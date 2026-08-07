@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Brand palette — deep forest green + warm gold + ivory */
+  --color-brand-900: #0e2119;
+  --color-brand-800: #1a3a2a;
+  --color-brand-700: #1e3d2f;
+  --color-brand-600: #2d5a3d;
+  --color-brand-500: #3d7a52;
+  --color-brand-400: #5a9e6e;
+  --color-brand-300: #82bf96;
+  --color-brand-200: #b5dbbe;
+  --color-brand-100: #dff0e4;
+  --color-brand-50:  #f1faf4;
+
+  --color-gold-900: #6b4a00;
+  --color-gold-800: #8b6200;
+  --color-gold-700: #a87b10;
+  --color-gold-600: #c9973a;
+  --color-gold-500: #d4a843;
+  --color-gold-400: #e2bf6a;
+  --color-gold-300: #ecd08f;
+  --color-gold-200: #f4e3bb;
+  --color-gold-100: #faf2de;
+  --color-gold-50:  #fdf9f0;
+
+  --color-terracotta-600: #b85c2a;
+  --color-terracotta-500: #c4622a;
+  --color-terracotta-400: #d4784a;
+  --color-terracotta-100: #fce9df;
+
+  /* Semantic */
+  --color-background: #fdfaf6;
+  --color-foreground: #1a1a1a;
+  --color-muted:      #6b7280;
+  --color-border:     #e8e0d5;
+  --color-card:       #ffffff;
+
+  /* Fonts */
+  --font-sans:    var(--font-geist-sans);
+  --font-display: var(--font-playfair);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0e1a12;
+    --color-foreground: #f5f0e8;
+    --color-muted:      #9ca3af;
+    --color-border:     #2d3d2f;
+    --color-card:       #152219;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Adire-inspired decorative pattern used as accent bg */
+.pattern-adire {
+  background-image: radial-gradient(circle at 1px 1px, var(--color-brand-200) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Focus ring consistent with brand */
+:focus-visible {
+  outline: 2px solid var(--color-gold-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
