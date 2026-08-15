@@ -1,0 +1,47 @@
+---
+description: Axios-only HTTP in apps/web. Never use the fetch API. Browser uses proxyClient; RSC uses serverGet/publicGet; Route Handlers use proxyNest.
+alwaysApply: true
+---
+
+# HTTP client — axios only
+
+Never call `fetch()` in `apps/web`. Next.js patches `fetch` for RSC caching; this app opted out. All HTTP goes through axios helpers so auth, timeouts, and errors stay consistent.
+
+## Which helper
+
+| Caller | Helper | Talks to |
+|---|---|---|
+| Client components (`'use client'`) | `proxyClient` from `@/lib/proxy-client` | `/api/proxy/*` (BFF, Clerk cookie) |
+| Authenticated RSC / `api.server.ts` | `serverFetch` / `getMe` / `getEvents` | Nest, Clerk token from `getBackendClerkToken()` |
+| Public RSC (vendor page, RSVP GET) | `publicGet` from `@/lib/backend` | Nest, no auth |
+| Public client (RSVP submit) | `backend` from `@/lib/backend` | Nest, no auth |
+| Route Handlers | `proxyNest` / `proxyNestStream` from `@/lib/proxy-nest` | Nest |
+
+## Do not
+
+```ts
+// BAD — never
+await fetch(`${API_URL}/api/inquiries/${id}/book`, { method: 'POST', ... })
+
+// BAD — never add apps/web/src/app/api/proxy/<resource>/route.ts
+```
+
+```ts
+// GOOD — browser
+await proxyClient.post(`/inquiries/${id}/book`, { messageId })
+
+// GOOD — RSC
+const me = await getMe()
+
+// GOOD — new Nest path: catch-all already forwards /api/proxy/* → Nest /api/*
+```
+
+## New endpoints
+
+Call the **canonical Nest path** via `proxyClient`. Do not add a dedicated proxy route. `app/api/proxy/[...path]/route.ts` is the only BFF.
+
+Exception: `EventSource('/api/sse/stream')` for the live message stream — that is the browser EventSource API, not `fetch`.
+
+## Why not Next.js `fetch`
+
+Next extends `fetch` with caching and dedupe. Authed JSON must not be cached. Axios does not go through that cache. Keep it that way.

@@ -82,19 +82,27 @@ enum NotificationType {
 // ─────────────────────────────────────────────
 
 model User {
-  id               String   @id @default(cuid())
-  clerkId          String   @unique @map("clerk_id")
-  email            String   @unique
-  firstName        String?  @map("first_name")
-  lastName         String?  @map("last_name")
+  id               String    @id @default(cuid())
+  clerkId          String    @unique @map("clerk_id")
+  email            String    @unique
+  firstName        String?   @map("first_name")
+  lastName         String?   @map("last_name")
   phone            String?
-  avatarUrl        String?  @map("avatar_url")
-  role             UserRole @default(USER)
-  hasVendorProfile Boolean  @default(false) @map("has_vendor_profile")
-  activeMode       String   @default("user") @map("active_mode") // "user" | "vendor"
-  region           String   @default("Ottawa, Ontario, Canada")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  avatarUrl        String?   @map("avatar_url")
+  role             UserRole  @default(USER)
+  hasVendorProfile Boolean   @default(false) @map("has_vendor_profile")
+  activeMode       String    @default("user") @map("active_mode") // "user" | "vendor"
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
+  // Profile details collected during onboarding
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  tribes           Tribe[]
+  city             String?
+  countryOfOrigin  String?   @map("country_of_origin")
+
+  region           String    @default("Ottawa, Ontario, Canada")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
   deletedAt        DateTime? @map("deleted_at")
 
   vendorProfile    VendorProfile?

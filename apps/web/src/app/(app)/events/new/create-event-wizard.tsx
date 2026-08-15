@@ -1,0 +1,838 @@
+'use client'
+
+import { useState, useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  ChevronRight, ChevronLeft, Check, Loader2,
+  Users, Calendar, MapPin, DollarSign, Sparkles, Search,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
+import { proxyClient } from '@/lib/proxy-client'
+import { getVendorCategoryLabel } from '@/lib/vendor-categories'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TOTAL_STEPS = 6
+
+const EVENT_TYPES = [
+  { value: 'WEDDING',             label: 'Wedding',              description: 'The whole celebration — add traditional, court, reception as sub-events if you need them' },
+  { value: 'TRADITIONAL_WEDDING', label: 'Traditional Wedding', description: 'A cultural ceremony honouring family traditions' },
+  { value: 'WHITE_WEDDING',       label: 'White Wedding',        description: 'Church wedding in Western style' },
+  { value: 'COURT',               label: 'Court',                description: 'Legal ceremony at the registry' },
+  { value: 'BRIDE_PRICE',         label: 'Bride price',          description: 'Family negotiation and gifts' },
+  { value: 'RECEPTION',           label: 'Wedding Reception',    description: 'The grand celebration after the ceremony' },
+  { value: 'INTRODUCTION',        label: 'Introduction',         description: 'Families meet and gifts are presented' },
+  { value: 'ENGAGEMENT',          label: 'Engagement Party',     description: 'Celebrating the couple before the big day' },
+  { value: 'CUSTOM',              label: 'Custom ceremony',      description: 'A named cultural rite — you choose the title' },
+  { value: 'NAMING_CEREMONY',     label: 'Naming Ceremony',      description: 'Welcoming a new child into the family' },
+] as const
+
+const TRIBES = [
+  {
+    value: 'IBIBIO',
+    label: 'Ibibio',
+    region: 'Akwa Ibom',
+    description: 'Ukod inyanga attire, nkuho ceremony, coral beads & ofong fabric',
+  },
+  {
+    value: 'YORUBA',
+    label: 'Yoruba',
+    region: 'Southwest Nigeria',
+    description: 'Gele, aso-oke, alaga ceremony & palm wine carrying',
+  },
+  {
+    value: 'IGBO',
+    label: 'Igbo',
+    region: 'Southeast Nigeria',
+    description: 'George wrapper, oji (kola nut) & wine-carrying ceremony',
+  },
+  {
+    value: 'EFIK',
+    label: 'Efik',
+    region: 'Cross River',
+    description: 'Mbuoñ wrapper, coral beads, mbopo ceremony & nkwa music',
+  },
+  {
+    value: 'IJAW',
+    label: 'Ijaw',
+    region: 'Niger Delta',
+    description: 'Traditional wrapper, perebo dowry ceremony & ekine masquerade',
+  },
+  {
+    value: 'HAUSA',
+    label: 'Hausa',
+    region: 'Northern Nigeria',
+    description: 'Atamfa fabric, lefe gift exchange & lalle (henna) night',
+  },
+  {
+    value: 'URHOBO',
+    label: 'Urhobo',
+    region: 'Delta State',
+    description: 'Ufuoma attire, ighele bride price negotiation & cultural dance',
+  },
+  {
+    value: 'BINI',
+    label: 'Bini / Edo',
+    region: 'Edo State',
+    description: 'Coral beads, isi marriage rites & Bini royal music',
+  },
+  {
+    value: 'FULANI',
+    label: 'Fulani',
+    region: 'Multiple states',
+    description: 'Shadi wedding, wurooji gifts, woven fabric & griot performers',
+  },
+  {
+    value: 'TIVI',
+    label: 'Tiv',
+    region: 'Benue State',
+    description: 'Handwoven gende cloth, swange dance & kuchichun bride price',
+  },
+  {
+    value: 'OTHER',
+    label: 'Other / Mixed',
+    region: 'Diaspora blend',
+    description: 'Multiple cultures, mixed heritage, or a custom blend',
+  },
+] as const
+
+const THEMES = [
+  {
+    value: 'TRADITIONAL',
+    label: 'Full Traditional',
+    description: 'Rich cultural colours, native fabrics, indigenous decor',
+    palette: ['#8B4513', '#DAA520', '#006400'],
+  },
+  {
+    value: 'FUSION',
+    label: 'Afro-Fusion',
+    description: 'Modern elegance meets Nigerian cultural elements',
+    palette: ['#1B4332', '#D4AF37', '#F5E6C8'],
+  },
+  {
+    value: 'REGAL',
+    label: 'Regal',
+    description: 'Deep burgundy, gold, and royal formality',
+    palette: ['#4A0E1A', '#C9A84C', '#1A0A0C'],
+  },
+  {
+    value: 'WHITE_WEDDING',
+    label: 'Classic White',
+    description: 'Timeless white and ivory with soft floral arrangements',
+    palette: ['#F9F9F9', '#E8C8A0', '#B0A090'],
+  },
+  {
+    value: 'INDOOR_LUXURY',
+    label: 'Indoor Luxury',
+    description: 'Ballroom glamour with chandelier lighting and draped ceilings',
+    palette: ['#1A1A2E', '#C9A84C', '#FFFFFF'],
+  },
+  {
+    value: 'BLACK_TIE',
+    label: 'Black tie',
+    description: 'Evening formal — black, navy, and champagne',
+    palette: ['#0B0B0F', '#1B2A4A', '#E8D5B5'],
+  },
+  {
+    value: 'MODERN',
+    label: 'Modern',
+    description: 'Clean lines, restrained palette, contemporary venue',
+    palette: ['#2C2C2C', '#C4C4C4', '#F4F1EA'],
+  },
+  {
+    value: 'INTIMATE',
+    label: 'Intimate',
+    description: 'Small gathering — warm light, close tables, quiet luxury',
+    palette: ['#3D2A1F', '#D4A574', '#F3E6D8'],
+  },
+  {
+    value: 'OUTDOOR',
+    label: 'Outdoor Garden',
+    description: 'Open-air celebration under the sky with floral arches',
+    palette: ['#2D6A4F', '#F0C040', '#FFFFFF'],
+  },
+  {
+    value: 'GARDEN',
+    label: 'Botanical Garden',
+    description: 'Lush greenery, wildflowers, and organic natural textures',
+    palette: ['#3A7D44', '#A8D5A2', '#F5F5DC'],
+  },
+] as const
+
+const VENDOR_CATEGORY_LABELS: Record<string, string> = {}  // replaced by i18n — use getVendorCategoryLabel()
+
+const DEFAULT_BUDGET_SPLIT: Record<string, number> = {
+  CATERER: 0.30,
+  PHOTOGRAPHER: 0.12,
+  VIDEOGRAPHER: 0.08,
+  DECORATOR: 0.15,
+  DJ: 0.08,
+  MAKEUP_ARTIST: 0.07,
+  MC: 0.05,
+  WEDDING_PLANNER: 0.05,
+  FASHION_STYLIST: 0.05,
+  LIVE_BAND: 0.03,
+  OTHER: 0.02,
+}
+
+// ─── Shared components ────────────────────────────────────────────────────────
+
+/** Compact horizontal pill for event type */
+function EventTypePill({
+  selected,
+  label,
+  onClick,
+}: {
+  selected: boolean
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-all',
+        selected
+          ? 'bg-gold-500/15 border-gold-500 text-gold-300 ring-1 ring-gold-500/20'
+          : 'bg-white/5 border-white/10 text-brand-300 hover:bg-white/8 hover:border-white/20 hover:text-white',
+      )}
+    >
+      {selected && <Check size={12} strokeWidth={3} className="text-gold-400 shrink-0" />}
+      {label}
+    </button>
+  )
+}
+
+/** Compact checkbox row for tribe list */
+function TribeRow({
+  selected,
+  label,
+  region,
+  description,
+  onClick,
+}: {
+  selected: boolean
+  label: string
+  region: string
+  description: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all',
+        selected
+          ? 'bg-gold-500/10 border-gold-500/50 ring-1 ring-gold-500/20'
+          : 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15',
+      )}
+    >
+      {/* Checkbox indicator */}
+      <span
+        className={cn(
+          'shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
+          selected ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+        )}
+      >
+        {selected && <Check size={10} strokeWidth={3} className="text-brand-900" />}
+      </span>
+
+      {/* Text */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={cn('font-medium text-sm', selected ? 'text-gold-200' : 'text-white')}>
+            {label}
+          </span>
+          <span className="text-[10px] text-brand-500 font-normal">{region}</span>
+        </div>
+        <p className="text-brand-400 text-xs mt-0.5 leading-relaxed">{description}</p>
+      </div>
+    </button>
+  )
+}
+
+// ─── Form state ───────────────────────────────────────────────────────────────
+
+interface WizardState {
+  eventType: string
+  tribes: string[]
+  themes: string[]
+  title: string
+  estimatedDate: string
+  guestCount: string
+  location: string
+  totalBudget: string
+}
+
+const initialState: WizardState = {
+  eventType: '',
+  tribes: [],
+  themes: [],
+  title: '',
+  estimatedDate: '',
+  guestCount: '',
+  location: 'Ottawa, Ontario, Canada',
+  totalBudget: '',
+}
+
+// ─── Variants ─────────────────────────────────────────────────────────────────
+
+const stepVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 48 : -48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -48 : 48, opacity: 0 }),
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StepProgress({ step }: { step: number }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-8">
+      {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+        <div
+          key={i}
+          className={cn(
+            'h-1 flex-1 rounded-full transition-all duration-300',
+            i < step ? 'bg-gold-500' : i === step - 1 ? 'bg-gold-400' : 'bg-white/15',
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ─── Wizard steps ─────────────────────────────────────────────────────────────
+
+function StepEventType({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+  const selected = EVENT_TYPES.find((t) => t.value === state.eventType)
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-white mb-1">
+        What are we celebrating?
+      </h2>
+      <p className="text-brand-300 text-sm mb-6">Choose the type of event you&apos;re planning.</p>
+
+      {/* Pill grid */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {EVENT_TYPES.map(({ value, label }) => (
+          <EventTypePill
+            key={value}
+            selected={state.eventType === value}
+            label={label}
+            onClick={() => set('eventType', value)}
+          />
+        ))}
+      </div>
+
+      {/* Description of selected */}
+      <AnimatePresence mode="wait">
+        {selected && (
+          <motion.div
+            key={selected.value}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="rounded-xl bg-gold-500/8 border border-gold-500/20 px-4 py-3"
+          >
+            <p className="text-gold-200 text-sm font-medium">{selected.label}</p>
+            <p className="text-brand-300 text-xs mt-0.5">{selected.description}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function StepTribe({
+  state,
+  toggleTribe,
+}: {
+  state: WizardState
+  toggleTribe: (v: string) => void
+  set: (k: keyof WizardState, v: string) => void
+}) {
+  const [query, setQuery] = useState('')
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase()
+    return q
+      ? TRIBES.filter(
+          (t) =>
+            t.label.toLowerCase().includes(q) ||
+            t.region.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q),
+        )
+      : TRIBES
+  }, [query])
+
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-white mb-1">Which cultures?</h2>
+      <p className="text-brand-300 text-sm mb-1">
+        Select all that apply — we&apos;ll merge the traditions into one checklist.
+      </p>
+      {state.tribes.length > 0 && (
+        <p className="text-gold-400 text-xs mb-3">
+          {state.tribes.length} selected
+        </p>
+      )}
+
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search cultures…"
+          className="w-full rounded-xl bg-white/5 border border-white/10 pl-9 pr-4 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 text-sm transition-colors"
+        />
+      </div>
+
+      {/* List */}
+      <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+        {filtered.map(({ value, label, region, description }) => (
+          <TribeRow
+            key={value}
+            selected={state.tribes.includes(value)}
+            label={label}
+            region={region}
+            description={description}
+            onClick={() => toggleTribe(value)}
+          />
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-brand-400 text-sm text-center py-6">No match — try &quot;Other / Mixed&quot;</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StepTheme({
+  state,
+  toggleTheme,
+}: {
+  state: WizardState
+  toggleTheme: (value: string) => void
+}) {
+  const selected = THEMES.filter((t) => state.themes.includes(t.value))
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-white mb-1">Set the scene</h2>
+      <p className="text-brand-300 text-sm mb-6">
+        Pick one or more looks. They apply to this event and any sub-events you add later.
+      </p>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {THEMES.map(({ value, label }) => (
+          <EventTypePill
+            key={value}
+            selected={state.themes.includes(value)}
+            label={label}
+            onClick={() => toggleTheme(value)}
+          />
+        ))}
+      </div>
+
+      {selected.length > 0 && (
+        <div className="space-y-2">
+          {selected.map((theme) => (
+            <div
+              key={theme.value}
+              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+            >
+              <div className="flex gap-1 mb-2.5">
+                {theme.palette.map((c) => (
+                  <div key={c} className="h-3 flex-1 rounded-md" style={{ background: c }} />
+                ))}
+              </div>
+              <p className="text-white text-sm font-medium">{theme.label}</p>
+              <p className="text-brand-300 text-xs mt-0.5">{theme.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StepDetails({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+  const selectedType = EVENT_TYPES.find((t) => t.value === state.eventType)
+  const placeholder = selectedType ? `My ${selectedType.label}` : 'Event name'
+
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-white mb-1">Event details</h2>
+      <p className="text-brand-300 text-sm mb-6">Add the specifics — everything here is optional except the name.</p>
+      <div className="space-y-4">
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-brand-200 mb-1.5">
+            Event name <span className="text-gold-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={state.title}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder={placeholder}
+            className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+          />
+        </div>
+
+        {/* Date */}
+        <div>
+          <label className="block text-sm font-medium text-brand-200 mb-1.5">
+            <Calendar size={13} className="inline mr-1.5 text-brand-400" />
+            Estimated date <span className="text-brand-500">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={state.estimatedDate}
+            onChange={(e) => set('estimatedDate', e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm [color-scheme:dark]"
+          />
+        </div>
+
+        {/* Guest count + Location */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-brand-200 mb-1.5">
+              <Users size={13} className="inline mr-1.5 text-brand-400" />
+              Guests <span className="text-brand-500">(optional)</span>
+            </label>
+            <input
+              type="number"
+              value={state.guestCount}
+              onChange={(e) => set('guestCount', e.target.value)}
+              placeholder="200"
+              min={1}
+              max={5000}
+              className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-200 mb-1.5">
+              <MapPin size={13} className="inline mr-1.5 text-brand-400" />
+              Location
+            </label>
+            <input
+              type="text"
+              value={state.location}
+              onChange={(e) => set('location', e.target.value)}
+              placeholder="Ottawa, Ontario, Canada"
+              className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StepBudget({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+  const tCat = useTranslations('vendorCategories')
+  const raw = parseInt(state.totalBudget, 10) || 0
+  const formatted = raw > 0 ? raw.toLocaleString('en-CA') : ''
+
+  const topCategories = Object.entries(DEFAULT_BUDGET_SPLIT)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-white mb-1">Your budget</h2>
+      <p className="text-brand-300 text-sm mb-6">
+        Set your total budget in CAD. We&apos;ll automatically split it across all vendor categories.
+      </p>
+
+      {/* Budget input */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-brand-200 mb-1.5">
+          <DollarSign size={13} className="inline mr-1 text-brand-400" />
+          Total budget (CAD) <span className="text-gold-500">*</span>
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400 font-medium text-sm">CA$</span>
+          <input
+            type="number"
+            value={state.totalBudget}
+            onChange={(e) => set('totalBudget', e.target.value)}
+            placeholder="25000"
+            min={1000}
+            className="w-full rounded-xl bg-white/6 border border-white/12 pl-12 pr-4 py-3.5 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-lg font-semibold"
+          />
+        </div>
+        <p className="text-brand-500 text-xs mt-1.5">Minimum: CA$1,000</p>
+      </div>
+
+      {/* Budget preview */}
+      {raw >= 1000 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-white/4 border border-white/10 p-4"
+        >
+          <p className="text-xs font-medium text-brand-300 mb-3 uppercase tracking-wider">Budget split preview</p>
+          <div className="space-y-2">
+            {topCategories.map(([category, ratio]) => {
+              const amount = Math.round(raw * ratio)
+              const width = Math.round(ratio * 100)
+              return (
+                <div key={category}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-brand-300">{getVendorCategoryLabel(category, tCat)}</span>
+                    <span className="text-white font-medium">CA${amount.toLocaleString('en-CA')}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${width}%` }}
+                      transition={{ duration: 0.5, delay: 0.05 }}
+                      className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400"
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            <p className="text-brand-500 text-xs text-right pt-1">+ 6 more categories</p>
+          </div>
+          <div className="flex justify-between mt-3 pt-3 border-t border-white/8">
+            <span className="text-sm text-brand-300">Total</span>
+            <span className="text-sm font-semibold text-gold-400">CA${formatted}</span>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+function StepReview({ state }: { state: WizardState }) {
+  const eventLabel = EVENT_TYPES.find((t) => t.value === state.eventType)?.label ?? state.eventType
+  const tribeLabels = state.tribes
+    .map((v) => TRIBES.find((t) => t.value === v)?.label ?? v)
+    .join(', ')
+  const themeLabel = state.themes
+    .map((v) => THEMES.find((t) => t.value === v)?.label ?? v)
+    .join(', ')
+  const budget = parseInt(state.totalBudget, 10) || 0
+
+  const rows = [
+    { label: 'Event', value: eventLabel },
+    { label: 'Culture', value: tribeLabels },
+    { label: 'Theme', value: themeLabel },
+    { label: 'Name', value: state.title },
+    { label: 'Date', value: state.estimatedDate ? new Date(state.estimatedDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD' },
+    { label: 'Guests', value: state.guestCount ? `${parseInt(state.guestCount).toLocaleString()} guests` : 'TBD' },
+    { label: 'Location', value: state.location || 'Ottawa, Ontario, Canada' },
+    { label: 'Budget', value: `CA$${budget.toLocaleString('en-CA')}` },
+  ]
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 rounded-xl bg-gold-500/15">
+          <Sparkles size={18} className="text-gold-400" />
+        </div>
+        <div>
+          <h2 className="font-display text-2xl font-semibold text-white">Review & create</h2>
+          <p className="text-brand-300 text-sm">Everything look right? We&apos;ll generate your checklist automatically.</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
+        {rows.map(({ label, value }, i) => (
+          <div
+            key={label}
+            className={cn(
+              'flex items-center justify-between px-4 py-3 text-sm',
+              i < rows.length - 1 && 'border-b border-white/6',
+            )}
+          >
+            <span className="text-brand-400 w-20 shrink-0">{label}</span>
+            <span className="text-white text-right">{value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-xl bg-emerald-500/8 border border-emerald-500/20 px-4 py-3 flex gap-3">
+        <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+        <p className="text-emerald-300 text-xs leading-relaxed">
+          We&apos;ll create a personalised checklist with cultural traditions, auto-split your budget across vendor categories, and make it easy to find vendors in Ottawa.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main wizard ──────────────────────────────────────────────────────────────
+
+export function CreateEventWizard() {
+  const router = useRouter()
+  const [step, setStep] = useState(1)
+  const [dir, setDir] = useState(1)
+  const [state, setState] = useState<WizardState>(initialState)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = useCallback((key: keyof WizardState, value: string) => {
+    setState((prev) => ({ ...prev, [key]: value }))
+  }, [])
+
+  const toggleTribe = useCallback((value: string) => {
+    setState((prev) => ({
+      ...prev,
+      tribes: prev.tribes.includes(value)
+        ? prev.tribes.filter((t) => t !== value)
+        : [...prev.tribes, value],
+    }))
+  }, [])
+
+  const toggleTheme = useCallback((value: string) => {
+    setState((prev) => ({
+      ...prev,
+      themes: prev.themes.includes(value)
+        ? prev.themes.filter((t) => t !== value)
+        : [...prev.themes, value],
+    }))
+  }, [])
+
+  const canAdvance = (() => {
+    switch (step) {
+      case 1: return !!state.eventType
+      case 2: return state.tribes.length > 0
+      case 3: return state.themes.length > 0
+      case 4: return state.title.trim().length >= 2
+      case 5: return parseInt(state.totalBudget, 10) >= 1000
+      default: return true
+    }
+  })()
+
+  const go = (delta: number) => {
+    setDir(delta)
+    setStep((s) => s + delta)
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const { data: event } = await proxyClient.post<{ id: string }>('/events', {
+        title: state.title,
+        eventType: state.eventType,
+        tribes: state.tribes,
+        themes: state.themes,
+        totalBudget: parseInt(state.totalBudget, 10),
+        estimatedDate: state.estimatedDate || undefined,
+        guestCount: state.guestCount ? parseInt(state.guestCount, 10) : undefined,
+        location: state.location || undefined,
+      })
+      router.push(`/events/${event.id}`)
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? err?.message ?? 'Something went wrong')
+      setLoading(false)
+    }
+  }
+
+  const stepProps = { state, set, toggleTribe, toggleTheme }
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] flex items-start justify-center px-4 py-8 md:py-12">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => router.push('/events')}
+            className="flex items-center gap-1.5 text-brand-400 hover:text-white text-sm transition-colors mb-6"
+          >
+            <ChevronLeft size={16} /> Back to Events
+          </button>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-brand-400 uppercase tracking-widest">
+              Step {step} of {TOTAL_STEPS}
+            </p>
+          </div>
+          <StepProgress step={step} />
+        </div>
+
+        {/* Step panel */}
+        <div className="rounded-2xl bg-white/4 border border-white/10 p-6 md:p-8 min-h-[420px] relative overflow-hidden">
+          {/* Adire pattern */}
+          <div className="absolute inset-0 pattern-adire opacity-[0.03] pointer-events-none" />
+
+          <AnimatePresence mode="wait" custom={dir}>
+            <motion.div
+              key={step}
+              custom={dir}
+              variants={stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="relative z-10"
+            >
+              {step === 1 && <StepEventType {...stepProps} />}
+              {step === 2 && <StepTribe {...stepProps} toggleTribe={toggleTribe} />}
+              {step === 3 && <StepTheme state={state} toggleTheme={toggleTheme} />}
+              {step === 4 && <StepDetails {...stepProps} />}
+              {step === 5 && <StepBudget {...stepProps} />}
+              {step === 6 && <StepReview state={state} />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <p className="mt-3 text-red-400 text-sm text-center">{error}</p>
+        )}
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between mt-5">
+          <button
+            type="button"
+            onClick={() => go(-1)}
+            disabled={step === 1}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-brand-300 hover:text-white hover:bg-white/8 disabled:opacity-0 disabled:pointer-events-none transition-all"
+          >
+            <ChevronLeft size={16} /> Back
+          </button>
+
+          {step < TOTAL_STEPS ? (
+            <button
+              type="button"
+              onClick={() => go(1)}
+              disabled={!canAdvance}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-40 disabled:cursor-not-allowed text-brand-900 font-semibold text-sm transition-all shadow-lg shadow-gold-900/20"
+            >
+              Continue <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-60 disabled:cursor-not-allowed text-brand-900 font-semibold text-sm transition-all shadow-lg shadow-gold-900/20"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" /> Creating…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={15} /> Create Event
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

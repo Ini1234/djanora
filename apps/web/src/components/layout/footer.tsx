@@ -8,7 +8,7 @@ const footerLinks = {
   ],
   Vendors: [
     { href: '/vendor/sign-up', label: 'Join as a Vendor' },
-    { href: '/vendor/dashboard', label: 'Vendor Dashboard' },
+    { href: '/', label: 'Vendor Dashboard' },
   ],
   Company: [
     { href: '/about', label: 'About' },
@@ -31,15 +31,15 @@ export function Footer() {
             <Link
               href="/"
               className="flex items-center gap-2 font-display text-xl font-semibold text-white mb-4"
-              aria-label="CaaS — home"
+              aria-label="Djanora — home"
             >
               <span className="w-8 h-8 rounded-full bg-gold-600 flex items-center justify-center text-brand-900 text-sm font-bold">
-                C
+                D
               </span>
-              <span>CaaS</span>
+              <span>Djanora</span>
             </Link>
             <p className="text-sm text-brand-300 leading-relaxed">
-              Culture as a Service. Plan your Nigerian wedding in Ottawa with confidence.
+              Plan your Nigerian wedding in Ottawa with confidence.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-brand-800 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-brand-400">
-            &copy; {new Date().getFullYear()} CaaS. Ottawa, Ontario, Canada.
+            &copy; {new Date().getFullYear()} Djanora. Ottawa, Ontario, Canada.
           </p>
           <p className="text-xs text-brand-500">Built for the diaspora, by the diaspora.</p>
         </div>

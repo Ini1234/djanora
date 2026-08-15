@@ -1,0 +1,993 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  VENDOR
+  ADMIN
+}
+
+enum VendorCategory {
+  CATERER
+  DJ
+  PHOTOGRAPHER
+  VIDEOGRAPHER
+  DECORATOR
+  MAKEUP_ARTIST
+  MC
+  WEDDING_PLANNER
+  FASHION_STYLIST
+  LIVE_BAND
+  OTHER
+}
+
+enum Tribe {
+  YORUBA
+  IGBO
+  HAUSA
+  IBIBIO
+  EFIK
+  IJAW
+  URHOBO
+  BINI
+  FULANI
+  TIVI
+  OTHER
+}
+
+enum EventType {
+  WEDDING
+  INTRODUCTION
+  BRIDE_PRICE
+  TRADITIONAL_WEDDING
+  COURT
+  WHITE_WEDDING
+  RECEPTION
+  ENGAGEMENT
+  NAMING_CEREMONY
+  CUSTOM
+}
+
+enum WeddingTheme {
+  TRADITIONAL
+  WHITE_WEDDING
+  FUSION
+  OUTDOOR
+  INDOOR_LUXURY
+  GARDEN
+  REGAL
+  BLACK_TIE
+  INTIMATE
+  MODERN
+}
+
+enum InquiryStatus {
+  PENDING
+  VIEWED
+  QUOTED
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  BOOKED
+}
+
+enum InquiryMessageKind {
+  TEXT
+  QUOTE
+  LINK
+  INSPIRATION
+}
+
+enum NotificationType {
+  INQUIRY_RECEIVED
+  INQUIRY_QUOTED
+  INQUIRY_ACCEPTED
+  INQUIRY_DECLINED
+  BOOKING_CONFIRMED
+  EVENT_REMINDER
+  REVIEW_REQUEST
+  SYSTEM
+  EVENT_INVITE
+  EVENT_COMMENT
+  INSPIRATION_COMMENT
+}
+
+enum EventSurface {
+  SCHEDULE
+  CHECKLIST
+  BUDGET
+  MOODBOARD
+  VENDORS
+  GUESTS
+}
+
+enum EventMemberRole {
+  EDITOR
+  COMMENTER
+  VIEWER
+}
+
+enum EventCommentSubject {
+  SCHEDULE_ITEM
+  CHECKLIST_ITEM
+  BUDGET_ITEM
+  MOOD_BOARD_ITEM
+  EVENT
+}
+
+enum EventActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  COMPLETED
+  COMMENTED
+  INVITED
+}
+
+enum RsvpStatus {
+  PENDING
+  ATTENDING
+  DECLINED
+  MAYBE
+}
+
+// ─────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  clerkId          String    @unique @map("clerk_id")
+  email            String    @unique
+  firstName        String?   @map("first_name")
+  lastName         String?   @map("last_name")
+  phone            String?
+  avatarUrl        String?   @map("avatar_url")
+  role             UserRole  @default(USER)
+  hasVendorProfile Boolean   @default(false) @map("has_vendor_profile")
+  activeMode       String    @default("user") @map("active_mode") // "user" | "vendor"
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
+  // Profile details collected during onboarding
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  tribes           Tribe[]
+  city             String?
+  countryOfOrigin  String?   @map("country_of_origin")
+
+  region           String    @default("Ottawa, Ontario, Canada")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  checklists       UserChecklist[]
+  vendorProfile    VendorProfile?
+  events           Event[]
+  inquiriesAsSender    Inquiry[]          @relation("InquirySender")
+  inquiryMessages      InquiryMessage[]   @relation("InquiryMessageSender")
+  notifications    Notification[]
+  reviews          Review[]       @relation("ReviewAuthor")
+  vendorContacts   UserVendorContact[]
+  inspirationItems InspirationItem[] @relation("InspirationCreator")
+  moodBoardItems   MoodBoardItem[]   @relation("MoodBoardUser")
+  eventMemberships EventMember[]     @relation("EventMemberships")
+  eventInvitesSent EventMember[]     @relation("EventMemberInviter")
+  eventComments    EventComment[]    @relation("EventCommentAuthor")
+  commentMentions  EventCommentMention[]
+  inspirationComments InspirationComment[]
+  inspirationLikes InspirationLike[]
+  vendorFavorites  VendorFavorite[]
+  eventActivities  EventActivity[]   @relation("EventActivityActor")
+  surfaceReads     EventSurfaceRead[]
+  assignedChecklists EventChecklist[] @relation("ChecklistAssignee")
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model UserChecklist {
+  id               String    @id @default(cuid())
+  userId           String    @map("user_id")
+  eventId          String?   @map("event_id")
+  eventChecklistId String?   @unique @map("event_checklist_id")
+  title            String
+  isCompleted      Boolean   @default(false) @map("is_completed")
+  dueDate          DateTime? @map("due_date") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventChecklist EventChecklist? @relation(fields: [eventChecklistId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dueDate])
+  @@index([eventId])
+  @@map("user_checklists")
+}
+
+// ─────────────────────────────────────────────
+// VENDOR PROFILES
+// ─────────────────────────────────────────────
+
+model VendorProfile {
+  id               String         @id @default(cuid())
+  userId           String         @unique @map("user_id")
+  slug             String         @unique
+  businessName     String         @map("business_name")
+  bio              String?        @db.Text
+  category         VendorCategory
+  categories       VendorCategory[] @default([]) @map("categories")
+  tribesServed     Tribe[]        @map("tribes_served")
+  estimatedPriceFrom Int?         @map("estimated_price_from")
+  estimatedPriceTo   Int?         @map("estimated_price_to")
+  currency         String         @default("CAD")
+  websiteUrl       String?        @map("website_url")
+  instagramUrl     String?        @map("instagram_url")
+  facebookUrl      String?        @map("facebook_url")
+  externalPortfolioUrl   String?  @map("external_portfolio_url")
+  externalPortfolioLabel String?  @map("external_portfolio_label")
+  avatarUrl        String?        @map("avatar_url")
+  city             String?
+  embedding        Bytes?
+  isVerified       Boolean        @default(false) @map("is_verified")
+  isActive         Boolean        @default(true) @map("is_active")
+  averageRating    Float?         @map("average_rating")
+  totalReviews     Int            @default(0) @map("total_reviews")
+  profileViews     Int            @default(0) @map("profile_views")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services         VendorService[]
+  availability     VendorAvailability[]
+  inquiries        Inquiry[]      @relation("InquiryVendor")
+  reviews          Review[]       @relation("ReviewVendor")
+  budgetBookings   EventBudgetItem[] @relation("BudgetBookings")
+  contactLink      UserVendorContact? @relation("ContactToProfile")
+  checklistItems   EventChecklist[]  @relation("ChecklistVendorProfile")
+  inspirationItems InspirationItem[] @relation("InspirationVendor")
+  favorites        VendorFavorite[]
+
+  @@index([category])
+  @@index([slug])
+  @@index([isActive, isVerified])
+  @@map("vendor_profiles")
+}
+
+model VendorService {
+  id              String        @id @default(cuid())
+  vendorProfileId String        @map("vendor_profile_id")
+  name            String
+  description     String?       @db.Text
+  priceFrom       Int?          @map("price_from")
+  priceTo         Int?          @map("price_to")
+  currency        String        @default("CAD")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  vendorProfile   VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([vendorProfileId])
+  @@map("vendor_services")
+}
+
+model VendorAvailability {
+  id              String        @id @default(cuid())
+  vendorProfileId String        @map("vendor_profile_id")
+  date            DateTime      @db.Date
+  isAvailable     Boolean       @default(false) @map("is_available")
+  note            String?
+
+  vendorProfile   VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorProfileId, date])
+  @@index([vendorProfileId, date])
+  @@map("vendor_availability")
+}
+
+// ─────────────────────────────────────────────
+// EVENTS (Host's wedding)
+// ─────────────────────────────────────────────
+
+model Event {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  parentId        String?       @map("parent_id")
+  title           String
+  eventType       EventType     @default(RECEPTION) @map("event_type")
+  tribes          Tribe[]
+  themes          WeddingTheme[]
+  estimatedDate   DateTime?     @map("estimated_date") @db.Date
+  location        String?
+  totalBudget     Int           @map("total_budget")
+  currency        String        @default("CAD")
+  guestCount      Int?          @map("guest_count")
+  notes           String?       @db.Text
+  isCompleted     Boolean       @default(false) @map("is_completed")
+  sortOrder       Int           @default(0) @map("sort_order")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent          Event?        @relation("EventTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Event[]       @relation("EventTree")
+  budgetItems     EventBudgetItem[]
+  checklist       EventChecklist[]
+  schedule        EventScheduleItem[]
+  inquiries       Inquiry[]
+  guests          Guest[]
+  guestInvites    GuestInvite[]
+  moodBoard       MoodBoardItem[]
+  members         EventMember[]
+  comments        EventComment[]
+  activities      EventActivity[]
+  surfaceReads    EventSurfaceRead[]
+  userChecklists  UserChecklist[]
+  subGrants       EventSubGrant[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@map("events")
+}
+
+// ─────────────────────────────────────────────
+// EVENT SHARING (planners — not RSVP guests)
+// ─────────────────────────────────────────────
+
+model EventMember {
+  id          String          @id @default(cuid())
+  eventId     String          @map("event_id")
+  userId      String?         @map("user_id")
+  email       String
+  role        EventMemberRole
+  surfaces    EventSurface[]
+  invitedById String          @map("invited_by_id")
+  token       String          @unique
+  acceptedAt  DateTime?       @map("accepted_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User?           @relation("EventMemberships", fields: [userId], references: [id], onDelete: SetNull)
+  invitedBy   User            @relation("EventMemberInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  subGrants   EventSubGrant[]
+  concealments EventChecklistConcealment[]
+
+  @@unique([eventId, email])
+  @@index([userId])
+  @@index([email])
+  @@index([eventId])
+  @@map("event_members")
+}
+
+model EventSubGrant {
+  id            String         @id @default(cuid())
+  eventMemberId String         @map("event_member_id")
+  eventId       String         @map("event_id")
+  surfaces      EventSurface[]
+
+  member        EventMember    @relation(fields: [eventMemberId], references: [id], onDelete: Cascade)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventMemberId, eventId])
+  @@index([eventId])
+  @@map("event_sub_grants")
+}
+
+model EventComment {
+  id          String              @id @default(cuid())
+  eventId     String              @map("event_id")
+  authorId    String              @map("author_id")
+  subjectType EventCommentSubject @map("subject_type")
+  subjectId   String              @map("subject_id")
+  parentId    String?             @map("parent_id")
+  body        String              @db.Text
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  deletedAt   DateTime?           @map("deleted_at")
+
+  event       Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author      User                @relation("EventCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent      EventComment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     EventComment[]      @relation("CommentReplies")
+  mentions    EventCommentMention[]
+
+  @@index([eventId, subjectType, subjectId])
+  @@index([parentId])
+  @@map("event_comments")
+}
+
+model EventCommentMention {
+  commentId String       @map("comment_id")
+  userId    String       @map("user_id")
+
+  comment   EventComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId])
+  @@map("event_comment_mentions")
+}
+
+model EventActivity {
+  id          String              @id @default(cuid())
+  eventId     String              @map("event_id")
+  actorId     String              @map("actor_id")
+  action      EventActivityAction
+  surface     EventSurface?
+  summary     String
+  subjectType String?             @map("subject_type")
+  subjectId   String?             @map("subject_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  event       Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  actor       User                @relation("EventActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@index([eventId, surface, createdAt])
+  @@map("event_activities")
+}
+
+model EventSurfaceRead {
+  id        String   @id @default(cuid())
+  eventId   String   @map("event_id")
+  userId    String   @map("user_id")
+  surface   String
+  seenAt    DateTime @default(now()) @map("seen_at")
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, surface])
+  @@index([userId])
+  @@map("event_surface_reads")
+}
+
+// ─────────────────────────────────────────────
+// GUEST LIST & INVITES
+// ─────────────────────────────────────────────
+
+model Guest {
+  id             String       @id @default(cuid())
+  eventId        String       @map("event_id")
+  firstName      String       @map("first_name")
+  lastName       String?      @map("last_name")
+  email          String?
+  phone          String?
+  note           String?      @db.Text
+  plusOneAllowed Boolean      @default(false) @map("plus_one_allowed")
+  tableNumber    String?      @map("table_number")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invite         GuestInvite?
+
+  @@index([eventId])
+  @@map("guests")
+}
+
+model GuestInvite {
+  id           String     @id @default(cuid())
+  guestId      String     @unique @map("guest_id")
+  eventId      String     @map("event_id")
+  token        String     @unique @default(cuid())
+  sentAt       DateTime?  @map("sent_at")
+  sentVia      String?    @map("sent_via")
+  expiresAt    DateTime?  @map("expires_at")
+  customNote   String?    @map("custom_note") @db.Text
+  rsvpStatus   RsvpStatus @default(PENDING) @map("rsvp_status")
+  rsvpAt       DateTime?  @map("rsvp_at")
+  plusOneName  String?    @map("plus_one_name")
+  dietaryNote  String?    @map("dietary_note") @db.Text
+  guestMessage String?    @map("guest_message") @db.Text
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  guest        Guest      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  event        Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([token])
+  @@map("guest_invites")
+}
+
+// ─────────────────────────────────────────────
+// USER VENDOR CONTACTS (personal rolodex)
+// ─────────────────────────────────────────────
+
+model UserVendorContact {
+  id              String          @id @default(cuid())
+  userId          String          @map("user_id")
+  name            String          @db.VarChar(120)
+  category        VendorCategory?
+  email           String?         @db.VarChar(255)
+  phone           String?         @db.VarChar(50)
+  website         String?         @db.VarChar(500)
+  notes           String?         @db.Text
+  // If this contact later creates a registered vendor account, link them
+  vendorProfileId String?         @unique @map("vendor_profile_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendorProfile   VendorProfile?  @relation("ContactToProfile", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  budgetItems     EventBudgetItem[]
+  checklistItems  EventChecklist[] @relation("ChecklistContact")
+
+  @@index([userId])
+  @@index([userId, category])
+  @@map("user_vendor_contacts")
+}
+
+model EventBudgetItem {
+  id                  String              @id @default(cuid())
+  eventId             String              @map("event_id")
+  category            VendorCategory
+  label               String?
+  vendorName          String?             @map("vendor_name")
+  vendorProfileId     String?             @map("vendor_profile_id")
+  userVendorContactId String?             @map("user_vendor_contact_id")
+  notes               String?
+  allocatedAmount     Int                 @map("allocated_amount")
+  spentAmount         Int                 @default(0) @map("spent_amount")
+  currency            String              @default("CAD")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  event               Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vendorProfile       VendorProfile?      @relation("BudgetBookings", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  userVendorContact   UserVendorContact?  @relation(fields: [userVendorContactId], references: [id], onDelete: SetNull)
+  receipts            BudgetReceipt[]
+  inspirations        MoodBoardItem[]
+  scheduleLinks       EventScheduleBudgetLink[]
+
+  @@index([eventId])
+  @@index([vendorProfileId])
+  @@index([userVendorContactId])
+  @@map("event_budget_items")
+}
+
+model BudgetReceipt {
+  id           String          @id @default(cuid())
+  budgetItemId String          @map("budget_item_id")
+  filename     String
+  url          String
+  mimeType     String?         @map("mime_type")
+  fileSize     Int?            @map("file_size")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  budgetItem   EventBudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  @@index([budgetItemId])
+  @@map("budget_receipts")
+}
+
+model EventChecklist {
+  id                  String             @id @default(cuid())
+  eventId             String             @map("event_id")
+  title               String
+  description         String?
+  isCompleted         Boolean            @default(false) @map("is_completed")
+  dueDate             DateTime?          @map("due_date") @db.Date
+  sortOrder           Int                @default(0) @map("sort_order")
+  notifyByEmail       Boolean            @default(false) @map("notify_by_email")
+  notifyBySms         Boolean            @default(false) @map("notify_by_sms")
+  notifiedAt          DateTime?          @map("notified_at")
+  needsVendor         Boolean            @default(false) @map("needs_vendor")
+  vendorCategory      String?            @map("vendor_category")
+  vendorProfileId     String?            @map("vendor_profile_id")
+  userVendorContactId String?            @map("user_vendor_contact_id")
+  assigneeUserId      String?            @map("assignee_user_id")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+
+  event               Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vendorProfile       VendorProfile?     @relation("ChecklistVendorProfile", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  userVendorContact   UserVendorContact? @relation("ChecklistContact", fields: [userVendorContactId], references: [id], onDelete: SetNull)
+  assignee            User?              @relation("ChecklistAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  inspirations        MoodBoardItem[]
+  scheduleLinks       EventScheduleChecklistLink[]
+  homeItem            UserChecklist?
+  concealments        EventChecklistConcealment[]
+
+  @@index([eventId])
+  @@index([dueDate, isCompleted])
+  @@index([vendorProfileId])
+  @@index([userVendorContactId])
+  @@index([assigneeUserId, isCompleted])
+  @@map("event_checklist")
+}
+
+model EventChecklistConcealment {
+  id            String         @id @default(cuid())
+  checklistId   String         @map("checklist_id")
+  eventMemberId String         @map("event_member_id")
+
+  checklist     EventChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  member        EventMember    @relation(fields: [eventMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([checklistId, eventMemberId])
+  @@map("event_checklist_concealments")
+}
+
+model EventScheduleItem {
+  id               String            @id @default(cuid())
+  eventId          String            @map("event_id")
+  title            String
+  notes            String?           @db.Text
+  date             String?           @db.VarChar(10)
+  startTime        String?           @map("start_time") @db.VarChar(5)
+  endTime          String?           @map("end_time") @db.VarChar(5)
+  location         String?
+  sortOrder        Int               @default(0) @map("sort_order")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  budgetLinks      EventScheduleBudgetLink[]
+  checklistLinks   EventScheduleChecklistLink[]
+  inspirationLinks EventScheduleMoodBoardLink[]
+
+  @@index([eventId])
+  @@map("event_schedule_items")
+}
+
+model EventScheduleBudgetLink {
+  scheduleItemId String            @map("schedule_item_id")
+  budgetItemId   String            @map("budget_item_id")
+
+  scheduleItem   EventScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  budgetItem     EventBudgetItem   @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleItemId, budgetItemId])
+  @@index([budgetItemId])
+  @@map("event_schedule_budget_links")
+}
+
+model EventScheduleChecklistLink {
+  scheduleItemId  String            @map("schedule_item_id")
+  checklistItemId String            @map("checklist_item_id")
+
+  scheduleItem    EventScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  checklistItem   EventChecklist    @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleItemId, checklistItemId])
+  @@index([checklistItemId])
+  @@map("event_schedule_checklist_links")
+}
+
+model EventScheduleMoodBoardLink {
+  scheduleItemId  String            @map("schedule_item_id")
+  moodBoardItemId String            @map("mood_board_item_id")
+
+  scheduleItem    EventScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  moodBoardItem   MoodBoardItem     @relation(fields: [moodBoardItemId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleItemId, moodBoardItemId])
+  @@index([moodBoardItemId])
+  @@map("event_schedule_mood_board_links")
+}
+
+// ─────────────────────────────────────────────
+// CULTURAL CONTENT
+// ─────────────────────────────────────────────
+
+model Culture {
+  id          String      @id @default(cuid())
+  name        String      @unique // "Nigerian"
+  description String?     @db.Text
+  tribes      CultureTribe[]
+
+  @@map("cultures")
+}
+
+model CultureTribe {
+  id              String      @id @default(cuid())
+  cultureId       String      @map("culture_id")
+  tribe           Tribe
+  description     String?     @db.Text
+  traditions      Tradition[]
+
+  culture         Culture     @relation(fields: [cultureId], references: [id], onDelete: Cascade)
+
+  @@unique([cultureId, tribe])
+  @@map("culture_tribes")
+}
+
+model Tradition {
+  id              String       @id @default(cuid())
+  cultureTribeId  String       @map("culture_tribe_id")
+  eventType       EventType    @map("event_type")
+  title           String
+  description     String       @db.Text
+  sortOrder       Int          @default(0) @map("sort_order")
+  isRequired      Boolean      @default(false) @map("is_required")
+
+  cultureTribe    CultureTribe @relation(fields: [cultureTribeId], references: [id], onDelete: Cascade)
+
+  @@index([cultureTribeId, eventType])
+  @@map("traditions")
+}
+
+// ─────────────────────────────────────────────
+// INQUIRIES & BOOKINGS
+// ─────────────────────────────────────────────
+
+model Inquiry {
+  id              String        @id @default(cuid())
+  eventId         String?       @map("event_id")
+  senderId        String        @map("sender_id")
+  vendorProfileId String        @map("vendor_profile_id")
+  status          InquiryStatus @default(PENDING)
+  message         String        @db.Text
+  quotedAmount    Int?          @map("quoted_amount")
+  currency        String        @default("CAD")
+  eventDate       DateTime?     @map("event_date") @db.Date
+  bookedAt        DateTime?     @map("booked_at")
+  reviewRequestedAt DateTime?   @map("review_requested_at")
+  originInspirationItemId String? @map("origin_inspiration_item_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  event           Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  sender          User          @relation("InquirySender", fields: [senderId], references: [id])
+  vendorProfile   VendorProfile @relation("InquiryVendor", fields: [vendorProfileId], references: [id])
+  originInspirationItem InspirationItem? @relation("InquiryOriginPost", fields: [originInspirationItemId], references: [id], onDelete: SetNull)
+  messages        InquiryMessage[]
+
+  @@index([senderId])
+  @@index([vendorProfileId])
+  @@index([eventId])
+  @@index([status])
+  @@index([originInspirationItemId])
+  @@map("inquiries")
+}
+
+model InquiryMessage {
+  id          String              @id @default(cuid())
+  inquiryId   String              @map("inquiry_id")
+  senderId    String              @map("sender_id")
+  message     String              @db.Text
+  kind        InquiryMessageKind  @default(TEXT)
+  payload     Json?
+  createdAt   DateTime            @default(now()) @map("created_at")
+  readAt      DateTime?           @map("read_at")
+  editedAt    DateTime?           @map("edited_at")
+  unsentAt    DateTime?           @map("unsent_at")
+
+  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  sender      User     @relation("InquiryMessageSender", fields: [senderId], references: [id])
+
+  @@index([inquiryId])
+  @@index([senderId])
+  @@map("inquiry_messages")
+}
+
+// ─────────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────────
+
+model Review {
+  id              String        @id @default(cuid())
+  authorId        String        @map("author_id")
+  vendorProfileId String        @map("vendor_profile_id")
+  rating          Int           // 1–5
+  comment         String?       @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  author          User          @relation("ReviewAuthor", fields: [authorId], references: [id])
+  vendorProfile   VendorProfile @relation("ReviewVendor", fields: [vendorProfileId], references: [id])
+
+  @@unique([authorId, vendorProfileId])
+  @@index([vendorProfileId])
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// INSPIRATION
+// ─────────────────────────────────────────────
+
+enum InspirationCategory {
+  PERFORMANCE
+  VENUE
+  DECOR
+  MUSIC
+  FASHION
+  FOOD
+  OTHER
+}
+
+enum InspirationVisibility {
+  DRAFT
+  PROFILE
+  INSPIRATION
+}
+
+enum InspirationMediaType {
+  IMAGE
+  VIDEO
+  EXTERNAL
+}
+
+model Tag {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  label      String
+  isCurated  Boolean  @default(false) @map("is_curated")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  posts      InspirationTag[]
+
+  @@map("tags")
+}
+
+model InspirationTag {
+  inspirationItemId String @map("inspiration_item_id")
+  tagId             String @map("tag_id")
+
+  inspirationItem InspirationItem @relation(fields: [inspirationItemId], references: [id], onDelete: Cascade)
+  tag             Tag             @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([inspirationItemId, tagId])
+  @@index([tagId])
+  @@map("inspiration_tags")
+}
+
+model InspirationMedia {
+  id                String                @id @default(cuid())
+  inspirationItemId String                @map("inspiration_item_id")
+  url               String
+  mediaType         InspirationMediaType  @default(IMAGE) @map("media_type")
+  caption           String?
+  isCover           Boolean               @default(false) @map("is_cover")
+  sortOrder         Int                   @default(0) @map("sort_order")
+  createdAt         DateTime              @default(now()) @map("created_at")
+
+  inspirationItem   InspirationItem       @relation(fields: [inspirationItemId], references: [id], onDelete: Cascade)
+
+  @@index([inspirationItemId, sortOrder])
+  @@map("inspiration_media")
+}
+
+model InspirationItem {
+  id             String                 @id @default(cuid())
+  title          String
+  description    String                 @db.Text
+  category       InspirationCategory
+  tags           String[]               @default([])
+  imageUrl       String?                @map("image_url")
+  location       String?
+  priceRangeFrom Float?                 @map("price_range_from")
+  priceRangeTo   Float?                 @map("price_range_to")
+  currency       String                 @default("CAD")
+  costNote       String?                @map("cost_note")
+  visibility     InspirationVisibility  @default(PROFILE)
+
+  // Embedding stored as raw bytes (Float32Array serialized)
+  embedding      Bytes?
+
+  // Optional link to a registered vendor
+  vendorProfileId String?            @map("vendor_profile_id")
+  vendorProfile   VendorProfile?     @relation("InspirationVendor", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+
+  // Creator (null = admin-seeded)
+  createdById    String?             @map("created_by_id")
+  createdBy      User?               @relation("InspirationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  isAdminCurated Boolean             @default(false) @map("is_admin_curated")
+
+  savedBy        MoodBoardItem[]
+  likes          InspirationLike[]
+  media          InspirationMedia[]
+  tagLinks       InspirationTag[]
+  originInquiries Inquiry[]          @relation("InquiryOriginPost")
+  comments       InspirationComment[]
+
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([vendorProfileId])
+  @@index([visibility, category])
+  @@index([vendorProfileId, visibility])
+  @@map("inspiration_items")
+}
+
+model InspirationComment {
+  id                String          @id @default(cuid())
+  inspirationItemId String          @map("inspiration_item_id")
+  inspirationItem   InspirationItem @relation(fields: [inspirationItemId], references: [id], onDelete: Cascade)
+  authorId          String          @map("author_id")
+  author            User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body              String          @db.Text
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@index([inspirationItemId, createdAt])
+  @@index([authorId])
+  @@map("inspiration_comments")
+}
+
+model MoodBoardItem {
+  id                 String           @id @default(cuid())
+  userId             String           @map("user_id")
+  user               User             @relation("MoodBoardUser", fields: [userId], references: [id], onDelete: Cascade)
+  eventId            String           @map("event_id")
+  event              Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  inspirationItemId  String           @map("inspiration_item_id")
+  inspirationItem    InspirationItem  @relation(fields: [inspirationItemId], references: [id], onDelete: Cascade)
+  notes              String?
+
+  // Optional links to planning items
+  checklistItemId    String?          @map("checklist_item_id")
+  checklistItem      EventChecklist?  @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
+  budgetItemId       String?          @map("budget_item_id")
+  budgetItem         EventBudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+  scheduleLinks      EventScheduleMoodBoardLink[]
+
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@unique([userId, eventId, inspirationItemId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([checklistItemId])
+  @@index([budgetItemId])
+  @@map("mood_board_items")
+}
+
+model InspirationLike {
+  userId            String          @map("user_id")
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inspirationItemId String          @map("inspiration_item_id")
+  inspirationItem   InspirationItem @relation(fields: [inspirationItemId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  @@id([userId, inspirationItemId])
+  @@index([inspirationItemId])
+  @@map("inspiration_likes")
+}
+
+model VendorFavorite {
+  userId          String        @map("user_id")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendorProfileId String        @map("vendor_profile_id")
+  vendorProfile   VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@id([userId, vendorProfileId])
+  @@index([vendorProfileId])
+  @@map("vendor_favorites")
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  type        NotificationType
+  title       String
+  body        String
+  isRead      Boolean          @default(false) @map("is_read")
+  metadata    Json?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}

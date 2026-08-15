@@ -13,11 +13,12 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
-    "db:studio": "turbo db:studio"
+    "db:studio": "turbo db:studio",
+    "test:hardening": "npm run test:hardening --workspace=api"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
     "prettier": "^3.3.0",
+    "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },
   "packageManager": "npm@10.8.0",
