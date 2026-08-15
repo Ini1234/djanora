@@ -1,0 +1,86 @@
+# Deploys apps/api → Azure Web App test-djanora
+#
+# Required GitHub secret:
+#   AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A
+# Runtime env (set on the Azure app, not here): DATABASE_URL, WEB_URL,
+#   NEXT_PUBLIC_API_URL, CLERK_*, RESEND_*, etc.
+
+name: Deploy API
+
+on:
+  push:
+    branches: [main, test]
+    paths:
+      - 'apps/api/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build --workspace=api
+
+      - name: Hardening tests
+        run: npm run test:hardening
+
+      - name: Pack deploy bundle
+        run: |
+          set -euo pipefail
+          mkdir -p .deploy/api
+          cp apps/api/package.json .deploy/api/
+          cp -R apps/api/dist .deploy/api/dist
+          cp -R apps/api/prisma .deploy/api/prisma
+          cp apps/api/prisma.config.ts .deploy/api/
+          mkdir -p .deploy/api/uploads
+          cd .deploy/api
+          npm install --omit=dev --ignore-scripts
+          DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci npx prisma generate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-app
+          path: .deploy/api
+          include-hidden-files: true
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: test-djanora
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-app
+          path: ./api-app
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: test-djanora
+          slot-name: Production
+          package: ./api-app
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A }}
