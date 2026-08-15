@@ -452,7 +452,7 @@ export class EventMembersService {
           </p>
         </div>
         <div style="padding:16px 32px 24px;border-top:1px solid #1e3a2a">
-          <p style="margin:0;color:#3d6b4a;font-size:11px">Sent via Djanora · Cultural Wedding Planning</p>
+          <p style="margin:0;color:#3d6b4a;font-size:11px">Sent via Djanora · Event Planning</p>
         </div>
       </div>
     `

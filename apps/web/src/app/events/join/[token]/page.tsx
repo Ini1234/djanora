@@ -149,7 +149,7 @@ function InviteCard({
       </div>
       {!signedIn && (
         <p className="text-center text-xs mt-6" style={{ color: 'var(--color-muted)' }}>
-          Powered by Djanora · Cultural Wedding Planning
+          Powered by Djanora · Event Planning
         </p>
       )}
     </div>

@@ -212,12 +212,12 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
               </div>
               <div>
                 <label className="block text-xs text-brand-400 mb-1.5">
-                  Message to the couple
+                  Message to the planner
                 </label>
                 <textarea
                   value={guestMessage}
                   onChange={(e) => setGuestMessage(e.target.value)}
-                  placeholder="Congratulations! We're so happy for you both…"
+                  placeholder="Looking forward to celebrating with you…"
                   rows={3}
                   className="w-full text-sm bg-white/6 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:border-gold-500/50 transition-colors resize-none"
                 />

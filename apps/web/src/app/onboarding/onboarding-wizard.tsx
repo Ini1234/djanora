@@ -357,7 +357,7 @@ function StepRole({ value, onChange }: { value: Role | null; onChange: (v: Role)
           { value: 'USER' as Role, emoji: '💑', label: 'Planning an event',
             desc: 'Browse vendors, build your guest list, manage your budget and checklist.' },
           { value: 'VENDOR' as Role, emoji: '🎪', label: 'I offer a service',
-            desc: "Create a vendor profile and get discovered by couples across Ottawa. You'll set up your business details next." },
+            desc: "Create a vendor profile and get discovered by planners. You'll set up your business details next." },
         ] as const).map((opt) => (
           <button key={opt.value} type="button" onClick={() => onChange(opt.value)} aria-pressed={value === opt.value}
             className={cn(
@@ -479,7 +479,7 @@ function StepVendorBusiness({ businessName, categories, onBusinessName, onToggle
           Tell us about<br />your business
         </h2>
         <p className="text-brand-300 text-base leading-relaxed">
-          This is how couples will find and recognise you on Djanora.
+          This is how planners will find and recognise you on Djanora.
         </p>
       </div>
 
@@ -556,7 +556,7 @@ function StepVendorService({ bio, tribesServed, city, onBio, onToggleTribe, onCi
           <label htmlFor="bio" className="block text-sm font-medium text-brand-200 mb-2">
             Bio <span className="text-brand-500 font-normal">(optional)</span>
           </label>
-          <textarea id="bio" rows={3} placeholder="Tell couples what makes your service special…"
+          <textarea id="bio" rows={3} placeholder="Tell planners what makes your service special…"
             value={bio} onChange={(e) => onBio(e.target.value)}
             className="w-full px-4 py-3.5 rounded-xl bg-white/8 border border-white/15 text-white text-sm placeholder:text-brand-500 focus:outline-none focus:border-gold-500/60 focus:bg-white/12 transition resize-none" />
         </div>
@@ -611,9 +611,9 @@ function StepVendorPricing({ priceFrom, priceTo, websiteUrl, instagramUrl, faceb
       <div>
         <p className="text-gold-400 text-sm font-medium tracking-widest uppercase mb-3">Pricing & links</p>
         <h2 className="font-display text-4xl sm:text-5xl font-semibold text-white leading-tight mb-3">
-          Help couples<br />plan their budget
+          Help planners<br />plan their budget
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">All optional — gives couples an idea of what to expect.</p>
+        <p className="text-brand-300 text-base leading-relaxed">All optional — gives planners an idea of what to expect.</p>
       </div>
 
       <div className="space-y-5">

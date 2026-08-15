@@ -53,12 +53,12 @@ function completeness(p: MyVendorProfile) {
 
 function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
   const items: { done: boolean; label: string; hint: string; href?: string }[] = [
-    { done: !!p.bio,                                           label: 'Add a bio',              hint: 'Tell couples what makes you special' },
-    { done: !!p.city,                                          label: 'Set your city / region',  hint: 'Helps couples find local vendors' },
-    { done: !!p.estimatedPriceFrom,                            label: 'Add a price range',       hint: 'Couples plan better with a budget guide' },
+    { done: !!p.bio,                                           label: 'Add a bio',              hint: 'Tell planners what makes you special' },
+    { done: !!p.city,                                          label: 'Set your city / region',  hint: 'Helps planners find local vendors' },
+    { done: !!p.estimatedPriceFrom,                            label: 'Add a price range',       hint: 'Planners plan better with a budget guide' },
     { done: !!(p.websiteUrl || p.instagramUrl || p.facebookUrl), label: 'Add a social / website link', hint: 'Builds trust and drives bookings' },
     { done: p.portfolioCount > 0,                              label: 'Add portfolio looks', hint: 'Looks with photos get more inquiries', href: '/portfolio' },
-    { done: p.tribesServed.length > 0,                         label: 'Set communities served',  hint: 'Matches you to the right couples' },
+    { done: p.tribesServed.length > 0,                         label: 'Set communities served',  hint: 'Matches you to the right planners' },
   ]
   const remaining = items.filter((i) => !i.done)
   if (remaining.length === 0) return null
@@ -257,12 +257,12 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
             {[
               { icon: Edit3,      label: 'Edit profile',         href: '/settings',           sub: 'Update your details' },
               { icon: ImageIcon,  label: 'Add portfolio looks', href: '/portfolio',           sub: 'Showcase your work' },
-              { icon: Users,      label: 'View inquiries',       href: '/inquiries',           sub: 'Messages from couples' },
+              { icon: Users,      label: 'View inquiries',       href: '/inquiries',           sub: 'Messages from planners' },
               ...(profile ? [{
                 icon: ExternalLink,
                 label: 'View public profile',
                 href: `/vendors/${profile.slug}`,
-                sub: 'See what couples see',
+                sub: 'See what planners see',
               }] : []),
             ].map((action) => (
               <Link key={action.label} href={action.href}
@@ -287,7 +287,7 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
           className="bg-white/60 dark:bg-white/4 border border-black/8 dark:border-white/8 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-base font-semibold text-brand-900 dark:text-white">Your profile preview</h2>
-            <span className="text-xs text-brand-400">What couples see</span>
+            <span className="text-xs text-brand-400">What planners see</span>
           </div>
 
           {profile.bio && (

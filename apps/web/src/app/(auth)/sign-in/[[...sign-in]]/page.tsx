@@ -4,7 +4,7 @@ import { safeInternalPath } from '@/lib/safe-path'
 
 export const metadata: Metadata = {
   title: 'Sign In',
-  description: 'Sign in to your Djanora account to continue planning your Nigerian wedding in Ottawa.',
+  description: 'Sign in to your Djanora account to continue planning your event.',
   robots: { index: false, follow: false },
 }
 

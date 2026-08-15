@@ -19,32 +19,32 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 
 const vendorCategories = [
-  { icon: Utensils, label: 'Catering', description: 'Jollof rice, egusi, suya & more' },
-  { icon: Music2, label: 'DJ & Music', description: 'Afrobeats, fuji, highlife' },
+  { icon: Utensils, label: 'Catering', description: 'Menus for any celebration' },
+  { icon: Music2, label: 'DJ & Music', description: 'Sets that fit the room' },
   { icon: Camera, label: 'Photography', description: 'Capture every moment' },
-  { icon: Palette, label: 'Decoration', description: 'Halls, aso-oke draping, florals' },
-  { icon: Mic2, label: 'MC / Compere', description: 'Bilingual hosting' },
-  { icon: Shirt, label: 'Fashion & Styling', description: 'Gele, aso-ebi, agbada' },
+  { icon: Palette, label: 'Decoration', description: 'Venues, florals, styling' },
+  { icon: Mic2, label: 'MC / Compere', description: 'Hosts who keep it moving' },
+  { icon: Shirt, label: 'Fashion & Styling', description: 'Looks for the day' },
 ]
 
 const steps = [
   {
     number: '01',
-    title: 'Choose your culture & tribe',
+    title: 'Create your event',
     description:
-      'Select Nigerian and your tribe — Yoruba, Igbo, or Hausa. We surface traditions, customs, and choreography specific to your heritage.',
+      'Add the date, location, and what you are celebrating. Invite collaborators so everyone sees the same plan.',
   },
   {
     number: '02',
     title: 'Set your budget',
     description:
-      'Enter your total budget and we automatically break it down by category — catering, decor, photography and more — based on real Ottawa pricing.',
+      'Enter your total budget and we break it down by category — catering, decor, photography and more.',
   },
   {
     number: '03',
     title: 'Find & book vendors',
     description:
-      'Browse vetted Ottawa vendors filtered by your culture and budget. Send inquiries, get quotes, and confirm bookings all in one place.',
+      'Browse local vendors, send inquiries, get quotes, and keep bookings in one place.',
   },
 ]
 
@@ -53,7 +53,7 @@ const features = [
     icon: Sparkles,
     title: 'AI-powered planning',
     description:
-      'Get a personalised event timeline, tradition checklist, and choreography guide generated specifically for your tribe and theme.',
+      'Get a personalised event timeline and checklist so you know what to do next.',
   },
   {
     icon: Wallet,
@@ -65,13 +65,13 @@ const features = [
     icon: Users,
     title: 'Vetted local vendors',
     description:
-      'Every vendor on Djanora is Ottawa-based, reviewed by the community, and culturally experienced.',
+      'Every vendor on Djanora is reviewed by the community and ready to book.',
   },
   {
     icon: CalendarDays,
     title: 'Event timeline',
     description:
-      'From introduction ceremony to reception — get a complete day-of timeline with traditional milestones.',
+      'From first inquiry to the day of — keep the schedule, checklist, and vendors in one place.',
   },
 ]
 
@@ -101,24 +101,23 @@ export function LandingPage() {
             {/* Location badge */}
             <div className="inline-flex items-center gap-1.5 bg-brand-100 text-brand-700 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
               <MapPin size={12} aria-hidden="true" />
-              <span>Ottawa, Ontario — Nigerian weddings</span>
+              <span>Ottawa, Ontario — event planning</span>
             </div>
 
             <h1
               id="hero-heading"
               className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold text-brand-900 leading-tight mb-6"
             >
-              Your culture.
+              Your event.
               <br />
-              <span className="text-gold-600">Your wedding.</span>
+              <span className="text-gold-600">Your plan.</span>
               <br />
               Your way.
             </h1>
 
             <p className="text-lg sm:text-xl text-[var(--color-muted)] max-w-2xl mx-auto mb-10 leading-relaxed">
-              Djanora helps Nigerian diaspora couples in Ottawa plan culturally authentic weddings —
-              from traditional rites to white wedding — connecting you with trusted local vendors,
-              all within your budget.
+              Djanora helps you plan your event — budget, vendors, guests, and the day-of schedule —
+              all in one place.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -155,7 +154,7 @@ export function LandingPage() {
               <span aria-hidden="true" className="hidden sm:block text-[var(--color-border)]">
                 •
               </span>
-              <span>Yoruba · Igbo · Hausa traditions</span>
+              <span>Budget, vendors, and guests in one place</span>
               <span aria-hidden="true" className="hidden sm:block text-[var(--color-border)]">
                 •
               </span>
@@ -177,7 +176,7 @@ export function LandingPage() {
               Everything you need, in one place
             </h2>
             <p className="text-center text-[var(--color-muted)] mb-10">
-              Ottawa vendors experienced in Nigerian culture
+              Vendors for every part of the day
             </p>
 
             <ul
@@ -217,7 +216,7 @@ export function LandingPage() {
                 id="how-it-works-heading"
                 className="font-display text-4xl font-semibold text-brand-900 mb-4"
               >
-                Plan your wedding in 3 steps
+                Plan your event in 3 steps
               </h2>
               <p className="text-[var(--color-muted)] text-lg max-w-xl mx-auto">
                 No more Googling vendors, guessing at traditions, or spreadsheet budgets.
@@ -269,11 +268,10 @@ export function LandingPage() {
                 id="features-heading"
                 className="font-display text-4xl font-semibold text-white mb-4"
               >
-                Built for the diaspora
+                Built for planners and vendors
               </h2>
               <p className="text-brand-300 text-lg max-w-xl mx-auto">
-                We understand that planning a Nigerian wedding abroad means navigating two cultures
-                at once. Djanora bridges that gap.
+                Keep the plan, the people, and the budget together so nothing slips through.
               </p>
             </div>
 
@@ -310,17 +308,17 @@ export function LandingPage() {
                   id="vendors-cta-heading"
                   className="font-display text-4xl font-semibold text-brand-900 mb-6 leading-tight"
                 >
-                  Reach couples who are ready to book
+                  Reach planners who are ready to book
                 </h2>
                 <p className="text-[var(--color-muted)] text-lg leading-relaxed mb-8">
-                  Create a portfolio, showcase your work, and get discovered by Ottawa families
-                  planning Nigerian weddings. No commission on bookings — you keep what you earn.
+                  Create a portfolio, showcase your work, and get discovered by people planning
+                  events. No commission on bookings — you keep what you earn.
                 </p>
 
                 <ul className="flex flex-col gap-3 mb-8" role="list">
                   {[
                     'Free to create a profile',
-                    'Reach culturally-aware clients',
+                    'Reach planners who are ready to book',
                     'Manage inquiries in one dashboard',
                     'No booking commissions',
                   ].map((item) => (
@@ -349,7 +347,7 @@ export function LandingPage() {
                 <div className="relative">
                   <div className="text-4xl mb-4">🎊</div>
                   <p className="font-display text-2xl font-semibold mb-2">
-                    &ldquo;Finally, a platform that gets Nigerian weddings.&rdquo;
+                    &ldquo;Finally, a platform that keeps the whole event in one place.&rdquo;
                   </p>
                   <p className="text-brand-300 text-sm">— Ottawa vendor community</p>
                 </div>
@@ -368,17 +366,17 @@ export function LandingPage() {
               id="final-cta-heading"
               className="font-display text-4xl sm:text-5xl font-semibold text-brand-900 mb-6"
             >
-              Your wedding story starts here
+              Your event starts here
             </h2>
             <p className="text-[var(--color-muted)] text-lg mb-10">
-              Free to start. No credit card required. Ottawa&apos;s first culturally-aware wedding
-              planning platform.
+              Free to start. No credit card required. Plan your event with vendors, budget, and
+              guests in one place.
             </p>
             <Link
               href="/sign-up"
               className="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-600 text-white font-medium text-lg px-10 py-5 rounded-full transition-colors shadow-xl shadow-brand-900/20"
             >
-              Start planning your wedding
+              Start planning your event
               <ChevronRight size={20} aria-hidden="true" />
             </Link>
           </div>

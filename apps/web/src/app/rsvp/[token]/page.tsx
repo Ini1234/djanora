@@ -120,7 +120,7 @@ export default async function RsvpPage({ params }: Props) {
         </div>
 
         <p className="text-center text-brand-600 text-xs mt-6">
-          Powered by Djanora · Cultural Wedding Planning
+          Powered by Djanora · Event Planning
         </p>
       </div>
     </div>

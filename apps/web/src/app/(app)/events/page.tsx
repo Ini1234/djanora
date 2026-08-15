@@ -146,7 +146,7 @@ export default async function EventsPage() {
             No events yet
           </h2>
           <p className="text-sm max-w-sm mb-6" style={{ color: 'var(--color-muted)' }}>
-            Create your first event to start planning your Nigerian celebration in Ottawa.
+            Create your first event to start planning.
           </p>
           <Link
             href="/events/new"

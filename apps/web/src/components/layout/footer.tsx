@@ -39,7 +39,7 @@ export function Footer() {
               <span>Djanora</span>
             </Link>
             <p className="text-sm text-brand-300 leading-relaxed">
-              Plan your Nigerian wedding in Ottawa with confidence.
+              Plan your event with confidence.
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export function Footer() {
           <p className="text-xs text-brand-400">
             &copy; {new Date().getFullYear()} Djanora. Ottawa, Ontario, Canada.
           </p>
-          <p className="text-xs text-brand-500">Built for the diaspora, by the diaspora.</p>
+          <p className="text-xs text-brand-500">Built for planners and vendors.</p>
         </div>
       </div>
     </footer>

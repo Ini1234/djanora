@@ -37,7 +37,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative space-y-6">
           <blockquote>
             <p className="font-display text-3xl font-semibold text-white leading-snug">
-              &ldquo;Your culture deserves to be celebrated — not guessed at.&rdquo;
+              &ldquo;Your event. Your plan. Your way.&rdquo;
             </p>
           </blockquote>
           <div className="flex items-center gap-3">
@@ -46,16 +46,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
             <div>
               <p className="text-sm font-medium text-white">Djanora</p>
-              <p className="text-xs text-brand-300">Ottawa, Ontario — Nigerian weddings</p>
+              <p className="text-xs text-brand-300">Ottawa, Ontario — event planning</p>
             </div>
           </div>
         </div>
 
         <div className="relative flex gap-8">
           {[
-            { value: 'Yoruba', label: 'Tradition' },
-            { value: 'Igbo', label: 'Heritage' },
-            { value: 'Hausa', label: 'Culture' },
+            { value: 'Budget', label: 'Stay on track' },
+            { value: 'Vendors', label: 'Book in one place' },
+            { value: 'Guests', label: 'Keep everyone in sync' },
           ].map((item) => (
             <div key={item.value}>
               <p className="text-lg font-semibold text-white">{item.value}</p>

@@ -15,30 +15,30 @@ const playfair  = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://caas.com'),
+  metadataBase: new URL('https://djanora.com'),
   title: {
-    default:  'Djanora | Nigerian Wedding Planning in Ottawa',
+    default:  'Djanora | Plan Your Event',
     template: '%s | Djanora',
   },
   description:
-    'Plan your Nigerian wedding in Ottawa with confidence. Djanora connects diaspora couples with culturally-informed vendors — caterers, DJs, decorators, photographers and more — all within your budget.',
+    'Plan your event with confidence. Djanora keeps budget, vendors, guests, and the day-of schedule in one place.',
   keywords: [
-    'Nigerian wedding Ottawa', 'African wedding planner Canada', 'diaspora wedding planning',
-    'Nigerian caterer Ottawa', 'Yoruba wedding', 'Igbo wedding', 'Hausa wedding',
-    'Nigerian vendors Ottawa', 'cultural wedding planning', 'aso-ebi Ottawa',
+    'event planning', 'event planner', 'book vendors', 'event budget',
+    'guest list', 'event schedule', 'catering', 'photography',
+    'event vendors', 'plan your event',
   ],
   authors: [{ name: 'Djanora' }],
   creator: 'Djanora',
   openGraph: {
-    type: 'website', locale: 'en_CA', url: 'https://caas.com', siteName: 'Djanora',
-    title: 'Djanora — Plan Your Nigerian Wedding in Ottawa',
-    description: 'Connect with trusted Nigerian vendors in Ottawa. Plan a culturally authentic wedding, on budget.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Djanora — Nigerian wedding planning' }],
+    type: 'website', locale: 'en_CA', url: 'https://djanora.com', siteName: 'Djanora',
+    title: 'Djanora — Plan Your Event',
+    description: 'Connect with trusted vendors. Plan your event on budget — guests, schedule, and bookings in one place.',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Djanora — plan your event' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Djanora — Nigerian Wedding Planning in Ottawa',
-    description: 'Plan a culturally authentic Nigerian wedding in Ottawa, on budget.',
+    title: 'Djanora — Plan Your Event',
+    description: 'Plan your event on budget — vendors, guests, and schedule in one place.',
     images: ['/og-image.jpg'],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
@@ -57,11 +57,11 @@ const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Djanora',
-  url: 'https://caas.com',
-  description: 'Nigerian wedding planning platform for diaspora couples in Ottawa, Canada.',
+  url: 'https://djanora.com',
+  description: 'Event planning platform for planners and vendors — budget, vendors, guests, and schedule in one place.',
   potentialAction: {
     '@type': 'SearchAction',
-    target: 'https://caas.com/vendors?q={search_term_string}',
+    target: 'https://djanora.com/vendors?q={search_term_string}',
     'query-input': 'required name=search_term_string',
   },
 }

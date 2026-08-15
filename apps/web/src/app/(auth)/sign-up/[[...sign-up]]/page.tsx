@@ -4,7 +4,7 @@ import { safeInternalPath } from '@/lib/safe-path'
 
 export const metadata: Metadata = {
   title: 'Create Account',
-  description: 'Create your free Djanora account and start planning your Nigerian wedding in Ottawa.',
+  description: 'Create your free Djanora account and start planning your event.',
   robots: { index: false, follow: false },
 }
 
