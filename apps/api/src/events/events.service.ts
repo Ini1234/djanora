@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import { createReadStream, existsSync } from 'fs'
-import { basename, join } from 'path'
+import { basename } from 'path'
 import { PrismaService } from '../prisma/prisma.service'
+import { BlobStorageService } from '../uploads/blob-storage.service'
 import { EventActivityAction, EventSurface, VendorCategory } from '@prisma/client'
 import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './dto/children.dto'
 import { CreateEventDto } from './dto/create-event.dto'
@@ -33,9 +33,6 @@ const SCHEDULE_INCLUDE = {
     },
   },
 } as const
-
-const UPLOADS_DIR = join(process.cwd(), 'uploads')
-const PRIVATE_UPLOADS_DIR = join(UPLOADS_DIR, 'private')
 
 export function receiptProxyUrl(eventId: string, itemId: string, receiptId: string) {
   return `/api/proxy/events/${eventId}/budget/${itemId}/receipts/${receiptId}/file`
@@ -101,6 +98,7 @@ export class EventsService {
     private prisma: PrismaService,
     private access: EventAccessService,
     private activity: EventActivityService,
+    private storage: BlobStorageService,
   ) {}
 
   private track(
@@ -668,24 +666,20 @@ export class EventsService {
     })
     if (!receipt) throw new NotFoundException('Receipt not found')
 
-    const diskPath = this.resolveReceiptDiskPath(receipt.url)
-    if (!diskPath || !existsSync(diskPath)) throw new NotFoundException('Receipt not found')
+    const name = basename(receipt.url.split('?')[0] ?? '')
+    const kind = receipt.url.includes('private/') || receipt.url.startsWith('private/')
+      ? 'receipts'
+      : name.startsWith('receipt-')
+        ? 'images'
+        : null
+    const stream = kind ? await this.storage.download(kind, name) : null
+    if (!stream) throw new NotFoundException('Receipt not found')
 
     return {
-      stream: createReadStream(diskPath),
+      stream,
       mimeType: receipt.mimeType ?? 'application/octet-stream',
       filename: receipt.filename,
     }
-  }
-
-  private resolveReceiptDiskPath(url: string) {
-    const name = basename(url.split('?')[0] ?? '')
-    if (!name || name.includes('..')) return null
-    if (url.includes('private/') || url.startsWith('private/')) {
-      return join(PRIVATE_UPLOADS_DIR, name)
-    }
-    if (name.startsWith('receipt-')) return join(UPLOADS_DIR, name)
-    return null
   }
 
   async deleteReceipt(clerkId: string, eventId: string, receiptId: string) {
@@ -699,7 +693,14 @@ export class EventsService {
       throw new NotFoundException('Receipt not found')
     }
 
-    return this.prisma.budgetReceipt.delete({ where: { id: receiptId } })
+    const deleted = await this.prisma.budgetReceipt.delete({ where: { id: receiptId } })
+    const name = basename(receipt.url.split('?')[0] ?? '')
+    if (receipt.url.includes('private/') || receipt.url.startsWith('private/')) {
+      await this.storage.delete('receipts', name)
+    } else if (name.startsWith('receipt-')) {
+      await this.storage.delete('images', name)
+    }
+    return deleted
   }
 
   async listChecklist(clerkId: string, eventId: string, assignedToMe = false) {

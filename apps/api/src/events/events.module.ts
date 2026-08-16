@@ -9,9 +9,10 @@ import { EventActivityService } from './event-activity.service'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { UsersModule } from '../users/users.module'
 import { SseModule } from '../sse/sse.module'
+import { UploadsModule } from '../uploads/uploads.module'
 
 @Module({
-  imports: [NotificationsModule, UsersModule, SseModule, EventAccessModule],
+  imports: [NotificationsModule, UsersModule, SseModule, EventAccessModule, UploadsModule],
   controllers: [EventsController, EventInvitesPublicController],
   providers: [EventsService, EventMembersService, EventCommentsService, EventActivityService],
   exports: [EventsService, EventAccessModule, EventActivityService],

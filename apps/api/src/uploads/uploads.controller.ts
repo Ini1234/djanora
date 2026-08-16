@@ -1,8 +1,6 @@
 import { Controller, Get, NotFoundException, Param, StreamableFile } from '@nestjs/common'
-import { createReadStream, existsSync } from 'fs'
-import { extname, join, resolve } from 'path'
-
-const UPLOADS_DIR = resolve(process.cwd(), 'uploads')
+import { extname } from 'path'
+import { BlobStorageService, isSafeName } from './blob-storage.service'
 
 const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -14,24 +12,18 @@ const MIME: Record<string, string> = {
 
 @Controller('uploads')
 export class UploadsController {
+  constructor(private readonly storage: BlobStorageService) {}
+
   @Get(':filename')
-  serve(@Param('filename') filename: string) {
-    if (
-      !filename
-      || filename.includes('..')
-      || filename.includes('/')
-      || filename.includes('\\')
-      || filename.startsWith('receipt-')
-    ) {
+  async serve(@Param('filename') filename: string) {
+    if (!isSafeName(filename) || filename.startsWith('receipt-')) {
       throw new NotFoundException()
     }
 
-    const diskPath = join(UPLOADS_DIR, filename)
-    if (!diskPath.startsWith(UPLOADS_DIR) || !existsSync(diskPath)) {
-      throw new NotFoundException()
-    }
+    const stream = await this.storage.download('images', filename)
+    if (!stream) throw new NotFoundException()
 
-    return new StreamableFile(createReadStream(diskPath), {
+    return new StreamableFile(stream, {
       type: MIME[extname(filename).toLowerCase()] ?? 'application/octet-stream',
     })
   }

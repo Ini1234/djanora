@@ -14,13 +14,11 @@ import {
   BadRequestException,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { diskStorage } from 'multer'
-import { randomBytes } from 'crypto'
-import { extname, join } from 'path'
-import { existsSync, mkdirSync } from 'fs'
+import { memoryStorage } from 'multer'
 import { VendorsService } from './vendors.service'
 import { VendorPostsService } from './vendor-posts.service'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
+import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.service'
 import { CreateVendorProfileDto } from './dto/create-vendor-profile.dto'
 import { CreateReviewDto } from './dto/create-review.dto'
 import {
@@ -30,22 +28,8 @@ import {
   UpdateVendorPostDto,
 } from './dto/vendor-post.dto'
 
-const UPLOADS_DIR = join(process.cwd(), 'uploads')
-
-function ensureUploadsDir() {
-  if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true })
-}
-
 const imageUpload = FileInterceptor('file', {
-  storage: diskStorage({
-    destination: (_req, _file, cb) => {
-      ensureUploadsDir()
-      cb(null, UPLOADS_DIR)
-    },
-    filename: (_req, file, cb) => {
-      cb(null, `post-${randomBytes(16).toString('hex')}${extname(file.originalname)}`)
-    },
-  }),
+  storage: memoryStorage(),
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (allowed.includes(file.mimetype)) cb(null, true)
@@ -54,9 +38,9 @@ const imageUpload = FileInterceptor('file', {
   limits: { fileSize: 10 * 1024 * 1024 },
 })
 
-function uploadedUrl(file: Express.Multer.File) {
+function uploadedUrl(filename: string) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-  return `${apiBase}/uploads/${file.filename}`
+  return `${apiBase}/uploads/${filename}`
 }
 
 @Controller('vendors')
@@ -64,6 +48,7 @@ export class VendorsController {
   constructor(
     private readonly vendorsService: VendorsService,
     private readonly posts: VendorPostsService,
+    private readonly storage: BlobStorageService,
   ) {}
 
   @Get()
@@ -120,13 +105,15 @@ export class VendorsController {
   @Post('me/posts/:id/media')
   @UseGuards(ClerkAuthGuard)
   @UseInterceptors(imageUpload)
-  addPostImage(
+  async addPostImage(
     @Request() req: { userId: string },
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('No file uploaded')
-    return this.posts.addImage(req.userId, id, uploadedUrl(file))
+    const filename = makeUploadName(file.originalname, 'post-')
+    await this.storage.upload('images', filename, file.buffer, file.mimetype)
+    return this.posts.addImage(req.userId, id, uploadedUrl(filename))
   }
 
   @Post('me/posts/:id/media/link')

@@ -15,10 +15,7 @@ import {
   StreamableFile,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { diskStorage } from 'multer'
-import { randomBytes } from 'crypto'
-import { extname, join } from 'path'
-import { existsSync, mkdirSync } from 'fs'
+import { memoryStorage } from 'multer'
 import { EventCommentSubject, EventSurface } from '@prisma/client'
 import { EventsService } from './events.service'
 import { EventMembersService } from './event-members.service'
@@ -34,16 +31,10 @@ import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './
 import { CreateCommentDto, UpdateCommentDto } from './dto/comments.dto'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
+import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.service'
 
 interface ClerkPayload {
   sub: string
-}
-
-const UPLOADS_DIR = join(process.cwd(), 'uploads')
-const PRIVATE_UPLOADS_DIR = join(UPLOADS_DIR, 'private')
-
-function ensurePrivateUploadsDir() {
-  if (!existsSync(PRIVATE_UPLOADS_DIR)) mkdirSync(PRIVATE_UPLOADS_DIR, { recursive: true })
 }
 
 @Controller('events')
@@ -54,6 +45,7 @@ export class EventsController {
     private readonly membersService: EventMembersService,
     private readonly commentsService: EventCommentsService,
     private readonly activityService: EventActivityService,
+    private readonly storage: BlobStorageService,
   ) {}
 
   @Post()
@@ -194,15 +186,7 @@ export class EventsController {
   @Post(':id/budget/:itemId/receipts')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          ensurePrivateUploadsDir()
-          cb(null, PRIVATE_UPLOADS_DIR)
-        },
-        filename: (_req, file, cb) => {
-          cb(null, `${randomBytes(16).toString('hex')}${extname(file.originalname)}`)
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (_req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
         if (allowed.includes(file.mimetype)) cb(null, true)
@@ -218,9 +202,11 @@ export class EventsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('No file uploaded')
+    const storedName = makeUploadName(file.originalname)
+    await this.storage.upload('receipts', storedName, file.buffer, file.mimetype)
     return this.eventsService.addReceipt(
       user.sub, eventId, itemId,
-      file.originalname, file.filename, file.mimetype, file.size,
+      file.originalname, `private/${storedName}`, file.mimetype, file.size,
     )
   }
 
