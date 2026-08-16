@@ -16,6 +16,7 @@ on:
       - 'package-lock.json'
       - '.nvmrc'
       - '.github/workflows/deploy-api.yml'
+      - '.github/deployment.ini'
   workflow_dispatch:
 
 jobs:
@@ -54,7 +55,11 @@ jobs:
           cp -R apps/api/dist .deploy/api/dist
           cp -R apps/api/prisma .deploy/api/prisma
           cp apps/api/prisma.config.ts .deploy/api/
+          cp apps/api/azure-start.sh .deploy/api/start.sh
+          chmod +x .deploy/api/start.sh
+          cp .github/deployment.ini .deploy/api/.deployment
           mkdir -p .deploy/api/uploads
+          node -e "const p=require('./.deploy/api/package.json'); p.scripts.start='sh start.sh'; require('fs').writeFileSync('./.deploy/api/package.json', JSON.stringify(p,null,2))"
           cd .deploy/api
           npm install --omit=dev --ignore-scripts
           DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci npx prisma generate

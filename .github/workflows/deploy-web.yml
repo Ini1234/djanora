@@ -17,6 +17,7 @@ on:
       - 'package-lock.json'
       - '.nvmrc'
       - '.github/workflows/deploy-web.yml'
+      - '.github/deployment.ini'
   workflow_dispatch:
 
 jobs:
@@ -73,19 +74,21 @@ jobs:
             if [ -d apps/web/public ]; then
               cp -R apps/web/public "$STANDALONE/apps/web/public"
             fi
-            printf '%s\n' '{"name":"web","private":true,"scripts":{"start":"node apps/web/server.js"}}' > "$STANDALONE/package.json"
           elif [ -f "$STANDALONE/server.js" ]; then
             mkdir -p "$STANDALONE/.next"
             cp -R apps/web/.next/static "$STANDALONE/.next/static"
             if [ -d apps/web/public ]; then
               cp -R apps/web/public "$STANDALONE/public"
             fi
-            printf '%s\n' '{"name":"web","private":true,"scripts":{"start":"node server.js"}}' > "$STANDALONE/package.json"
           else
             echo "Could not find server.js under $STANDALONE"
             find "$STANDALONE" -name 'server.js' | head
             exit 1
           fi
+          cp apps/web/azure-start.sh "$STANDALONE/start.sh"
+          chmod +x "$STANDALONE/start.sh"
+          cp .github/deployment.ini "$STANDALONE/.deployment"
+          printf '%s\n' '{"name":"web","private":true,"scripts":{"start":"sh start.sh"}}' > "$STANDALONE/package.json"
 
       - uses: actions/upload-artifact@v4
         with:
