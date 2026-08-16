@@ -3,7 +3,7 @@
 # Required GitHub secret:
 #   AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A
 # Runtime env (set on the Azure app, not here): DATABASE_URL, WEB_URL,
-#   NEXT_PUBLIC_API_URL, CLERK_*, RESEND_*, etc.
+#   NEXT_PUBLIC_API_URL, CLERK_*, RESEND_*, AZURE_STORAGE_* (account + per-kind containers), etc.
 
 name: Deploy API
 

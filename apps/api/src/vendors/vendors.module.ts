@@ -4,9 +4,10 @@ import { VendorsService } from './vendors.service'
 import { VendorPostsService } from './vendor-posts.service'
 import { PrismaModule } from '../prisma/prisma.module'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
+import { UploadsModule } from '../uploads/uploads.module'
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, UploadsModule],
   controllers: [VendorsController],
   providers: [VendorsService, VendorPostsService, ClerkAuthGuard],
   exports: [VendorsService],
