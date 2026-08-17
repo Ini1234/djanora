@@ -88,4 +88,5 @@ jobs:
           app-name: test-djanora
           slot-name: Production
           package: ./api-app
+          startup-command: npm start
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A }}
