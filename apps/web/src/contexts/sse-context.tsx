@@ -135,7 +135,13 @@ export function useSse() {
 const CHAT_PATHS = ['/messages', '/inquiries']
 
 /* ─── Provider ────────────────────────────────────────────── */
-export function SseProvider({ children }: { children: ReactNode }) {
+export function SseProvider({
+  children,
+  enabled,
+}: {
+  children: ReactNode
+  enabled: boolean
+}) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<InAppNotification[]>([])
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0)
@@ -167,10 +173,11 @@ export function SseProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (!enabled) return
     if (hydratedNotificationsRef.current) return
     hydratedNotificationsRef.current = true
     hydrateNotifications()
-  }, [hydrateNotifications])
+  }, [enabled, hydrateNotifications])
 
   // Clear unread + toasts when the user navigates to a chat page
   useEffect(() => {
@@ -182,9 +189,13 @@ export function SseProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname])
 
-  useEffect(() => retainSse(), [])
+  useEffect(() => {
+    if (!enabled) return
+    return retainSse()
+  }, [enabled])
 
   useEffect(() => {
+    if (!enabled) return
     return onSse((event) => {
       if (event.type === 'new_message' && event.message) {
         if (event.message.isCurrentUser) return
@@ -253,7 +264,7 @@ export function SseProvider({ children }: { children: ReactNode }) {
         }, 6000)
       }
     })
-  }, [])
+  }, [enabled])
 
   const on = useCallback((fn: Listener) => onSse(fn), [])
 

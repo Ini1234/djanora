@@ -3,8 +3,11 @@ import { Geist } from 'next/font/google'
 import { Playfair_Display } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { JsonLd } from '@/components/json-ld'
+import { AppProviders } from '@/components/app-providers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
+import { cookies } from 'next/headers'
+import { isSessionCookieName } from '@/lib/clerk-token'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -69,6 +72,7 @@ const websiteJsonLd = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
   const messages = await getMessages()
+  const signedIn = (await cookies()).getAll().some((cookie) => isSessionCookieName(cookie.name))
 
   return (
     <html
@@ -80,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JsonLd data={websiteJsonLd} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
-            {children}
+            <AppProviders signedIn={signedIn}>{children}</AppProviders>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

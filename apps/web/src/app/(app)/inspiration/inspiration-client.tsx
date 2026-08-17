@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Search, Sparkles, MapPin, DollarSign, ExternalLink,
@@ -9,7 +9,9 @@ import {
   X, ArrowRight, CalendarDays, CheckSquare, Receipt, Clock,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { proxyClient } from '@/lib/proxy-client'
+import { queryKeys } from '@/lib/query-keys'
 import { InspirationDetail } from './inspiration-detail'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -237,15 +239,13 @@ function FindVendorsPanel({
   item: InspirationItem
   onClose: () => void
 }) {
-  const [vendors, setVendors] = useState<MatchedVendor[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    proxyClient.get(`/inspiration/${item.id}/matching-vendors`)
-      .then(({ data }) => setVendors(Array.isArray(data) ? data : []))
-      .catch(() => setVendors([]))
-      .finally(() => setLoading(false))
-  }, [item.id])
+  const { data: vendors = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.inspirationMatchingVendors(item.id),
+    queryFn: async () => {
+      const { data } = await proxyClient.get(`/inspiration/${item.id}/matching-vendors`)
+      return Array.isArray(data) ? data as MatchedVendor[] : []
+    },
+  })
 
   return (
     <div
@@ -1033,108 +1033,125 @@ const EXAMPLE_QUERIES = [
 ]
 
 export function InspirationClient({ initialTag, initialItemId }: { initialTag?: string; initialItemId?: string }) {
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<InspirationCategory | 'ALL'>('ALL')
   const [activeTag, setActiveTag] = useState(initialTag ?? '')
-  const [browseTags, setBrowseTags] = useState<{ slug: string; label: string; isCurated: boolean }[]>([])
   const [view, setView] = useState<'browse' | 'saved'>('browse')
-  const [items, setItems] = useState<InspirationItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
-  const [savedLoading, setSavedLoading] = useState(true)
   const [removingId, setRemovingId] = useState<string | null>(null)
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [saveModal, setSaveModal] = useState<InspirationItem | null>(null)
   const [vendorPanelItem, setVendorPanelItem] = useState<InspirationItem | null>(null)
   const [detailItem, setDetailItem] = useState<InspirationItem | null>(null)
-  const [hasSearched, setHasSearched] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
   const openedQueryItem = useRef<string | null>(null)
+  const [feedParams, setFeedParams] = useState({
+    q: '',
+    cat: 'ALL' as InspirationCategory | 'ALL',
+    tag: initialTag ?? '',
+  })
 
-  const loadSaved = useCallback(async () => {
-    try {
+  const { data: browseTags = [] } = useQuery({
+    queryKey: queryKeys.inspirationTags,
+    queryFn: async () => {
+      const { data } = await proxyClient.get<{ slug: string; label: string; isCurated: boolean }[]>('/inspiration/tags')
+      return Array.isArray(data) ? data : []
+    },
+  })
+
+  const { data: savedEntries = [], isPending: savedLoading, refetch: loadSaved } = useQuery({
+    queryKey: queryKeys.inspirationSaved,
+    queryFn: async () => {
       const { data } = await proxyClient.get<SavedEntry[]>('/inspiration/saved')
-      const arr = Array.isArray(data) ? data : []
-      setSavedEntries(arr)
-      setSavedIds(new Set(arr.map((entry) => entry.inspirationItem.id)))
-    } catch {
-      setSavedEntries([])
-    } finally {
-      setSavedLoading(false)
+      return Array.isArray(data) ? data : []
+    },
+  })
+  const savedIds = useMemo(
+    () => new Set(savedEntries.map((entry) => entry.inspirationItem.id)),
+    [savedEntries],
+  )
+
+  const { data: likedIdList = [] } = useQuery({
+    queryKey: queryKeys.inspirationLikedIds,
+    queryFn: async () => {
+      const { data } = await proxyClient.get<string[]>('/inspiration/liked/ids')
+      return Array.isArray(data) ? data : []
+    },
+  })
+  const likedIds = useMemo(() => new Set(likedIdList), [likedIdList])
+
+  useEffect(() => {
+    if (view === 'saved') return
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      setFeedParams({ q: query, cat: activeCategory, tag: activeTag })
+      return
     }
-  }, [])
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setFeedParams({ q: query, cat: activeCategory, tag: activeTag })
+    }, 350)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [query, activeCategory, activeTag, view])
 
-  useEffect(() => {
-    void loadSaved()
-  }, [loadSaved])
-
-  useEffect(() => {
-    proxyClient.get<string[]>('/inspiration/liked/ids')
-      .then(({ data }) => setLikedIds(new Set(Array.isArray(data) ? data : [])))
-      .catch(() => setLikedIds(new Set()))
-  }, [])
+  const { data: items = [], isFetching: loading, isFetched: hasSearched } = useQuery({
+    queryKey: queryKeys.inspirationFeed(feedParams.q, feedParams.cat, feedParams.tag),
+    enabled: view === 'browse',
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (feedParams.q.trim()) params.set('q', feedParams.q.trim())
+      if (feedParams.cat !== 'ALL') params.set('category', feedParams.cat)
+      if (feedParams.tag.trim()) params.set('tag', feedParams.tag.trim())
+      const { data } = await proxyClient.get(`/inspiration?${params}`)
+      return Array.isArray(data) ? data as InspirationItem[] : []
+    },
+  })
 
   function bumpLikeCount(itemId: string, delta: number) {
-    setItems((prev) => prev.map((item) => (
-      item.id === itemId ? { ...item, likeCount: Math.max(0, (item.likeCount ?? 0) + delta) } : item
-    )))
-    setSavedEntries((prev) => prev.map((entry) => (
-      entry.inspirationItem.id === itemId
-        ? { ...entry, inspirationItem: { ...entry.inspirationItem, likeCount: Math.max(0, (entry.inspirationItem.likeCount ?? 0) + delta) } }
-        : entry
-    )))
+    const nextCount = (count: number | undefined) => Math.max(0, (count ?? 0) + delta)
+
+    queryClient.setQueryData<InspirationItem[]>(
+      queryKeys.inspirationFeed(feedParams.q, feedParams.cat, feedParams.tag),
+      (prev) => (prev ?? []).map((item) =>
+        item.id === itemId ? { ...item, likeCount: nextCount(item.likeCount) } : item,
+      ),
+    )
+    queryClient.setQueryData<SavedEntry[]>(queryKeys.inspirationSaved, (prev) =>
+      (prev ?? []).map((entry) =>
+        entry.inspirationItem.id === itemId
+          ? { ...entry, inspirationItem: { ...entry.inspirationItem, likeCount: nextCount(entry.inspirationItem.likeCount) } }
+          : entry,
+      ),
+    )
+    queryClient.setQueryData<{ id: string; likeCount?: number }[]>(queryKeys.likedLooks, (prev) =>
+      (prev ?? []).map((item) =>
+        item.id === itemId ? { ...item, likeCount: nextCount(item.likeCount) } : item,
+      ),
+    )
     setDetailItem((prev) => (
-      prev?.id === itemId ? { ...prev, likeCount: Math.max(0, (prev.likeCount ?? 0) + delta) } : prev
+      prev?.id === itemId ? { ...prev, likeCount: nextCount(prev.likeCount) } : prev
     ))
   }
 
   async function toggleLike(item: InspirationItem) {
     const next = !likedIds.has(item.id)
-    setLikedIds((prev) => {
-      const copy = new Set(prev)
-      if (next) copy.add(item.id)
-      else copy.delete(item.id)
-      return copy
+    queryClient.setQueryData<string[]>(queryKeys.inspirationLikedIds, (prev) => {
+      const current = prev ?? []
+      return next ? [...current, item.id] : current.filter((id) => id !== item.id)
     })
     bumpLikeCount(item.id, next ? 1 : -1)
     try {
       if (next) await proxyClient.post(`/inspiration/${item.id}/like`)
       else await proxyClient.delete(`/inspiration/${item.id}/like`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.likedLooks })
     } catch {
-      setLikedIds((prev) => {
-        const copy = new Set(prev)
-        if (next) copy.delete(item.id)
-        else copy.add(item.id)
-        return copy
+      queryClient.setQueryData<string[]>(queryKeys.inspirationLikedIds, (prev) => {
+        const current = prev ?? []
+        return next ? current.filter((id) => id !== item.id) : [...current, item.id]
       })
       bumpLikeCount(item.id, next ? -1 : 1)
     }
   }
-
-  useEffect(() => {
-    proxyClient.get<{ slug: string; label: string; isCurated: boolean }[]>('/inspiration/tags')
-      .then(({ data }) => setBrowseTags(Array.isArray(data) ? data : []))
-      .catch(() => setBrowseTags([]))
-  }, [])
-
-  const fetchItems = useCallback(async (q: string, cat: InspirationCategory | 'ALL', tag?: string) => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (q.trim()) params.set('q', q.trim())
-      if (cat !== 'ALL') params.set('category', cat)
-      if (tag?.trim()) params.set('tag', tag.trim())
-      const { data } = await proxyClient.get(`/inspiration?${params}`)
-      setItems(Array.isArray(data) ? data : [])
-      setHasSearched(true)
-    } catch {
-      setItems([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   useEffect(() => {
     if (!initialItemId) return
@@ -1160,23 +1177,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
     return () => { cancelled = true }
   }, [initialItemId, items, savedEntries, hasSearched, savedLoading])
 
-  // Unified fetch effect — immediate on first render, debounced on subsequent changes
-  useEffect(() => {
-    if (view === 'saved') return
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      fetchItems(query, activeCategory, activeTag)
-      return
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchItems(query, activeCategory, activeTag)
-    }, 350)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [query, activeCategory, activeTag, fetchItems, view])
-
-  function handleSaved(itemId: string) {
-    setSavedIds((prev) => new Set([...prev, itemId]))
+  function handleSaved() {
     void loadSaved()
   }
 
@@ -1190,11 +1191,9 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
           }),
         ),
       )
-      setSavedEntries((prev) => {
-        const next = prev.filter((row) => row.inspirationItem.id !== group.inspirationItem.id)
-        setSavedIds(new Set(next.map((row) => row.inspirationItem.id)))
-        return next
-      })
+      queryClient.setQueryData<SavedEntry[]>(queryKeys.inspirationSaved, (prev) =>
+        (prev ?? []).filter((row) => row.inspirationItem.id !== group.inspirationItem.id),
+      )
     } finally {
       setRemovingId(null)
     }
@@ -1439,7 +1438,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
         <SaveModal
           item={saveModal}
           onClose={() => setSaveModal(null)}
-          onSaved={(itemId) => handleSaved(itemId)}
+          onSaved={() => handleSaved()}
         />
       )}
 

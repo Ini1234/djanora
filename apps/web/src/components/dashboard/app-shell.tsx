@@ -1,7 +1,6 @@
 import type { UserMe } from '@/lib/api.types'
 import { Sidebar } from './sidebar'
 import { MobileNav } from './mobile-nav'
-import { SseProvider } from '@/contexts/sse-context'
 import { ToastContainer } from '@/components/ui/toast-container'
 
 interface AppShellProps {
@@ -16,7 +15,7 @@ export function AppShell({ user, children }: AppShellProps) {
     [user.firstName?.[0], user.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?'
 
   return (
-    <SseProvider>
+    <>
       <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
         <Sidebar
           displayName={displayName}
@@ -53,6 +52,6 @@ export function AppShell({ user, children }: AppShellProps) {
 
       {/* Global toast overlay — renders above everything */}
       <ToastContainer vendorMode={user.activeMode === 'vendor'} />
-    </SseProvider>
+    </>
   )
 }
