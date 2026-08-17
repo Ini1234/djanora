@@ -13,10 +13,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  findAll(
-    @CurrentUser() user: ClerkPayload,
-    @Query('limit') limit?: string,
-  ) {
+  findAll(@CurrentUser() user: ClerkPayload, @Query('limit') limit?: string) {
     return this.notificationsService.findByUser(user.sub, limit ? parseInt(limit, 10) : 20)
   }
 

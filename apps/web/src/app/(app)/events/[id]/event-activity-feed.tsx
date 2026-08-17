@@ -65,12 +65,17 @@ export function EventActivityFeed({ eventId }: { eventId: string }) {
 
   return (
     <section
-      className="rounded-2xl overflow-hidden"
+      className="overflow-hidden rounded-2xl"
       style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
     >
-      <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="flex items-center gap-2 border-b px-5 py-3"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         <History size={14} style={{ color: 'var(--color-brand-primary)' }} />
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Activity</h2>
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          Activity
+        </h2>
       </div>
       <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
         {rows.slice(0, 20).map((row) => (
@@ -78,7 +83,7 @@ export function EventActivityFeed({ eventId }: { eventId: string }) {
             <p className="text-xs" style={{ color: 'var(--color-text-primary)' }}>
               {row.summary}
             </p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-muted)' }}>
+            <p className="mt-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
               {actorName(row.actor)} · {timeAgo(row.createdAt)}
             </p>
           </li>

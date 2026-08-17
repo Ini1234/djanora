@@ -15,7 +15,9 @@ function eventMeta(event: Event) {
     event.parent?.title ? `in ${event.parent.title}` : null,
     formatEventDate(event.estimatedDate),
     event.location,
-  ].filter(Boolean).join(' · ')
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function NextEvent({ event }: { event: Event }) {
@@ -30,24 +32,24 @@ function NextEvent({ event }: { event: Event }) {
     >
       <div className="min-w-0">
         <p
-          className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2"
+          className="mb-2 text-[11px] font-semibold tracking-[0.08em] uppercase"
           style={{ color: 'var(--color-brand-primary)' }}
         >
           Next
         </p>
         <h2
-          className="font-display text-2xl sm:text-[28px] font-semibold truncate"
+          className="font-display truncate text-2xl font-semibold sm:text-[28px]"
           style={{ color: 'var(--color-foreground)' }}
         >
           {event.title}
         </h2>
-        <p className="text-sm mt-2 truncate" style={{ color: 'var(--color-muted)' }}>
+        <p className="mt-2 truncate text-sm" style={{ color: 'var(--color-muted)' }}>
           {eventMeta(event)}
         </p>
       </div>
       {when && (
         <p
-          className="font-display text-2xl sm:text-[28px] shrink-0 whitespace-nowrap"
+          className="font-display shrink-0 text-2xl whitespace-nowrap sm:text-[28px]"
           style={{ color: 'var(--color-brand-primary)' }}
         >
           {when}
@@ -65,19 +67,19 @@ function EventRow({ event, past }: { event: Event; past?: boolean }) {
     <li>
       <Link
         href={`/events/${event.id}`}
-        className="group flex items-center gap-3 py-3.5 hover:opacity-80 transition-opacity"
+        className="group flex items-center gap-3 py-3.5 transition-opacity hover:opacity-80"
       >
         <Calendar size={15} className="shrink-0" style={{ color: 'var(--color-muted)' }} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+          <p className="truncate text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>
             {event.title}
           </p>
-          <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-muted)' }}>
+          <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--color-muted)' }}>
             {eventMeta(event)}
           </p>
         </div>
         {when && (
-          <span className="text-xs shrink-0" style={{ color: 'var(--color-muted)' }}>
+          <span className="shrink-0 text-xs" style={{ color: 'var(--color-muted)' }}>
             {when}
           </span>
         )}
@@ -88,7 +90,10 @@ function EventRow({ event, past }: { event: Event; past?: boolean }) {
 
 function EventList({ events, past }: { events: Event[]; past?: boolean }) {
   return (
-    <ul className="divide-y" style={{ borderColor: 'var(--color-border)', opacity: past ? 0.7 : 1 }}>
+    <ul
+      className="divide-y"
+      style={{ borderColor: 'var(--color-border)', opacity: past ? 0.7 : 1 }}
+    >
       {events.map((event) => (
         <EventRow key={event.id} event={event} past={past} />
       ))}
@@ -103,8 +108,8 @@ export default async function EventsPage() {
   const rest = upcoming.slice(1)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1
             className="font-display text-3xl font-semibold"
@@ -112,18 +117,20 @@ export default async function EventsPage() {
           >
             My Events
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
+          <p className="mt-1 text-sm" style={{ color: 'var(--color-muted)' }}>
             {events.length === 0
               ? 'No events yet'
               : [
                   upcoming.length > 0 ? `${upcoming.length} upcoming` : null,
                   past.length > 0 ? `${past.length} past` : null,
-                ].filter(Boolean).join(' · ')}
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
           </p>
         </div>
         <Link
           href="/events/new"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 text-brand-900 font-semibold text-sm transition-colors"
+          className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
         >
           <Plus size={16} /> New Event
         </Link>
@@ -136,21 +143,21 @@ export default async function EventsPage() {
           className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="p-4 rounded-2xl bg-gold-500/10 mb-4">
+          <div className="bg-gold-500/10 mb-4 rounded-2xl p-4">
             <CalendarDays size={32} className="text-gold-600 dark:text-gold-400" />
           </div>
           <h2
-            className="font-display text-xl font-semibold mb-2"
+            className="font-display mb-2 text-xl font-semibold"
             style={{ color: 'var(--color-foreground)' }}
           >
             No events yet
           </h2>
-          <p className="text-sm max-w-sm mb-6" style={{ color: 'var(--color-muted)' }}>
+          <p className="mb-6 max-w-sm text-sm" style={{ color: 'var(--color-muted)' }}>
             Create your first event to start planning.
           </p>
           <Link
             href="/events/new"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 text-brand-900 font-semibold text-sm transition-colors"
+            className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
           >
             <Plus size={15} /> Plan your first event
           </Link>
@@ -162,7 +169,7 @@ export default async function EventsPage() {
           {rest.length > 0 && (
             <section>
               <h2
-                className="text-sm font-semibold mb-1"
+                className="mb-1 text-sm font-semibold"
                 style={{ color: 'var(--color-foreground)' }}
               >
                 Upcoming
@@ -173,10 +180,7 @@ export default async function EventsPage() {
 
           {past.length > 0 && (
             <section>
-              <h2
-                className="text-sm font-semibold mb-1"
-                style={{ color: 'var(--color-muted)' }}
-              >
+              <h2 className="mb-1 text-sm font-semibold" style={{ color: 'var(--color-muted)' }}>
                 Past
               </h2>
               <EventList events={past} past />

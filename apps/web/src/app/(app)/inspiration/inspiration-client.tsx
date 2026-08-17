@@ -3,12 +3,31 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Search, Sparkles, MapPin, DollarSign, ExternalLink,
-  Bookmark, BookmarkCheck, BookmarkX, ChevronRight, Heart, Loader2, Music,
-  Utensils, Shirt, Building2, Palette, Drama, Users, Star,
-  X, ArrowRight, CalendarDays, CheckSquare, Receipt, Clock,
+  Search,
+  Sparkles,
+  MapPin,
+  DollarSign,
+  Bookmark,
+  BookmarkCheck,
+  BookmarkX,
+  ChevronRight,
+  Heart,
+  Loader2,
+  Music,
+  Utensils,
+  Shirt,
+  Building2,
+  Palette,
+  Drama,
+  Users,
+  Star,
+  X,
+  ArrowRight,
+  CalendarDays,
+  CheckSquare,
+  Receipt,
+  Clock,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { proxyClient } from '@/lib/proxy-client'
 import { queryKeys } from '@/lib/query-keys'
@@ -16,7 +35,8 @@ import { InspirationDetail } from './inspiration-detail'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type InspirationCategory = 'PERFORMANCE' | 'VENUE' | 'DECOR' | 'MUSIC' | 'FASHION' | 'FOOD' | 'OTHER'
+type InspirationCategory =
+  'PERFORMANCE' | 'VENUE' | 'DECOR' | 'MUSIC' | 'FASHION' | 'FOOD' | 'OTHER'
 
 interface VendorProfile {
   id: string
@@ -100,10 +120,16 @@ function groupSaved(entries: SavedEntry[]): GroupedSaved[] {
     if (entry.notes && !existing.notes.includes(entry.notes)) {
       existing.notes.push(entry.notes)
     }
-    if (entry.checklistItem && !existing.checklistItems.some((item) => item.id === entry.checklistItem!.id)) {
+    if (
+      entry.checklistItem &&
+      !existing.checklistItems.some((item) => item.id === entry.checklistItem!.id)
+    ) {
       existing.checklistItems.push(entry.checklistItem)
     }
-    if (entry.budgetItem && !existing.budgetItems.some((item) => item.id === entry.budgetItem!.id)) {
+    if (
+      entry.budgetItem &&
+      !existing.budgetItems.some((item) => item.id === entry.budgetItem!.id)
+    ) {
       existing.budgetItems.push(entry.budgetItem)
     }
     for (const block of entry.scheduleItems ?? []) {
@@ -118,23 +144,26 @@ function groupSaved(entries: SavedEntry[]): GroupedSaved[] {
 // ─── Category config ──────────────────────────────────────────────────────────
 
 const CATEGORIES: { id: InspirationCategory | 'ALL'; label: string; icon: React.ElementType }[] = [
-  { id: 'ALL',         label: 'All',         icon: Sparkles  },
-  { id: 'PERFORMANCE', label: 'Performance', icon: Drama     },
-  { id: 'VENUE',       label: 'Venues',      icon: Building2 },
-  { id: 'DECOR',       label: 'Decor',       icon: Palette   },
-  { id: 'MUSIC',       label: 'Music',       icon: Music     },
-  { id: 'FASHION',     label: 'Fashion',     icon: Shirt     },
-  { id: 'FOOD',        label: 'Food',        icon: Utensils  },
+  { id: 'ALL', label: 'All', icon: Sparkles },
+  { id: 'PERFORMANCE', label: 'Performance', icon: Drama },
+  { id: 'VENUE', label: 'Venues', icon: Building2 },
+  { id: 'DECOR', label: 'Decor', icon: Palette },
+  { id: 'MUSIC', label: 'Music', icon: Music },
+  { id: 'FASHION', label: 'Fashion', icon: Shirt },
+  { id: 'FOOD', label: 'Food', icon: Utensils },
 ]
 
 const CATEGORY_COLORS: Record<InspirationCategory, { bg: string; text: string }> = {
   PERFORMANCE: { bg: 'color-mix(in srgb, #8b5cf6 12%, transparent)', text: '#8b5cf6' },
-  VENUE:       { bg: 'color-mix(in srgb, #0ea5e9 12%, transparent)', text: '#0ea5e9' },
-  DECOR:       { bg: 'color-mix(in srgb, #f59e0b 12%, transparent)', text: '#f59e0b' },
-  MUSIC:       { bg: 'color-mix(in srgb, #ec4899 12%, transparent)', text: '#ec4899' },
-  FASHION:     { bg: 'color-mix(in srgb, #14b8a6 12%, transparent)', text: '#14b8a6' },
-  FOOD:        { bg: 'color-mix(in srgb, #f97316 12%, transparent)', text: '#f97316' },
-  OTHER:       { bg: 'color-mix(in srgb, var(--color-muted) 12%, transparent)', text: 'var(--color-muted)' },
+  VENUE: { bg: 'color-mix(in srgb, #0ea5e9 12%, transparent)', text: '#0ea5e9' },
+  DECOR: { bg: 'color-mix(in srgb, #f59e0b 12%, transparent)', text: '#f59e0b' },
+  MUSIC: { bg: 'color-mix(in srgb, #ec4899 12%, transparent)', text: '#ec4899' },
+  FASHION: { bg: 'color-mix(in srgb, #14b8a6 12%, transparent)', text: '#14b8a6' },
+  FOOD: { bg: 'color-mix(in srgb, #f97316 12%, transparent)', text: '#f97316' },
+  OTHER: {
+    bg: 'color-mix(in srgb, var(--color-muted) 12%, transparent)',
+    text: 'var(--color-muted)',
+  },
 }
 
 // ─── Matching vendor types ────────────────────────────────────────────────────
@@ -168,7 +197,7 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
     >
       {/* Avatar */}
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
         style={{
           background: vendor.avatarUrl
             ? 'transparent'
@@ -176,33 +205,49 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
           color: 'var(--color-brand-primary)',
         }}
       >
-        {vendor.avatarUrl
-          ? <img src={vendor.avatarUrl} alt={vendor.businessName} className="w-full h-full object-cover rounded-xl" />
-          : initials
-        }
+        {vendor.avatarUrl ? (
+          <img
+            src={vendor.avatarUrl}
+            alt={vendor.businessName}
+            className="h-full w-full rounded-xl object-cover"
+          />
+        ) : (
+          initials
+        )}
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+          <p
+            className="truncate text-sm font-medium"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {vendor.businessName}
           </p>
           {vendor.isVerified && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
-              style={{ background: 'color-mix(in srgb, #0ea5e9 12%, transparent)', color: '#0ea5e9' }}>
+            <span
+              className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+              style={{
+                background: 'color-mix(in srgb, #0ea5e9 12%, transparent)',
+                color: '#0ea5e9',
+              }}
+            >
               Verified
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="mt-0.5 flex items-center gap-2">
           <span className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
             {vendor.category.replace('_', ' ')}
           </span>
           {vendor.city && (
             <>
               <span style={{ color: 'var(--color-border)' }}>·</span>
-              <span className="flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
+              <span
+                className="flex items-center gap-0.5 text-[11px]"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 <MapPin size={9} /> {vendor.city}
               </span>
             </>
@@ -210,7 +255,10 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
           {vendor.averageRating && (
             <>
               <span style={{ color: 'var(--color-border)' }}>·</span>
-              <span className="flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
+              <span
+                className="flex items-center gap-0.5 text-[11px]"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 <Star size={9} /> {vendor.averageRating.toFixed(1)}
               </span>
             </>
@@ -219,39 +267,31 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
       </div>
 
       {/* Price */}
-      <div className="text-right shrink-0">
+      <div className="shrink-0 text-right">
         {vendor.estimatedPriceFrom != null ? (
           <p className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-            {vendor.currency}{vendor.estimatedPriceFrom.toLocaleString()}
+            {vendor.currency}
+            {vendor.estimatedPriceFrom.toLocaleString()}
             {vendor.estimatedPriceTo ? `–${vendor.estimatedPriceTo.toLocaleString()}` : '+'}
           </p>
         ) : null}
-        <ArrowRight size={13} className="ml-auto mt-0.5" style={{ color: 'var(--color-muted)' }} />
+        <ArrowRight size={13} className="mt-0.5 ml-auto" style={{ color: 'var(--color-muted)' }} />
       </div>
     </Link>
   )
 }
 
-function FindVendorsPanel({
-  item,
-  onClose,
-}: {
-  item: InspirationItem
-  onClose: () => void
-}) {
+function FindVendorsPanel({ item, onClose }: { item: InspirationItem; onClose: () => void }) {
   const { data: vendors = [], isPending: loading } = useQuery({
     queryKey: queryKeys.inspirationMatchingVendors(item.id),
     queryFn: async () => {
       const { data } = await proxyClient.get(`/inspiration/${item.id}/matching-vendors`)
-      return Array.isArray(data) ? data as MatchedVendor[] : []
+      return Array.isArray(data) ? (data as MatchedVendor[]) : []
     },
   })
 
   return (
-    <div
-      className="fixed inset-0 z-50"
-      style={{ pointerEvents: 'auto' }}
-    >
+    <div className="fixed inset-0 z-50" style={{ pointerEvents: 'auto' }}>
       {/* Backdrop */}
       <div
         className="absolute inset-0"
@@ -260,25 +300,34 @@ function FindVendorsPanel({
       />
       {/* Panel */}
       <div
-        className="absolute right-0 top-0 h-full w-full max-w-md flex flex-col shadow-2xl"
+        className="absolute top-0 right-0 flex h-full w-full max-w-md flex-col shadow-2xl"
         style={{
           background: 'var(--color-card)',
           borderLeft: '1px solid var(--color-border)',
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="flex shrink-0 items-center justify-between border-b px-5 py-4"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <div>
-            <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-brand-primary)' }}>
+            <p
+              className="text-[11px] font-semibold tracking-widest uppercase"
+              style={{ color: 'var(--color-brand-primary)' }}
+            >
               Matching Vendors
             </p>
-            <p className="text-sm font-semibold mt-0.5 line-clamp-1" style={{ color: 'var(--color-text-primary)' }}>
+            <p
+              className="mt-0.5 line-clamp-1 text-sm font-semibold"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
               {item.title}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={16} />
@@ -289,10 +338,14 @@ function FindVendorsPanel({
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 size={22} className="animate-spin" style={{ color: 'var(--color-brand-primary)' }} />
+              <Loader2
+                size={22}
+                className="animate-spin"
+                style={{ color: 'var(--color-brand-primary)' }}
+              />
             </div>
           ) : vendors.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center px-6">
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <Users size={28} style={{ color: 'var(--color-muted)', opacity: 0.4 }} />
               <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                 No vendors found yet
@@ -302,7 +355,7 @@ function FindVendorsPanel({
               </p>
               <Link
                 href="/vendors"
-                className="text-xs font-medium flex items-center gap-1"
+                className="flex items-center gap-1 text-xs font-medium"
                 style={{ color: 'var(--color-brand-primary)' }}
               >
                 Browse all vendors <ChevronRight size={12} />
@@ -314,22 +367,23 @@ function FindVendorsPanel({
                 {vendors[0]._matchType === 'direct'
                   ? 'This vendor created this inspiration item'
                   : vendors[0]._matchType === 'semantic'
-                  ? `${vendors.length} vendors matched by AI similarity`
-                  : `${vendors.length} vendors matched by category`
-                }
+                    ? `${vendors.length} vendors matched by AI similarity`
+                    : `${vendors.length} vendors matched by category`}
               </p>
               <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-                {vendors.map((v) => <MatchedVendorRow key={v.id} vendor={v} />)}
+                {vendors.map((v) => (
+                  <MatchedVendorRow key={v.id} vendor={v} />
+                ))}
               </div>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="shrink-0 border-t px-5 py-4" style={{ borderColor: 'var(--color-border)' }}>
           <Link
             href="/vendors"
-            className="flex items-center justify-center gap-2 w-full h-9 rounded-xl text-sm font-medium"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium"
             style={{
               background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
               color: 'var(--color-brand-primary)',
@@ -345,9 +399,21 @@ function FindVendorsPanel({
 
 // ─── Save-to-event modal (2-step: event → optional link) ─────────────────────
 
-interface ChecklistItem { id: string; title: string }
-interface BudgetItem    { id: string; label: string | null; vendorName?: string | null; category: string }
-interface ScheduleBlock { id: string; title: string; startTime: string | null }
+interface ChecklistItem {
+  id: string
+  title: string
+}
+interface BudgetItem {
+  id: string
+  label: string | null
+  vendorName?: string | null
+  category: string
+}
+interface ScheduleBlock {
+  id: string
+  title: string
+  startTime: string | null
+}
 
 function SaveModal({
   item,
@@ -358,23 +424,24 @@ function SaveModal({
   onClose: () => void
   onSaved: (itemId: string, eventId: string) => void
 }) {
-  const [step, setStep]                     = useState<1 | 2>(1)
-  const [events, setEvents]                 = useState<Event[]>([])
-  const [selectedEvent, setSelectedEvent]   = useState('')
-  const [notes, setNotes]                   = useState('')
-  const [checklist, setChecklist]           = useState<ChecklistItem[]>([])
-  const [budgetItems, setBudgetItems]       = useState<BudgetItem[]>([])
-  const [scheduleItems, setScheduleItems]   = useState<ScheduleBlock[]>([])
+  const [step, setStep] = useState<1 | 2>(1)
+  const [events, setEvents] = useState<Event[]>([])
+  const [selectedEvent, setSelectedEvent] = useState('')
+  const [notes, setNotes] = useState('')
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([])
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+  const [scheduleItems, setScheduleItems] = useState<ScheduleBlock[]>([])
   const [linkedChecklist, setLinkedChecklist] = useState('')
-  const [linkedBudget, setLinkedBudget]     = useState('')
+  const [linkedBudget, setLinkedBudget] = useState('')
   const [linkedSchedules, setLinkedSchedules] = useState<string[]>([])
-  const [saving, setSaving]                 = useState(false)
-  const [error, setError]                   = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  const [linksLoading, setLinksLoading]     = useState(false)
+  const [linksLoading, setLinksLoading] = useState(false)
 
   useEffect(() => {
-    proxyClient.get('/events')
+    proxyClient
+      .get('/events')
       .then(({ data }) => {
         const arr = Array.isArray(data) ? data : []
         setEvents(arr)
@@ -426,7 +493,7 @@ function SaveModal({
         eventId: selectedEvent,
         notes: notes || undefined,
         checklistItemId: linkedChecklist || undefined,
-        budgetItemId:    linkedBudget    || undefined,
+        budgetItemId: linkedBudget || undefined,
         scheduleItemIds: linkedSchedules,
       })
       onSaved(item.id, selectedEvent)
@@ -438,7 +505,7 @@ function SaveModal({
     }
   }
 
-  const selectCls = "w-full rounded-xl px-3 py-2 text-sm"
+  const selectCls = 'w-full rounded-xl px-3 py-2 text-sm'
   const selectStyle = {
     background: 'color-mix(in srgb, var(--color-text-primary) 5%, transparent)',
     border: '1px solid var(--color-border)',
@@ -457,9 +524,12 @@ function SaveModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-muted)' }}>
+        <div className="border-b p-5" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="mb-1 flex items-center justify-between">
+            <p
+              className="text-[11px] font-semibold tracking-widest uppercase"
+              style={{ color: 'var(--color-muted)' }}
+            >
               Save to mood board · Step {step}/2
             </p>
             <div className="flex gap-1">
@@ -467,25 +537,36 @@ function SaveModal({
                 <div
                   key={s}
                   className="h-1 w-8 rounded-full transition-colors"
-                  style={{ background: step >= s ? 'var(--color-brand-primary)' : 'var(--color-border)' }}
+                  style={{
+                    background: step >= s ? 'var(--color-brand-primary)' : 'var(--color-border)',
+                  }}
                 />
               ))}
             </div>
           </div>
-          <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{item.title}</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            {item.title}
+          </p>
         </div>
 
         {/* Step 1: choose event + notes */}
         {step === 1 && (
-          <div className="p-5 space-y-4">
+          <div className="space-y-4 p-5">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted)' }}>
+              <label
+                className="mb-2 block text-[11px] font-semibold tracking-wider uppercase"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 Choose event
               </label>
               {events.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   No events yet.{' '}
-                  <Link href="/events/new" className="underline" style={{ color: 'var(--color-brand-primary)' }}>
+                  <Link
+                    href="/events/new"
+                    className="underline"
+                    style={{ color: 'var(--color-brand-primary)' }}
+                  >
                     Create one →
                   </Link>
                 </p>
@@ -497,13 +578,18 @@ function SaveModal({
                   style={selectStyle}
                 >
                   {events.map((ev) => (
-                    <option key={ev.id} value={ev.id}>{ev.title}</option>
+                    <option key={ev.id} value={ev.id}>
+                      {ev.title}
+                    </option>
                   ))}
                 </select>
               )}
             </div>
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted)' }}>
+              <label
+                className="mb-2 block text-[11px] font-semibold tracking-wider uppercase"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 Notes (optional)
               </label>
               <textarea
@@ -511,22 +597,30 @@ function SaveModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="What caught your eye?"
-                className="w-full rounded-xl px-3 py-2 text-sm resize-none"
+                className="w-full resize-none rounded-xl px-3 py-2 text-sm"
                 style={selectStyle}
               />
             </div>
-            {error && <p className="text-xs" style={{ color: 'var(--color-error)' }}>{error}</p>}
+            {error && (
+              <p className="text-xs" style={{ color: 'var(--color-error)' }}>
+                {error}
+              </p>
+            )}
           </div>
         )}
 
         {/* Step 2: optional links */}
         {step === 2 && (
-          <div className="p-5 space-y-4">
+          <div className="space-y-4 p-5">
             <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-              Optionally link this inspiration to a checklist task, budget line, or one or more schedule blocks.
+              Optionally link this inspiration to a checklist task, budget line, or one or more
+              schedule blocks.
             </p>
             {linksLoading ? (
-              <div className="flex items-center justify-center gap-2 py-6 text-sm" style={{ color: 'var(--color-muted)' }}>
+              <div
+                className="flex items-center justify-center gap-2 py-6 text-sm"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 <Loader2 size={14} className="animate-spin" />
                 Loading tasks, budget lines, and schedule…
               </div>
@@ -557,14 +651,20 @@ function SaveModal({
                     label: block.startTime ? `${block.title} · ${block.startTime}` : block.title,
                   }))}
                   values={linkedSchedules}
-                  onToggle={(id) => setLinkedSchedules((prev) => (
-                    prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
-                  ))}
+                  onToggle={(id) =>
+                    setLinkedSchedules((prev) =>
+                      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
+                    )
+                  }
                   multiple
                 />
               </>
             )}
-            {error && <p className="text-xs" style={{ color: 'var(--color-error)' }}>{error}</p>}
+            {error && (
+              <p className="text-xs" style={{ color: 'var(--color-error)' }}>
+                {error}
+              </p>
+            )}
           </div>
         )}
 
@@ -574,15 +674,19 @@ function SaveModal({
             <>
               <button
                 onClick={onClose}
-                className="flex-1 h-9 rounded-xl text-sm font-medium"
-                style={{ background: 'color-mix(in srgb, var(--color-text-primary) 6%, transparent)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+                className="h-9 flex-1 rounded-xl text-sm font-medium"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-text-primary) 6%, transparent)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={() => setStep(2)}
                 disabled={!selectedEvent}
-                className="flex-1 h-9 rounded-xl text-sm font-medium disabled:opacity-50"
+                className="h-9 flex-1 rounded-xl text-sm font-medium disabled:opacity-50"
                 style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
               >
                 Next →
@@ -592,18 +696,26 @@ function SaveModal({
             <>
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 h-9 rounded-xl text-sm font-medium"
-                style={{ background: 'color-mix(in srgb, var(--color-text-primary) 6%, transparent)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+                className="h-9 flex-1 rounded-xl text-sm font-medium"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-text-primary) 6%, transparent)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
               >
                 ← Back
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 h-9 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-medium disabled:opacity-50"
                 style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
               >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <BookmarkCheck size={14} />}
+                {saving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <BookmarkCheck size={14} />
+                )}
                 Save
               </button>
             </>
@@ -633,7 +745,7 @@ function LinkChoiceList({
   onToggle?: (id: string) => void
   multiple?: boolean
 }) {
-  const selectedIds = multiple ? (values ?? []) : (value ? [value] : [])
+  const selectedIds = multiple ? (values ?? []) : value ? [value] : []
   const noneSelected = selectedIds.length === 0
 
   function clear() {
@@ -646,29 +758,38 @@ function LinkChoiceList({
 
   return (
     <div>
-      <p className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted)' }}>
+      <p
+        className="mb-2 block text-[11px] font-semibold tracking-wider uppercase"
+        style={{ color: 'var(--color-muted)' }}
+      >
         {label}
         {multiple && selectedIds.length > 0 && (
-          <span className="ml-1 font-normal normal-case tracking-normal">({selectedIds.length})</span>
+          <span className="ml-1 font-normal tracking-normal normal-case">
+            ({selectedIds.length})
+          </span>
         )}
       </p>
       <div
-        className="max-h-36 overflow-y-auto rounded-xl p-1 space-y-0.5"
+        className="max-h-36 space-y-0.5 overflow-y-auto rounded-xl p-1"
         style={{ border: '1px solid var(--color-border)' }}
       >
         <button
           type="button"
           onClick={clear}
-          className="w-full text-left text-sm px-3 py-1.5 rounded-lg"
+          className="w-full rounded-lg px-3 py-1.5 text-left text-sm"
           style={{
-            background: noneSelected ? 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)' : 'transparent',
+            background: noneSelected
+              ? 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)'
+              : 'transparent',
             color: noneSelected ? 'var(--color-brand-primary)' : 'var(--color-text-secondary)',
           }}
         >
           — No link —
         </button>
         {items.length === 0 ? (
-          <p className="px-3 py-2 text-xs" style={{ color: 'var(--color-muted)' }}>{empty}</p>
+          <p className="px-3 py-2 text-xs" style={{ color: 'var(--color-muted)' }}>
+            {empty}
+          </p>
         ) : (
           items.map((item) => {
             const selected = selectedIds.includes(item.id)
@@ -676,10 +797,12 @@ function LinkChoiceList({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => multiple ? onToggle?.(item.id) : onChange?.(item.id)}
-                className="w-full text-left text-sm px-3 py-1.5 rounded-lg"
+                onClick={() => (multiple ? onToggle?.(item.id) : onChange?.(item.id))}
+                className="w-full rounded-lg px-3 py-1.5 text-left text-sm"
                 style={{
-                  background: selected ? 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)' : 'transparent',
+                  background: selected
+                    ? 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)'
+                    : 'transparent',
                   color: selected ? 'var(--color-brand-primary)' : 'var(--color-text-primary)',
                 }}
               >
@@ -718,24 +841,29 @@ function InspirationCard({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col transition-all hover:shadow-lg cursor-pointer"
+      className="flex cursor-pointer flex-col overflow-hidden rounded-2xl transition-all hover:shadow-lg"
       style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--color-border)',
       }}
       onClick={() => onOpen(item)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item) } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen(item)
+        }
+      }}
       role="button"
       tabIndex={0}
     >
       {/* Image / placeholder */}
       <div
-        className="h-40 flex items-center justify-center relative overflow-hidden"
+        className="relative flex h-40 items-center justify-center overflow-hidden"
         style={{ background: cat.bg }}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+          <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
         ) : (
           <div className="flex flex-col items-center gap-2 opacity-40">
             <Sparkles size={32} style={{ color: cat.text }} />
@@ -743,7 +871,7 @@ function InspirationCard({
         )}
         {/* Category badge */}
         <div
-          className="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full"
+          className="absolute top-3 left-3 rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
           style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}
         >
           {item.category}
@@ -751,8 +879,11 @@ function InspirationCard({
         <div className="absolute top-3 right-3 flex items-center gap-1.5">
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onLikeClick(item) }}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            onClick={(e) => {
+              e.stopPropagation()
+              onLikeClick(item)
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-all hover:scale-110"
             style={{
               background: liked ? 'var(--color-brand-primary)' : 'rgba(0,0,0,0.45)',
               backdropFilter: 'blur(4px)',
@@ -765,8 +896,11 @@ function InspirationCard({
           </button>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onSaveClick(item) }}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            onClick={(e) => {
+              e.stopPropagation()
+              onSaveClick(item)
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-all hover:scale-110"
             style={{
               background: saved ? 'var(--color-brand-primary)' : 'rgba(0,0,0,0.45)',
               backdropFilter: 'blur(4px)',
@@ -780,12 +914,18 @@ function InspirationCard({
       </div>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
+      <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <h3 className="font-semibold text-sm leading-snug" style={{ color: 'var(--color-text-primary)' }}>
+          <h3
+            className="text-sm leading-snug font-semibold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {item.title}
           </h3>
-          <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <p
+            className="mt-1 line-clamp-2 text-xs leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             {item.description}
           </p>
         </div>
@@ -793,19 +933,27 @@ function InspirationCard({
         {/* Tags */}
         {((item.tagItems && item.tagItems.length > 0) || item.tags.length > 0) && (
           <div className="flex flex-wrap gap-1">
-            {(item.tagItems ?? item.tags.map((label) => ({ slug: label, label }))).slice(0, 4).map((tag) => (
-              <button
-                key={tag.slug}
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.slug) }}
-                className="text-[10px] px-2 py-0.5 rounded-full"
-                style={{ background: cat.bg, color: cat.text }}
-              >
-                {tag.label}
-              </button>
-            ))}
+            {(item.tagItems ?? item.tags.map((label) => ({ slug: label, label })))
+              .slice(0, 4)
+              .map((tag) => (
+                <button
+                  key={tag.slug}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onTagClick?.(tag.slug)
+                  }}
+                  className="rounded-full px-2 py-0.5 text-[10px]"
+                  style={{ background: cat.bg, color: cat.text }}
+                >
+                  {tag.label}
+                </button>
+              ))}
             {(item.tagItems ?? item.tags).length > 4 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ color: 'var(--color-muted)' }}>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px]"
+                style={{ color: 'var(--color-muted)' }}
+              >
                 +{(item.tagItems ?? item.tags).length - 4}
               </span>
             )}
@@ -813,21 +961,31 @@ function InspirationCard({
         )}
 
         {/* Meta */}
-        <div className="flex items-center gap-3 mt-auto pt-1">
+        <div className="mt-auto flex items-center gap-3 pt-1">
           {(item.location || item.vendorProfile?.city) && (
-            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--color-muted)' }}>
+            <span
+              className="flex items-center gap-1 text-[11px]"
+              style={{ color: 'var(--color-muted)' }}
+            >
               <MapPin size={10} /> {item.location ?? item.vendorProfile?.city}
             </span>
           )}
           {item.priceRangeFrom != null && (
-            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--color-muted)' }}>
+            <span
+              className="flex items-center gap-1 text-[11px]"
+              style={{ color: 'var(--color-muted)' }}
+            >
               <DollarSign size={10} />
-              {item.currency}{item.priceRangeFrom.toLocaleString()}
+              {item.currency}
+              {item.priceRangeFrom.toLocaleString()}
               {item.priceRangeTo ? `–${item.priceRangeTo.toLocaleString()}` : '+'}
             </span>
           )}
           {(item.likeCount ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--color-muted)' }}>
+            <span
+              className="flex items-center gap-1 text-[11px]"
+              style={{ color: 'var(--color-muted)' }}
+            >
               <Heart size={10} /> {item.likeCount}
             </span>
           )}
@@ -838,7 +996,7 @@ function InspirationCard({
           <Link
             href={`/vendors/${item.vendorProfile.slug}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-between text-xs font-medium px-3 py-2 rounded-xl transition-colors"
+            className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors"
             style={{
               background: 'color-mix(in srgb, var(--color-brand-primary) 8%, transparent)',
               color: 'var(--color-brand-primary)',
@@ -849,14 +1007,19 @@ function InspirationCard({
           </Link>
         ) : (
           <button
-            onClick={(e) => { e.stopPropagation(); onFindVendors(item) }}
-            className="flex items-center justify-between w-full text-xs font-medium px-3 py-2 rounded-xl transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              onFindVendors(item)
+            }}
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors"
             style={{
               background: 'color-mix(in srgb, var(--color-brand-primary) 8%, transparent)',
               color: 'var(--color-brand-primary)',
             }}
           >
-            <span className="flex items-center gap-1"><Users size={11} /> Find matching vendors</span>
+            <span className="flex items-center gap-1">
+              <Users size={11} /> Find matching vendors
+            </span>
             <ChevronRight size={12} />
           </button>
         )}
@@ -883,31 +1046,42 @@ function SavedCard({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col cursor-pointer"
+      className="flex cursor-pointer flex-col overflow-hidden rounded-2xl"
       style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
       onClick={() => onOpen(item)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item) } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen(item)
+        }
+      }}
       role="button"
       tabIndex={0}
     >
-      <div className="h-40 flex items-center justify-center relative overflow-hidden" style={{ background: cat.bg }}>
+      <div
+        className="relative flex h-40 items-center justify-center overflow-hidden"
+        style={{ background: cat.bg }}
+      >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+          <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
         ) : (
           <Sparkles size={32} style={{ color: cat.text, opacity: 0.4 }} />
         )}
         <div
-          className="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full"
+          className="absolute top-3 left-3 rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
           style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}
         >
           {item.category}
         </div>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onUnsave() }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onUnsave()
+          }}
           disabled={removing}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center"
+          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', color: '#fff' }}
           title="Remove from saved"
         >
@@ -915,19 +1089,25 @@ function SavedCard({
         </button>
       </div>
 
-      <div className="flex flex-col flex-1 p-4 gap-3">
+      <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <h3 className="font-semibold text-sm leading-snug" style={{ color: 'var(--color-text-primary)' }}>
+          <h3
+            className="text-sm leading-snug font-semibold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {item.title}
           </h3>
-          <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          <p
+            className="mt-1 line-clamp-2 text-xs leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             {item.description}
           </p>
         </div>
 
         {group.notes.length > 0 && (
           <p
-            className="text-xs italic px-2 py-1.5 rounded-lg"
+            className="rounded-lg px-2 py-1.5 text-xs italic"
             style={{
               background: 'color-mix(in srgb, var(--color-text-primary) 4%, transparent)',
               color: 'var(--color-text-secondary)',
@@ -938,7 +1118,7 @@ function SavedCard({
         )}
 
         <p
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full w-fit flex-wrap"
+          className="inline-flex w-fit flex-wrap items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-medium"
           style={{
             background: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
             color: 'var(--color-brand-primary)',
@@ -955,13 +1135,18 @@ function SavedCard({
           ))}
         </p>
 
-        {(group.checklistItems.length > 0 || group.budgetItems.length > 0 || group.scheduleItems.length > 0) && (
+        {(group.checklistItems.length > 0 ||
+          group.budgetItems.length > 0 ||
+          group.scheduleItems.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {group.scheduleItems.map((block) => (
               <span
                 key={block.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                style={{ color: 'var(--color-brand-primary)', background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' }}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{
+                  color: 'var(--color-brand-primary)',
+                  background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
+                }}
               >
                 <Clock size={9} /> {block.title}
               </span>
@@ -969,8 +1154,11 @@ function SavedCard({
             {group.checklistItems.map((task) => (
               <span
                 key={task.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                style={{ color: 'var(--color-text-secondary)', background: 'color-mix(in srgb, var(--color-muted) 12%, transparent)' }}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{
+                  color: 'var(--color-text-secondary)',
+                  background: 'color-mix(in srgb, var(--color-muted) 12%, transparent)',
+                }}
               >
                 <CheckSquare size={9} /> {task.title}
               </span>
@@ -978,8 +1166,11 @@ function SavedCard({
             {group.budgetItems.map((budget) => (
               <span
                 key={budget.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                style={{ color: 'var(--color-brand-primary)', background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' }}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{
+                  color: 'var(--color-brand-primary)',
+                  background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
+                }}
               >
                 <Receipt size={9} /> {budget.label ?? budget.category.replaceAll('_', ' ')}
               </span>
@@ -992,7 +1183,7 @@ function SavedCard({
             <Link
               href={`/vendors/${item.vendorProfile.slug}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between w-full text-xs font-medium px-3 py-2 rounded-xl"
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium"
               style={{
                 background: 'color-mix(in srgb, var(--color-brand-primary) 8%, transparent)',
                 color: 'var(--color-brand-primary)',
@@ -1004,14 +1195,19 @@ function SavedCard({
           ) : (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onFindVendors(item) }}
-              className="flex items-center justify-between w-full text-xs font-medium px-3 py-2 rounded-xl"
+              onClick={(e) => {
+                e.stopPropagation()
+                onFindVendors(item)
+              }}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium"
               style={{
                 background: 'color-mix(in srgb, var(--color-brand-primary) 8%, transparent)',
                 color: 'var(--color-brand-primary)',
               }}
             >
-              <span className="flex items-center gap-1"><Users size={11} /> Find matching vendors</span>
+              <span className="flex items-center gap-1">
+                <Users size={11} /> Find matching vendors
+              </span>
               <ChevronRight size={12} />
             </button>
           )}
@@ -1032,7 +1228,13 @@ const EXAMPLE_QUERIES = [
   'Yoruba traditional ceremony',
 ]
 
-export function InspirationClient({ initialTag, initialItemId }: { initialTag?: string; initialItemId?: string }) {
+export function InspirationClient({
+  initialTag,
+  initialItemId,
+}: {
+  initialTag?: string
+  initialItemId?: string
+}) {
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<InspirationCategory | 'ALL'>('ALL')
@@ -1054,12 +1256,19 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
   const { data: browseTags = [] } = useQuery({
     queryKey: queryKeys.inspirationTags,
     queryFn: async () => {
-      const { data } = await proxyClient.get<{ slug: string; label: string; isCurated: boolean }[]>('/inspiration/tags')
+      const { data } =
+        await proxyClient.get<{ slug: string; label: string; isCurated: boolean }[]>(
+          '/inspiration/tags',
+        )
       return Array.isArray(data) ? data : []
     },
   })
 
-  const { data: savedEntries = [], isPending: savedLoading, refetch: loadSaved } = useQuery({
+  const {
+    data: savedEntries = [],
+    isPending: savedLoading,
+    refetch: loadSaved,
+  } = useQuery({
     queryKey: queryKeys.inspirationSaved,
     queryFn: async () => {
       const { data } = await proxyClient.get<SavedEntry[]>('/inspiration/saved')
@@ -1091,19 +1300,25 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
     debounceRef.current = setTimeout(() => {
       setFeedParams({ q: query, cat: activeCategory, tag: activeTag })
     }, 350)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [query, activeCategory, activeTag, view])
 
-  const { data: items = [], isFetching: loading, isFetched: hasSearched } = useQuery({
+  const {
+    data: items = [],
+    isFetching: loading,
+    isFetched: hasSearched,
+  } = useQuery({
     queryKey: queryKeys.inspirationFeed(feedParams.q, feedParams.cat, feedParams.tag),
     enabled: view === 'browse',
     queryFn: async () => {
-      const params = new URLSearchParams()
-      if (feedParams.q.trim()) params.set('q', feedParams.q.trim())
-      if (feedParams.cat !== 'ALL') params.set('category', feedParams.cat)
-      if (feedParams.tag.trim()) params.set('tag', feedParams.tag.trim())
-      const { data } = await proxyClient.get(`/inspiration?${params}`)
-      return Array.isArray(data) ? data as InspirationItem[] : []
+      const params: Record<string, string> = {}
+      if (feedParams.q.trim()) params.q = feedParams.q.trim()
+      if (feedParams.cat !== 'ALL') params.category = feedParams.cat
+      if (feedParams.tag.trim()) params.tag = feedParams.tag.trim()
+      const { data } = await proxyClient.get('/inspiration', { params })
+      return Array.isArray(data) ? (data as InspirationItem[]) : []
     },
   })
 
@@ -1112,14 +1327,21 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
 
     queryClient.setQueryData<InspirationItem[]>(
       queryKeys.inspirationFeed(feedParams.q, feedParams.cat, feedParams.tag),
-      (prev) => (prev ?? []).map((item) =>
-        item.id === itemId ? { ...item, likeCount: nextCount(item.likeCount) } : item,
-      ),
+      (prev) =>
+        (prev ?? []).map((item) =>
+          item.id === itemId ? { ...item, likeCount: nextCount(item.likeCount) } : item,
+        ),
     )
     queryClient.setQueryData<SavedEntry[]>(queryKeys.inspirationSaved, (prev) =>
       (prev ?? []).map((entry) =>
         entry.inspirationItem.id === itemId
-          ? { ...entry, inspirationItem: { ...entry.inspirationItem, likeCount: nextCount(entry.inspirationItem.likeCount) } }
+          ? {
+              ...entry,
+              inspirationItem: {
+                ...entry.inspirationItem,
+                likeCount: nextCount(entry.inspirationItem.likeCount),
+              },
+            }
           : entry,
       ),
     )
@@ -1128,9 +1350,9 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
         item.id === itemId ? { ...item, likeCount: nextCount(item.likeCount) } : item,
       ),
     )
-    setDetailItem((prev) => (
-      prev?.id === itemId ? { ...prev, likeCount: nextCount(prev.likeCount) } : prev
-    ))
+    setDetailItem((prev) =>
+      prev?.id === itemId ? { ...prev, likeCount: nextCount(prev.likeCount) } : prev,
+    )
   }
 
   async function toggleLike(item: InspirationItem) {
@@ -1162,7 +1384,9 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
       setDetailItem(fromFeed)
       return
     }
-    const fromSaved = savedEntries.find((e) => e.inspirationItem.id === initialItemId)?.inspirationItem
+    const fromSaved = savedEntries.find(
+      (e) => e.inspirationItem.id === initialItemId,
+    )?.inspirationItem
     if (fromSaved) {
       openedQueryItem.current = initialItemId
       setDetailItem(fromSaved)
@@ -1171,10 +1395,15 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
     if (!hasSearched && savedLoading) return
     openedQueryItem.current = initialItemId
     let cancelled = false
-    proxyClient.get<InspirationItem>(`/inspiration/${initialItemId}`)
-      .then(({ data }) => { if (!cancelled && data) setDetailItem(data) })
+    proxyClient
+      .get<InspirationItem>(`/inspiration/${initialItemId}`)
+      .then(({ data }) => {
+        if (!cancelled && data) setDetailItem(data)
+      })
       .catch(() => {})
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [initialItemId, items, savedEntries, hasSearched, savedLoading])
 
   function handleSaved() {
@@ -1206,38 +1435,43 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
     if (activeCategory !== 'ALL' && item.category !== activeCategory) return false
     if (!q) return true
     return (
-      item.title.toLowerCase().includes(q)
-      || item.description.toLowerCase().includes(q)
-      || group.events.some((event) => event.title.toLowerCase().includes(q))
+      item.title.toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q) ||
+      group.events.some((event) => event.title.toLowerCase().includes(q))
     )
   })
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
-
+    <div className="mx-auto max-w-5xl px-4 py-8 pb-16 sm:px-6 lg:px-8">
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="mb-2 flex items-center gap-2">
           <Sparkles size={18} style={{ color: 'var(--color-brand-primary)' }} />
-          <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--color-brand-primary)' }}>
+          <span
+            className="text-[11px] font-semibold tracking-widest uppercase"
+            style={{ color: 'var(--color-brand-primary)' }}
+          >
             Inspiration
           </span>
         </div>
-        <h1 className="font-display text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+        <h1
+          className="font-display mb-2 text-3xl font-bold"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
           Find your vision
         </h1>
         <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           Search for dances, venues, decor, music, fashion — describe what you want in plain words.
         </p>
         <div
-          className="inline-flex mt-4 p-1 rounded-xl"
+          className="mt-4 inline-flex rounded-xl p-1"
           style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
           role="tablist"
         >
-          {([
+          {[
             { id: 'browse' as const, label: 'Browse', icon: Sparkles },
             { id: 'saved' as const, label: 'Saved', icon: BookmarkCheck },
-          ]).map(({ id, label, icon: Icon }) => {
+          ].map(({ id, label, icon: Icon }) => {
             const active = view === id
             return (
               <button
@@ -1246,7 +1480,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
                 role="tab"
                 aria-selected={active}
                 onClick={() => setView(id)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium"
                 style={{
                   background: active ? 'var(--color-brand-primary)' : 'transparent',
                   color: active ? '#fff' : 'var(--color-text-secondary)',
@@ -1255,7 +1489,9 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
                 <Icon size={13} />
                 {label}
                 {id === 'saved' && groupedSaved.length > 0 && (
-                  <span className="text-[10px] font-semibold opacity-80">{groupedSaved.length}</span>
+                  <span className="text-[10px] font-semibold opacity-80">
+                    {groupedSaved.length}
+                  </span>
                 )}
               </button>
             )
@@ -1265,27 +1501,40 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
 
       {/* ── Search bar ─────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
+        className="mb-4 flex items-center gap-3 rounded-2xl px-4 py-3"
         style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--color-border)',
           boxShadow: '0 2px 12px rgba(0,0,0,.06)',
         }}
       >
-        {loading
-          ? <Loader2 size={18} className="animate-spin shrink-0" style={{ color: 'var(--color-brand-primary)' }} />
-          : <Search size={18} className="shrink-0" style={{ color: 'var(--color-muted)' }} />
-        }
+        {loading ? (
+          <Loader2
+            size={18}
+            className="shrink-0 animate-spin"
+            style={{ color: 'var(--color-brand-primary)' }}
+          />
+        ) : (
+          <Search size={18} className="shrink-0" style={{ color: 'var(--color-muted)' }} />
+        )}
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={view === 'saved' ? 'Search your saved ideas…' : 'Try "Igbo entrance dance" or "hall with high ceilings"…'}
+          placeholder={
+            view === 'saved'
+              ? 'Search your saved ideas…'
+              : 'Try "Igbo entrance dance" or "hall with high ceilings"…'
+          }
           className="flex-1 bg-transparent text-sm outline-none"
           style={{ color: 'var(--color-text-primary)' }}
         />
         {query && (
-          <button onClick={() => setQuery('')} className="text-xs shrink-0" style={{ color: 'var(--color-muted)' }}>
+          <button
+            onClick={() => setQuery('')}
+            className="shrink-0 text-xs"
+            style={{ color: 'var(--color-muted)' }}
+          >
             Clear
           </button>
         )}
@@ -1293,12 +1542,12 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
 
       {/* Example queries */}
       {!query && view === 'browse' && (
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="mb-6 flex flex-wrap gap-2">
           {EXAMPLE_QUERIES.map((ex) => (
             <button
               key={ex}
               onClick={() => setQuery(ex)}
-              className="text-xs px-3 py-1.5 rounded-full transition-colors"
+              className="rounded-full px-3 py-1.5 text-xs transition-colors"
               style={{
                 background: 'color-mix(in srgb, var(--color-text-primary) 5%, transparent)',
                 border: '1px solid var(--color-border)',
@@ -1312,14 +1561,14 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
       )}
 
       {/* ── Category filters ────────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+      <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-2">
         {CATEGORIES.map(({ id, label, icon: Icon }) => {
           const active = activeCategory === id
           return (
             <button
               key={id}
               onClick={() => setActiveCategory(id as InspirationCategory | 'ALL')}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all"
               style={{
                 background: active ? 'var(--color-brand-primary)' : 'var(--card-bg)',
                 border: `1px solid ${active ? 'transparent' : 'var(--color-border)'}`,
@@ -1334,7 +1583,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
       </div>
 
       {view === 'browse' && browseTags.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
+        <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-2">
           {browseTags.map((tag) => {
             const active = activeTag === tag.slug
             return (
@@ -1342,7 +1591,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
                 key={tag.slug}
                 type="button"
                 onClick={() => setActiveTag(active ? '' : tag.slug)}
-                className="text-xs px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+                className="shrink-0 rounded-full px-3 py-1.5 text-xs whitespace-nowrap"
                 style={{
                   background: active ? 'var(--color-brand-primary)' : 'var(--card-bg)',
                   border: `1px solid ${active ? 'transparent' : 'var(--color-border)'}`,
@@ -1360,12 +1609,16 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
       {view === 'saved' ? (
         savedLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 size={28} className="animate-spin" style={{ color: 'var(--color-brand-primary)' }} />
+            <Loader2
+              size={28}
+              className="animate-spin"
+              style={{ color: 'var(--color-brand-primary)' }}
+            />
           </div>
         ) : savedEntries.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
             <Bookmark size={32} style={{ color: 'var(--color-muted)', opacity: 0.4 }} />
-            <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
               Nothing saved yet
             </p>
             <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
@@ -1374,7 +1627,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
             <button
               type="button"
               onClick={() => setView('browse')}
-              className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium"
               style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
             >
               <Sparkles size={14} /> Browse inspiration
@@ -1383,12 +1636,12 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
         ) : visibleSaved.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
             <Search size={32} style={{ color: 'var(--color-muted)', opacity: 0.4 }} />
-            <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
               No saved ideas match this filter
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {visibleSaved.map((group) => (
               <SavedCard
                 key={group.inspirationItem.id}
@@ -1403,20 +1656,26 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
         )
       ) : loading && items.length === 0 ? (
         <div className="flex justify-center py-20">
-          <Loader2 size={28} className="animate-spin" style={{ color: 'var(--color-brand-primary)' }} />
+          <Loader2
+            size={28}
+            className="animate-spin"
+            style={{ color: 'var(--color-brand-primary)' }}
+          />
         </div>
       ) : items.length === 0 && hasSearched ? (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <Search size={32} style={{ color: 'var(--color-muted)', opacity: 0.4 }} />
-          <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
-            No results for &ldquo;{query}&rdquo;
+          <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+            {query.trim() ? `No results for “${query.trim()}”` : 'No inspiration yet'}
           </p>
           <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-            Try different words or browse a category
+            {query.trim()
+              ? 'Try different words or browse a category'
+              : 'Looks will show up here once they are published.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <InspirationCard
               key={item.id}
@@ -1444,10 +1703,7 @@ export function InspirationClient({ initialTag, initialItemId }: { initialTag?: 
 
       {/* Find vendors panel */}
       {vendorPanelItem && (
-        <FindVendorsPanel
-          item={vendorPanelItem}
-          onClose={() => setVendorPanelItem(null)}
-        />
+        <FindVendorsPanel item={vendorPanelItem} onClose={() => setVendorPanelItem(null)} />
       )}
 
       {detailItem && (

@@ -63,16 +63,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 function InviteNotFound({ signedIn }: { signedIn: boolean }) {
   return (
-    <div className="max-w-sm mx-auto text-center px-4 py-16">
-      <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+    <div className="mx-auto max-w-sm px-4 py-16 text-center">
+      <h1 className="mb-2 text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
         Invite not found
       </h1>
-      <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+      <p className="mb-6 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
         This invite link may have expired or is invalid.
       </p>
       <Link
         href={signedIn ? '/events' : '/'}
-        className="inline-flex h-10 items-center px-4 rounded-xl text-sm font-semibold"
+        className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold"
         style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
       >
         {signedIn ? 'Back to events' : 'Go home'}
@@ -92,43 +92,44 @@ function InviteCard({
 }) {
   const hostName = data.accepted
     ? 'Someone'
-    : ([data.invitedBy.firstName, data.invitedBy.lastName].filter(Boolean).join(' ') || 'Someone')
-  const eventDate = !data.accepted && data.event.estimatedDate
-    ? new Date(data.event.estimatedDate).toLocaleDateString('en-CA', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : null
+    : [data.invitedBy.firstName, data.invitedBy.lastName].filter(Boolean).join(' ') || 'Someone'
+  const eventDate =
+    !data.accepted && data.event.estimatedDate
+      ? new Date(data.event.estimatedDate).toLocaleDateString('en-CA', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : null
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 py-12">
+    <div className="mx-auto w-full max-w-md px-4 py-12">
       <div
-        className="rounded-3xl overflow-hidden border"
+        className="overflow-hidden rounded-3xl border"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
         <div className="bg-brand-900 dark:bg-brand-800 px-6 pt-8 pb-6">
-          <p className="text-xs uppercase tracking-[2px] text-gold-500 mb-2 font-medium">
+          <p className="text-gold-500 mb-2 text-xs font-medium tracking-[2px] uppercase">
             You&apos;re invited to plan
           </p>
-          <h1 className="font-display text-2xl font-bold text-white leading-tight">
+          <h1 className="font-display text-2xl leading-tight font-bold text-white">
             {data.event.title}
           </h1>
           {!data.accepted && (
-            <p className="text-brand-400 text-sm mt-1">
+            <p className="text-brand-400 mt-1 text-sm">
               {EVENT_TYPE_LABELS[data.event.eventType] ?? data.event.eventType}
             </p>
           )}
           {eventDate && (
-            <div className="mt-4 flex items-center gap-2 text-brand-300 text-sm">
+            <div className="text-brand-300 mt-4 flex items-center gap-2 text-sm">
               <CalendarDays size={13} className="text-gold-500 shrink-0" />
               {eventDate}
             </div>
           )}
         </div>
 
-        <div className="px-6 py-6 space-y-4">
+        <div className="space-y-4 px-6 py-6">
           {data.accepted ? (
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
               This invite was already accepted. Sign in with the same email to open the event.
@@ -140,7 +141,8 @@ function InviteCard({
                 {ROLE_LABELS[data.role] ?? data.role.toLowerCase()}.
               </p>
               <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-                You&apos;ll be able to see {data.surfaces.map((s) => SURFACE_LABELS[s] ?? s).join(', ')}.
+                You&apos;ll be able to see{' '}
+                {data.surfaces.map((s) => SURFACE_LABELS[s] ?? s).join(', ')}.
               </p>
             </>
           )}
@@ -148,7 +150,7 @@ function InviteCard({
         </div>
       </div>
       {!signedIn && (
-        <p className="text-center text-xs mt-6" style={{ color: 'var(--color-muted)' }}>
+        <p className="mt-6 text-center text-xs" style={{ color: 'var(--color-muted)' }}>
           Powered by Djanora · Event Planning
         </p>
       )}

@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, Request, UseGuards } from '@nestjs/common'
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+} from '@nestjs/common'
 import { InquiriesService } from './inquiries.service'
 import { CreateInquiryDto } from './dto/create-inquiry.dto'
 import { PostInquiryMessageDto } from './dto/post-inquiry-message.dto'
@@ -46,41 +56,25 @@ export class InquiriesController {
 
   /** Post a reply or vendor share card (sender or vendor). */
   @Post(':id/messages')
-  postMessage(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: PostInquiryMessageDto,
-  ) {
+  postMessage(@Request() req: any, @Param('id') id: string, @Body() dto: PostInquiryMessageDto) {
     return this.inquiriesService.postMessage(req.userId, id, dto)
   }
 
   /** Host accepts a vendor quote. Not a booking. */
   @Post(':id/accept-quote')
-  acceptQuote(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: BookQuoteDto,
-  ) {
+  acceptQuote(@Request() req: any, @Param('id') id: string, @Body() dto: BookQuoteDto) {
     return this.inquiriesService.acceptQuote(req.userId, id, dto.messageId)
   }
 
   /** Host rejects a vendor quote. Does not close the inquiry. */
   @Post(':id/reject-quote')
-  rejectQuote(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: BookQuoteDto,
-  ) {
+  rejectQuote(@Request() req: any, @Param('id') id: string, @Body() dto: BookQuoteDto) {
     return this.inquiriesService.rejectQuote(req.userId, id, dto.messageId)
   }
 
   /** Host confirms they booked the person outside Djanora. */
   @Post(':id/book')
-  bookQuote(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: BookQuoteDto,
-  ) {
+  bookQuote(@Request() req: any, @Param('id') id: string, @Body() dto: BookQuoteDto) {
     return this.inquiriesService.bookQuote(req.userId, id, dto.messageId)
   }
 

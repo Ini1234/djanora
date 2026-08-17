@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '@/lib/contact'
 
 const footerLinks = {
   Platform: [
@@ -12,7 +13,7 @@ const footerLinks = {
   ],
   Company: [
     { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
+    { href: CONTACT_MAILTO, label: 'Contact' },
     { href: '/blog', label: 'Blog' },
   ],
   Legal: [
@@ -24,21 +25,21 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="bg-brand-900 text-brand-200" aria-label="Site footer">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mb-12 grid grid-cols-2 gap-8 md:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="flex items-center gap-2 font-display text-xl font-semibold text-white mb-4"
+              className="font-display mb-4 flex items-center gap-2 text-xl font-semibold text-white"
               aria-label="Djanora — home"
             >
-              <span className="w-8 h-8 rounded-full bg-gold-600 flex items-center justify-center text-brand-900 text-sm font-bold">
+              <span className="bg-gold-600 text-brand-900 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
                 D
               </span>
               <span>Djanora</span>
             </Link>
-            <p className="text-sm text-brand-300 leading-relaxed">
+            <p className="text-brand-300 text-sm leading-relaxed">
               Plan your event with confidence.
             </p>
           </div>
@@ -46,18 +47,27 @@ export function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-4">
+              <h3 className="text-brand-400 mb-4 text-xs font-semibold tracking-widest uppercase">
                 {category}
               </h3>
               <ul className="flex flex-col gap-2" role="list">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-brand-300 hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.href.startsWith('mailto:') ? (
+                      <a
+                        href={link.href}
+                        className="text-brand-300 text-sm transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-brand-300 text-sm transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -65,11 +75,19 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="pt-8 border-t border-brand-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-brand-400">
+        <div className="border-brand-800 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
+          <p className="text-brand-400 text-xs">
             &copy; {new Date().getFullYear()} Djanora. Ottawa, Ontario, Canada.
           </p>
-          <p className="text-xs text-brand-500">Built for planners and vendors.</p>
+          <p className="text-brand-500 text-xs">
+            Questions?{' '}
+            <a
+              href={CONTACT_MAILTO}
+              className="hover:text-brand-300 underline-offset-2 hover:underline"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </p>
         </div>
       </div>
     </footer>

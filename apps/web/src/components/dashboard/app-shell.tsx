@@ -9,8 +9,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ user, children }: AppShellProps) {
-  const displayName =
-    [user.firstName, user.lastName].filter(Boolean).join(' ') || 'there'
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'there'
   const initials =
     [user.firstName?.[0], user.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?'
 
@@ -26,7 +25,7 @@ export function AppShell({ user, children }: AppShellProps) {
           activeMode={user.activeMode}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <MobileNav
             displayName={displayName}
             initials={initials}
@@ -38,7 +37,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
           <main
             id="main-content"
-            className="flex-1 overflow-y-auto relative"
+            className="relative flex-1 overflow-y-auto"
             style={{
               background: 'var(--page-bg)',
               scrollbarWidth: 'thin',

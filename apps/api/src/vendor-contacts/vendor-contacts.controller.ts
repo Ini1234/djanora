@@ -1,6 +1,14 @@
 import {
-  Controller, Get, Post, Patch, Delete,
-  Body, Param, Query, Request, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common'
 import { VendorContactsService } from './vendor-contacts.service'
 import { CreateVendorContactDto, UpdateVendorContactDto } from './dto/vendor-contact.dto'
@@ -22,11 +30,7 @@ export class VendorContactsController {
   }
 
   @Patch(':id')
-  update(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateVendorContactDto,
-  ) {
+  update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateVendorContactDto) {
     return this.service.update(req.userId, id, dto)
   }
 

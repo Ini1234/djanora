@@ -18,7 +18,7 @@ export class UsersController {
 
   @Get('me')
   getMe(@CurrentUser() user: ClerkPayload) {
-    return this.usersService.findByClerkId(user.sub)
+    return this.usersService.ensureFromClerk(user.sub)
   }
 
   @Patch('me')
@@ -32,10 +32,7 @@ export class UsersController {
   }
 
   @Patch('me/onboarding')
-  completeOnboarding(
-    @CurrentUser() user: ClerkPayload,
-    @Body() dto: CompleteOnboardingDto,
-  ) {
+  completeOnboarding(@CurrentUser() user: ClerkPayload, @Body() dto: CompleteOnboardingDto) {
     return this.usersService.completeOnboarding(user.sub, dto)
   }
 
@@ -45,10 +42,7 @@ export class UsersController {
   }
 
   @Post('me/checklists')
-  createChecklist(
-    @CurrentUser() user: ClerkPayload,
-    @Body() dto: CreateUserChecklistDto,
-  ) {
+  createChecklist(@CurrentUser() user: ClerkPayload, @Body() dto: CreateUserChecklistDto) {
     return this.usersService.createChecklist(user.sub, dto)
   }
 
@@ -62,10 +56,7 @@ export class UsersController {
   }
 
   @Delete('me/checklists/:id')
-  deleteChecklist(
-    @CurrentUser() user: ClerkPayload,
-    @Param('id') id: string,
-  ) {
+  deleteChecklist(@CurrentUser() user: ClerkPayload, @Param('id') id: string) {
     return this.usersService.deleteChecklist(user.sub, id)
   }
 }

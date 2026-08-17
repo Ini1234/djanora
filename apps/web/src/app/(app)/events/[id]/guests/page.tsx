@@ -27,19 +27,19 @@ export default async function GuestsPage({ params }: Props) {
   const guests = guestsResult ?? []
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Back */}
       <Link
         href={`/events/${id}`}
-        className="inline-flex items-center gap-1.5 text-brand-400 hover:text-white text-sm transition-colors mb-6"
+        className="text-brand-400 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors hover:text-white"
       >
         <ChevronLeft size={15} /> {event.title}
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="mb-1 flex items-center gap-2">
             <Users size={18} className="text-gold-400" />
             <h1 className="font-display text-2xl font-semibold text-white">Guest List</h1>
           </div>

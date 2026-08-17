@@ -1,10 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import {
-  EventMemberRole,
-  EventSurface,
-  type Event,
-  type User,
-} from '@prisma/client'
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { EventMemberRole, EventSurface, type Event, type User } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
 export const ALL_SURFACES: EventSurface[] = [
@@ -45,9 +45,9 @@ export function roleAllowsEdit(access: Pick<AccessPrincipal, 'isHost' | 'role'>)
 
 export function roleAllowsComment(access: Pick<AccessPrincipal, 'isHost' | 'role'>): boolean {
   return (
-    access.isHost
-    || access.role === EventMemberRole.EDITOR
-    || access.role === EventMemberRole.COMMENTER
+    access.isHost ||
+    access.role === EventMemberRole.EDITOR ||
+    access.role === EventMemberRole.COMMENTER
   )
 }
 
@@ -105,10 +105,7 @@ export class EventAccessService {
     return memberCanEdit(access, surface)
   }
 
-  canSeeChecklistRow(
-    access: EventAccess,
-    concealments?: { eventMemberId: string }[],
-  ) {
+  canSeeChecklistRow(access: EventAccess, concealments?: { eventMemberId: string }[]) {
     if (access.isHost || !access.memberId) return true
     return !(concealments ?? []).some((row) => row.eventMemberId === access.memberId)
   }
@@ -200,10 +197,7 @@ export class EventAccessService {
       where: {
         eventId,
         acceptedAt: { not: null },
-        OR: [
-          { userId: user.id },
-          { email: { equals: user.email, mode: 'insensitive' } },
-        ],
+        OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
       },
     })
     if (member) {
@@ -242,10 +236,7 @@ export class EventAccessService {
         where: {
           eventId: event.parentId,
           acceptedAt: { not: null },
-          OR: [
-            { userId: user.id },
-            { email: { equals: user.email, mode: 'insensitive' } },
-          ],
+          OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
         },
       })
       if (!parentMember) deny()
@@ -319,10 +310,12 @@ export class EventAccessService {
         select: { eventId: true },
       }),
     ])
-    return [...new Set([
-      ...hosted.map((e) => e.id),
-      ...memberOf.map((m) => m.eventId),
-      ...granted.map((g) => g.eventId),
-    ])]
+    return [
+      ...new Set([
+        ...hosted.map((e) => e.id),
+        ...memberOf.map((m) => m.eventId),
+        ...granted.map((g) => g.eventId),
+      ]),
+    ]
   }
 }

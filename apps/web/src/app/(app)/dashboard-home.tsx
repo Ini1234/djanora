@@ -107,11 +107,12 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
   const visibleDue = dueItems.slice(0, DUE_CAP)
   const overflow = dueItems.slice(DUE_CAP)
   const overflowEventTitles = [...new Set(overflow.map((row) => row.eventTitle))]
-  const overflowHref = overflow.length === 0
-    ? null
-    : overflow.every((row) => row.eventId === overflow[0].eventId)
-      ? `/events/${overflow[0].eventId}?tab=checklist`
-      : '/events'
+  const overflowHref =
+    overflow.length === 0
+      ? null
+      : overflow.every((row) => row.eventId === overflow[0].eventId)
+        ? `/events/${overflow[0].eventId}?tab=checklist`
+        : '/events'
 
   const unread = notifications.filter((n) => !n.isRead).slice(0, ACTIVITY_CAP)
   const next = nextEventCountdown(events)
@@ -145,10 +146,13 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+    <div className="mx-auto max-w-3xl space-y-10 px-4 py-10 sm:px-6">
       <header className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--color-foreground)' }}>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ color: 'var(--color-foreground)' }}
+          >
             {t.has('home') ? t('home') : 'Home'}
           </h1>
           {firstName && firstName !== 'there' && (
@@ -160,13 +164,16 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
         {next && (
           <Link
             href={`/events/${next.event.id}`}
-            className="shrink-0 text-right text-sm hover:opacity-80 transition-opacity"
+            className="shrink-0 text-right text-sm transition-opacity hover:opacity-80"
             style={{ color: 'var(--color-muted)' }}
           >
-            <span className="block text-[11px] uppercase tracking-wider">Next</span>
+            <span className="block text-[11px] tracking-wider uppercase">Next</span>
             <span className="font-medium" style={{ color: 'var(--color-foreground)' }}>
               {next.days === 0 ? 'Today' : next.days === 1 ? 'Tomorrow' : `${next.days}d`}
-              <span className="font-normal" style={{ color: 'var(--color-muted)' }}> · {next.event.title}</span>
+              <span className="font-normal" style={{ color: 'var(--color-muted)' }}>
+                {' '}
+                · {next.event.title}
+              </span>
             </span>
           </Link>
         )}
@@ -178,14 +185,14 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
         <div className="space-y-8">
           {upcoming.length > 0 && (
             <section>
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="mb-3 flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
                   Upcoming
                 </h2>
                 {events.length > 1 && (
                   <Link
                     href="/events"
-                    className="text-xs inline-flex items-center gap-0.5 hover:opacity-70"
+                    className="inline-flex items-center gap-0.5 text-xs hover:opacity-70"
                     style={{ color: 'var(--color-muted)' }}
                   >
                     All <ChevronRight size={12} />
@@ -206,25 +213,44 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
                     <li key={event.id}>
                       <Link
                         href={`/events/${event.id}`}
-                        className="group flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
+                        className="group flex items-center gap-3 py-3 transition-opacity hover:opacity-80"
                       >
-                        <Calendar size={15} className="shrink-0" style={{ color: 'var(--color-muted)' }} />
+                        <Calendar
+                          size={15}
+                          className="shrink-0"
+                          style={{ color: 'var(--color-muted)' }}
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+                          <p
+                            className="truncate text-sm font-medium"
+                            style={{ color: 'var(--color-foreground)' }}
+                          >
                             {event.title}
                           </p>
-                          <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                          <p
+                            className="mt-0.5 truncate text-xs"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
                             {[
                               EVENT_TYPE_LABELS[event.eventType] ?? event.eventType,
                               event.parent?.title ? `in ${event.parent.title}` : null,
                               dateLabel,
                               event.location,
-                            ].filter(Boolean).join(' · ')}
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </p>
                         </div>
                         {countdown != null && countdown >= 0 && (
-                          <span className="text-xs shrink-0" style={{ color: 'var(--color-muted)' }}>
-                            {countdown === 0 ? 'Today' : countdown === 1 ? 'Tomorrow' : `${countdown}d`}
+                          <span
+                            className="shrink-0 text-xs"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
+                            {countdown === 0
+                              ? 'Today'
+                              : countdown === 1
+                                ? 'Tomorrow'
+                                : `${countdown}d`}
                           </span>
                         )}
                       </Link>
@@ -236,14 +262,14 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
           )}
           {past.length > 0 && (
             <section>
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="mb-3 flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-muted)' }}>
                   Past
                 </h2>
                 {upcoming.length === 0 && events.length > 1 && (
                   <Link
                     href="/events"
-                    className="text-xs inline-flex items-center gap-0.5 hover:opacity-70"
+                    className="inline-flex items-center gap-0.5 text-xs hover:opacity-70"
                     style={{ color: 'var(--color-muted)' }}
                   >
                     All <ChevronRight size={12} />
@@ -263,23 +289,38 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
                     <li key={event.id}>
                       <Link
                         href={`/events/${event.id}`}
-                        className="group flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
+                        className="group flex items-center gap-3 py-3 transition-opacity hover:opacity-80"
                       >
-                        <Calendar size={15} className="shrink-0" style={{ color: 'var(--color-muted)' }} />
+                        <Calendar
+                          size={15}
+                          className="shrink-0"
+                          style={{ color: 'var(--color-muted)' }}
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--color-muted)' }}>
+                          <p
+                            className="truncate text-sm font-medium"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
                             {event.title}
                           </p>
-                          <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                          <p
+                            className="mt-0.5 truncate text-xs"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
                             {[
                               EVENT_TYPE_LABELS[event.eventType] ?? event.eventType,
                               event.parent?.title ? `in ${event.parent.title}` : null,
                               dateLabel,
                               event.location,
-                            ].filter(Boolean).join(' · ')}
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </p>
                         </div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide shrink-0" style={{ color: 'var(--color-muted)' }}>
+                        <span
+                          className="shrink-0 text-[10px] font-semibold tracking-wide uppercase"
+                          style={{ color: 'var(--color-muted)' }}
+                        >
                           Past
                         </span>
                       </Link>
@@ -293,10 +334,10 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
       )}
 
       {(visibleDue.length > 0 || unread.length > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           {visibleDue.length > 0 && (
             <section>
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="mb-3 flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
                   Due
                 </h2>
@@ -323,18 +364,27 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/events/${row.eventId}?tab=checklist&item=${row.item.id}`}
-                        className="text-sm font-medium hover:opacity-80 block truncate"
+                        className="block truncate text-sm font-medium hover:opacity-80"
                         style={{ color: 'var(--color-foreground)' }}
                       >
                         {row.item.title}
                       </Link>
-                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                      <p
+                        className="mt-0.5 truncate text-xs"
+                        style={{ color: 'var(--color-muted)' }}
+                      >
                         {row.eventTitle}
                       </p>
                     </div>
                     <span
-                      className="shrink-0 text-[11px] font-medium mt-0.5"
-                      style={{ color: row.overdue ? '#b91c1c' : row.dueLabel === 'Today' ? '#a87b10' : 'var(--color-muted)' }}
+                      className="mt-0.5 shrink-0 text-[11px] font-medium"
+                      style={{
+                        color: row.overdue
+                          ? '#b91c1c'
+                          : row.dueLabel === 'Today'
+                            ? '#a87b10'
+                            : 'var(--color-muted)',
+                      }}
                     >
                       {row.dueLabel}
                     </span>
@@ -358,7 +408,7 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
 
           {unread.length > 0 && (
             <section>
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="mb-3 flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
                   Activity
                 </h2>
@@ -372,18 +422,28 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
                     <button
                       type="button"
                       onClick={() => openNotification(n)}
-                      className="w-full text-left py-2 hover:opacity-80 transition-opacity"
+                      className="w-full py-2 text-left transition-opacity hover:opacity-80"
                     >
                       <div className="flex items-start gap-2.5">
-                        <Bell size={13} className="mt-0.5 shrink-0" style={{ color: 'var(--color-muted)' }} />
+                        <Bell
+                          size={13}
+                          className="mt-0.5 shrink-0"
+                          style={{ color: 'var(--color-muted)' }}
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+                          <p
+                            className="truncate text-sm font-medium"
+                            style={{ color: 'var(--color-foreground)' }}
+                          >
                             {n.title}
                           </p>
-                          <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-muted)' }}>
+                          <p
+                            className="mt-0.5 line-clamp-2 text-xs"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
                             {n.body}
                           </p>
-                          <p className="text-[10px] mt-1" style={{ color: 'var(--color-muted)' }}>
+                          <p className="mt-1 text-[10px]" style={{ color: 'var(--color-muted)' }}>
                             {timeAgo(n.createdAt)}
                           </p>
                         </div>

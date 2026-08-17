@@ -1,4 +1,13 @@
-import { IsIn, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength } from 'class-validator'
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class PostInquiryMessageDto {

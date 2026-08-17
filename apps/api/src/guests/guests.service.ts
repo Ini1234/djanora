@@ -19,7 +19,6 @@ import {
   BulkSendInviteDto,
   SubmitRsvpDto,
 } from './dto/guests.dto'
-import { RsvpStatus } from '@prisma/client'
 
 @Injectable()
 export class GuestsService {
@@ -71,12 +70,7 @@ export class GuestsService {
     return guest
   }
 
-  async updateGuest(
-    clerkId: string,
-    eventId: string,
-    guestId: string,
-    dto: UpdateGuestDto,
-  ) {
+  async updateGuest(clerkId: string, eventId: string, guestId: string, dto: UpdateGuestDto) {
     await this.assertEventAccess(clerkId, eventId, 'edit')
     const guest = await this.prisma.guest.findFirst({ where: { id: guestId, eventId } })
     if (!guest) throw new NotFoundException('Guest not found')
@@ -109,12 +103,7 @@ export class GuestsService {
 
   // ─── Invite sending ────────────────────────────────────────────────────────
 
-  async sendInvite(
-    clerkId: string,
-    eventId: string,
-    guestId: string,
-    dto: SendInviteDto,
-  ) {
+  async sendInvite(clerkId: string, eventId: string, guestId: string, dto: SendInviteDto) {
     const { event } = await this.assertEventAccess(clerkId, eventId, 'edit')
 
     const guest = await this.prisma.guest.findFirst({
@@ -126,10 +115,8 @@ export class GuestsService {
     const needsEmail = dto.via === 'email' || dto.via === 'both'
     const needsSms = dto.via === 'sms' || dto.via === 'both'
 
-    if (needsEmail && !guest.email)
-      throw new BadRequestException('Guest has no email address')
-    if (needsSms && !guest.phone)
-      throw new BadRequestException('Guest has no phone number')
+    if (needsEmail && !guest.email) throw new BadRequestException('Guest has no email address')
+    if (needsSms && !guest.phone) throw new BadRequestException('Guest has no phone number')
 
     // Upsert invite (resend is allowed)
     const expiresAt = new Date()
@@ -168,6 +155,7 @@ export class GuestsService {
     if (needsEmail && guest.email) {
       await this.delivery.sendEmail({
         to: guest.email,
+        kind: 'invitation',
         subject: `You're invited to ${event.title}! 🎉`,
         html: this.buildInviteEmail({
           guestName,
@@ -247,7 +235,7 @@ export class GuestsService {
     return this.prisma.guestInvite.update({
       where: { token },
       data: {
-        rsvpStatus: dto.status as RsvpStatus,
+        rsvpStatus: dto.status,
         rsvpAt: new Date(),
         plusOneName: dto.plusOneName ?? null,
         dietaryNote: dto.dietaryNote ?? null,

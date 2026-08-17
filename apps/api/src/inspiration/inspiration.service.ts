@@ -1,7 +1,19 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ForbiddenException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common'
-import { EventActivityAction, EventSurface, InspirationCategory, InspirationVisibility, NotificationType, Prisma, UserRole, VendorCategory } from '@prisma/client'
+import {
+  EventActivityAction,
+  EventSurface,
+  InspirationCategory,
+  InspirationVisibility,
+  NotificationType,
+  Prisma,
+  UserRole,
+  VendorCategory,
+} from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmbeddingService } from './embedding.service'
 import type { CreateInspirationDto } from './dto/create-inspiration.dto'
@@ -18,12 +30,12 @@ export type { CreateInspirationDto }
 
 const INSPIRATION_TO_VENDOR: Record<InspirationCategory, VendorCategory[]> = {
   PERFORMANCE: [VendorCategory.MC, VendorCategory.LIVE_BAND, VendorCategory.OTHER],
-  VENUE:       [VendorCategory.WEDDING_PLANNER, VendorCategory.OTHER],
-  DECOR:       [VendorCategory.DECORATOR],
-  MUSIC:       [VendorCategory.DJ, VendorCategory.LIVE_BAND, VendorCategory.MC],
-  FASHION:     [VendorCategory.FASHION_STYLIST, VendorCategory.MAKEUP_ARTIST],
-  FOOD:        [VendorCategory.CATERER],
-  OTHER:       [VendorCategory.OTHER],
+  VENUE: [VendorCategory.WEDDING_PLANNER, VendorCategory.OTHER],
+  DECOR: [VendorCategory.DECORATOR],
+  MUSIC: [VendorCategory.DJ, VendorCategory.LIVE_BAND, VendorCategory.MC],
+  FASHION: [VendorCategory.FASHION_STYLIST, VendorCategory.MAKEUP_ARTIST],
+  FOOD: [VendorCategory.CATERER],
+  OTHER: [VendorCategory.OTHER],
 }
 
 // ─── Select shape (no `satisfies` — avoids namespace import requirement) ──────
@@ -43,8 +55,12 @@ const ITEM_SELECT = {
   createdAt: true,
   vendorProfile: {
     select: {
-      id: true, slug: true, businessName: true,
-      isVerified: true, avatarUrl: true, city: true,
+      id: true,
+      slug: true,
+      businessName: true,
+      isVerified: true,
+      avatarUrl: true,
+      city: true,
     },
   },
   createdBy: {
@@ -62,7 +78,10 @@ export class InspirationService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  private feedWhere(category?: InspirationCategory, tag?: string): Prisma.InspirationItemWhereInput {
+  private feedWhere(
+    category?: InspirationCategory,
+    tag?: string,
+  ): Prisma.InspirationItemWhereInput {
     return {
       visibility: InspirationVisibility.INSPIRATION,
       ...(category ? { category } : {}),
@@ -111,14 +130,14 @@ export class InspirationService {
           ...mapPost(row),
           _score: EmbeddingService.cosineSimilarity(
             queryFloats,
-            EmbeddingService.deserialize(embedding as Uint8Array),
+            EmbeddingService.deserialize(embedding),
           ),
         }
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
       .sort((a, b) => b._score - a._score)
       .slice(0, limit)
-      .map(({ _score: _, ...rest }) => rest)
+      .map(({ _score, ...rest }) => rest)
 
     return attachLookStats(this.prisma, ranked)
   }
@@ -145,10 +164,10 @@ export class InspirationService {
     const terms = query.trim().split(/\s+/).filter(Boolean)
 
     const textOr = terms.flatMap((term) => [
-      { title:       { contains: term, mode: 'insensitive' as const } },
+      { title: { contains: term, mode: 'insensitive' as const } },
       { description: { contains: term, mode: 'insensitive' as const } },
-      { location:    { contains: term, mode: 'insensitive' as const } },
-      { tags:        { has: term } },
+      { location: { contains: term, mode: 'insensitive' as const } },
+      { tags: { has: term } },
     ])
 
     const rows = await this.prisma.inspirationItem.findMany({
@@ -217,7 +236,7 @@ export class InspirationService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
 
-    const text     = [dto.title, dto.description, ...(dto.tags ?? [])].join(' ')
+    const text = [dto.title, dto.description, ...(dto.tags ?? [])].join(' ')
     const embBytes = await this.embedding.embedDocument(text)
 
     return this.prisma.inspirationItem.create({
@@ -252,7 +271,10 @@ export class InspirationService {
     budgetItemId?: string,
     scheduleItemIds?: string[],
   ) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.MOODBOARD, action: 'edit' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.MOODBOARD,
+      action: 'edit',
+    })
     const user = access.user
 
     const item = await this.prisma.inspirationItem.findUnique({
@@ -303,12 +325,14 @@ export class InspirationService {
           notes,
           ...(checklistItemId !== undefined ? { checklistItemId } : {}),
           ...(budgetItemId !== undefined ? { budgetItemId } : {}),
-          ...(scheduleLinkCreate !== undefined ? {
-            scheduleLinks: {
-              deleteMany: {},
-              create: scheduleLinkCreate,
-            },
-          } : {}),
+          ...(scheduleLinkCreate !== undefined
+            ? {
+                scheduleLinks: {
+                  deleteMany: {},
+                  create: scheduleLinkCreate,
+                },
+              }
+            : {}),
         },
       })
     }
@@ -339,7 +363,10 @@ export class InspirationService {
   // ─── Mood board: unsave ───────────────────────────────────────────────────────
 
   async removeFromMoodBoard(clerkId: string, inspirationItemId: string, eventId: string) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.MOODBOARD, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.MOODBOARD,
+      action: 'edit',
+    })
 
     await this.prisma.moodBoardItem.deleteMany({
       where: { eventId, inspirationItemId },
@@ -411,7 +438,10 @@ export class InspirationService {
   // ─── Mood board: get for event ────────────────────────────────────────────────
 
   async getMoodBoard(clerkId: string, eventId: string) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.MOODBOARD, action: 'view' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.MOODBOARD,
+      action: 'view',
+    })
 
     const rows = await this.prisma.moodBoardItem.findMany({
       where: { eventId },
@@ -432,7 +462,10 @@ export class InspirationService {
 
   async getSavedIds(clerkId: string, eventId: string): Promise<string[]> {
     try {
-      await this.access.require(clerkId, eventId, { surface: EventSurface.MOODBOARD, action: 'view' })
+      await this.access.require(clerkId, eventId, {
+        surface: EventSurface.MOODBOARD,
+        action: 'view',
+      })
     } catch {
       return []
     }
@@ -452,7 +485,10 @@ export class InspirationService {
       select: { eventId: true },
     })
     if (!item) throw new NotFoundException('Event not found')
-    const access = await this.access.require(clerkId, item.eventId, { surface: EventSurface.CHECKLIST, action: 'view' })
+    const access = await this.access.require(clerkId, item.eventId, {
+      surface: EventSurface.CHECKLIST,
+      action: 'view',
+    })
     await this.access.assertCanSeeChecklistItem(access, checklistItemId)
     if (!this.access.canSee(access, EventSurface.MOODBOARD)) return []
 
@@ -471,7 +507,10 @@ export class InspirationService {
       select: { eventId: true },
     })
     if (!item) throw new NotFoundException('Event not found')
-    const access = await this.access.require(clerkId, item.eventId, { surface: EventSurface.BUDGET, action: 'view' })
+    const access = await this.access.require(clerkId, item.eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'view',
+    })
     if (!this.access.canSee(access, EventSurface.MOODBOARD)) return []
 
     return this.prisma.moodBoardItem.findMany({
@@ -503,7 +542,7 @@ export class InspirationService {
 
     let count = 0
     for (const item of items) {
-      const text  = [item.title, item.description, ...item.tags].join(' ')
+      const text = [item.title, item.description, ...item.tags].join(' ')
       const bytes = await this.embedding.embedDocument(text)
       if (bytes) {
         await this.prisma.inspirationItem.update({
@@ -551,8 +590,13 @@ export class InspirationService {
     const item = await this.prisma.inspirationItem.findUnique({
       where: { id: itemId },
       select: {
-        category: true, tags: true, title: true, description: true,
-        vendorProfileId: true, embedding: true, visibility: true,
+        category: true,
+        tags: true,
+        title: true,
+        description: true,
+        vendorProfileId: true,
+        embedding: true,
+        visibility: true,
       },
     })
     if (!item) throw new NotFoundException('Inspiration item not found')
@@ -561,11 +605,20 @@ export class InspirationService {
     }
 
     const VENDOR_SELECT = {
-      id: true, slug: true, businessName: true,
-      category: true, categories: true,
-      bio: true, avatarUrl: true, city: true,
-      isVerified: true, averageRating: true, totalReviews: true,
-      estimatedPriceFrom: true, estimatedPriceTo: true, currency: true,
+      id: true,
+      slug: true,
+      businessName: true,
+      category: true,
+      categories: true,
+      bio: true,
+      avatarUrl: true,
+      city: true,
+      isVerified: true,
+      averageRating: true,
+      totalReviews: true,
+      estimatedPriceFrom: true,
+      estimatedPriceTo: true,
+      currency: true,
     }
 
     // ── Case 1: vendor-created → return that vendor directly ──────────────
@@ -579,7 +632,7 @@ export class InspirationService {
 
     // ── Case 2: semantic vector search (when embeddings available) ────────
     if (this.embedding.isConfigured && item.embedding) {
-      const itemFloats = EmbeddingService.deserialize(item.embedding as Uint8Array)
+      const itemFloats = EmbeddingService.deserialize(item.embedding)
 
       const vendors = await this.prisma.vendorProfile.findMany({
         where: { isActive: true, embedding: { not: null } },
@@ -614,7 +667,7 @@ export class InspirationService {
       where: {
         isActive: true,
         OR: [
-          { category:   { in: affinityCategories } },
+          { category: { in: affinityCategories } },
           { categories: { hasSome: affinityCategories } },
         ],
       },
@@ -625,7 +678,8 @@ export class InspirationService {
     return candidates
       .map((v) => {
         const haystack = [v.businessName, v.bio ?? '', v.category, ...v.categories]
-          .join(' ').toLowerCase()
+          .join(' ')
+          .toLowerCase()
         const hits = itemKeywords.filter((kw) => haystack.includes(kw)).length
         return {
           ...v,
@@ -637,11 +691,13 @@ export class InspirationService {
       .slice(0, limit)
   }
 
-  private projectMoodBoardRow<T extends {
-    checklistItem: { id: string; title: string } | null
-    budgetItem: { id: string; label: string | null; category: string } | null
-    scheduleLinks: { scheduleItem: { id: string; title: string } }[]
-  }>(row: T, surfaces: EventSurface[], access?: EventAccess) {
+  private projectMoodBoardRow<
+    T extends {
+      checklistItem: { id: string; title: string } | null
+      budgetItem: { id: string; label: string | null; category: string } | null
+      scheduleLinks: { scheduleItem: { id: string; title: string } }[]
+    },
+  >(row: T, surfaces: EventSurface[], access?: EventAccess) {
     const { scheduleLinks, ...rest } = row
     const isHost = access?.isHost ?? surfaces.length === ALL_SURFACES.length
     const can = (s: EventSurface) => isHost || surfaces.includes(s)
@@ -655,9 +711,11 @@ export class InspirationService {
     }
   }
 
-  private toMoodBoardDto<T extends {
-    scheduleLinks: { scheduleItem: { id: string; title: string } }[]
-  }>(row: T) {
+  private toMoodBoardDto<
+    T extends {
+      scheduleLinks: { scheduleItem: { id: string; title: string } }[]
+    },
+  >(row: T) {
     const { scheduleLinks, ...rest } = row
     return {
       ...rest,
@@ -747,7 +805,8 @@ export class InspirationService {
     if (!comment) throw new NotFoundException('Comment not found')
 
     const isAuthor = comment.authorId === user.id
-    const isVendor = !!user.vendorProfile && comment.inspirationItem.vendorProfileId === user.vendorProfile.id
+    const isVendor =
+      !!user.vendorProfile && comment.inspirationItem.vendorProfileId === user.vendorProfile.id
     if (!isAuthor && !isVendor) throw new ForbiddenException('You cannot delete this comment')
 
     await this.prisma.inspirationComment.delete({ where: { id: commentId } })
@@ -812,7 +871,10 @@ export class InspirationService {
       include: { inspirationItem: { include: POST_INCLUDE } },
     })
 
-    return attachLookStats(this.prisma, rows.map((row) => mapPost(row.inspirationItem)))
+    return attachLookStats(
+      this.prisma,
+      rows.map((row) => mapPost(row.inspirationItem)),
+    )
   }
 
   async getLikedIds(clerkId: string) {

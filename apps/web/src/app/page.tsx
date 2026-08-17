@@ -15,10 +15,7 @@ export default async function RootPage() {
 
   return (
     <AppShell user={user}>
-      <DashboardHome
-        firstName={user.firstName ?? 'there'}
-        events={events}
-      />
+      <DashboardHome firstName={user.firstName ?? 'there'} events={events} />
     </AppShell>
   )
 }

@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import {
-  CalendarDays, Check, CheckCircle, DollarSign, ExternalLink, Link2,
-  Pencil, Send, Undo2, X, XCircle,
+  CalendarDays,
+  Check,
+  CheckCircle,
+  DollarSign,
+  ExternalLink,
+  Link2,
+  Pencil,
+  Send,
+  Undo2,
+  X,
+  XCircle,
 } from 'lucide-react'
 import { useSse } from '@/contexts/sse-context'
 import { proxyClient } from '@/lib/proxy-client'
@@ -14,7 +23,7 @@ import {
 
 export type MessageKind = 'TEXT' | 'QUOTE' | 'LINK' | 'INSPIRATION'
 export type InquiryThreadStatus =
-  | 'PENDING' | 'VIEWED' | 'QUOTED' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'BOOKED'
+  'PENDING' | 'VIEWED' | 'QUOTED' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'BOOKED'
 
 export interface QuotePayload {
   amount: number
@@ -72,17 +81,26 @@ interface Props {
 const DISCLAIMER = 'Not a contract. You and the other party agree on details outside Djanora.'
 
 function Avatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
-  const initials = name.split(' ').filter(Boolean).map((w) => w[0]).join('').toUpperCase().slice(0, 2) || '?'
+  const initials =
+    name
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?'
   return (
     <div
-      className="w-6 h-6 rounded-full shrink-0 overflow-hidden flex items-center justify-center ring-1 ring-black/8 dark:ring-white/10"
+      className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-black/8 dark:ring-white/10"
       style={{ background: 'var(--card-bg)', minWidth: 24, minHeight: 24 }}
     >
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+        <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
       ) : (
-        <span className="text-[9px] font-bold" style={{ color: 'var(--color-foreground)' }}>{initials}</span>
+        <span className="text-[9px] font-bold" style={{ color: 'var(--color-foreground)' }}>
+          {initials}
+        </span>
       )}
     </div>
   )
@@ -90,14 +108,17 @@ function Avatar({ name, avatarUrl }: { name: string; avatarUrl: string | null })
 
 function formatLocalTime(iso: string) {
   return new Date(iso).toLocaleString('en-CA', {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
 function Disclaimer({ compact }: { compact?: boolean }) {
   return (
     <p
-      className={compact ? 'text-[10px] leading-snug mt-1.5' : 'text-[10px] leading-snug'}
+      className={compact ? 'mt-1.5 text-[10px] leading-snug' : 'text-[10px] leading-snug'}
       style={{ color: 'var(--color-muted)' }}
     >
       {DISCLAIMER}
@@ -106,7 +127,12 @@ function Disclaimer({ compact }: { compact?: boolean }) {
 }
 
 function MessageMeta({
-  isMine, senderName, createdAt, isOriginal, editedAt, unsentAt,
+  isMine,
+  senderName,
+  createdAt,
+  isOriginal,
+  editedAt,
+  unsentAt,
 }: {
   isMine: boolean
   senderName: string
@@ -116,7 +142,7 @@ function MessageMeta({
   unsentAt?: string | null
 }) {
   return (
-    <span className="text-[10px] px-1" style={{ color: 'var(--color-muted)' }}>
+    <span className="px-1 text-[10px]" style={{ color: 'var(--color-muted)' }}>
       {isMine ? 'You' : senderName} · {formatLocalTime(createdAt)}
       {isOriginal && <span className="ml-1 opacity-60">(original message)</span>}
       {!unsentAt && editedAt && <span className="ml-1 opacity-60">(edited)</span>}
@@ -158,7 +184,7 @@ function MessageBubble({
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
       <Avatar name={isMine ? 'You' : senderName} avatarUrl={isMine ? null : avatarUrl} />
-      <div className={`max-w-[80%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+      <div className={`flex max-w-[80%] flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
         <MessageMeta
           isMine={isMine}
           senderName={senderName}
@@ -168,25 +194,29 @@ function MessageBubble({
           unsentAt={unsentAt}
         />
         <div
-          className="px-3 py-2 rounded-2xl text-sm leading-relaxed"
-          style={unsentAt ? {
-            background: 'transparent',
-            color: 'var(--color-muted)',
-            border: '1px dashed var(--color-border)',
-            fontStyle: 'italic',
-          } : isMine ? {
-            background: '#c9973a',
-            color: '#fff',
-            borderBottomRightRadius: 4,
-          } : {
-            background: 'var(--card-bg-hover)',
-            color: 'var(--color-foreground)',
-            borderBottomLeftRadius: 4,
-          }}
+          className="rounded-2xl px-3 py-2 text-sm leading-relaxed"
+          style={
+            unsentAt
+              ? {
+                  background: 'transparent',
+                  color: 'var(--color-muted)',
+                  border: '1px dashed var(--color-border)',
+                  fontStyle: 'italic',
+                }
+              : isMine
+                ? {
+                    background: '#c9973a',
+                    color: '#fff',
+                    borderBottomRightRadius: 4,
+                  }
+                : {
+                    background: 'var(--card-bg-hover)',
+                    color: 'var(--color-foreground)',
+                    borderBottomLeftRadius: 4,
+                  }
+          }
         >
-          {unsentAt
-            ? (isMine ? 'You unsent this message' : 'This message was unsent')
-            : text}
+          {unsentAt ? (isMine ? 'You unsent this message' : 'This message was unsent') : text}
         </div>
         {isMine && !unsentAt && (
           <div className="flex items-center gap-2 px-1">
@@ -199,7 +229,7 @@ function MessageBubble({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex items-center gap-1 text-[10px] hover:opacity-80 transition-opacity"
+                className="inline-flex items-center gap-1 text-[10px] transition-opacity hover:opacity-80"
                 style={{ color: 'var(--color-muted)' }}
               >
                 <Pencil size={10} />
@@ -211,12 +241,14 @@ function MessageBubble({
                 type="button"
                 onClick={onUnsend}
                 disabled={unsending}
-                className="inline-flex items-center gap-1 text-[10px] hover:opacity-80 transition-opacity disabled:opacity-40"
+                className="inline-flex items-center gap-1 text-[10px] transition-opacity hover:opacity-80 disabled:opacity-40"
                 style={{ color: 'var(--color-muted)' }}
               >
-                {unsending
-                  ? <span className="w-2.5 h-2.5 border border-current/30 border-t-current rounded-full animate-spin" />
-                  : <Undo2 size={10} />}
+                {unsending ? (
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border border-current/30 border-t-current" />
+                ) : (
+                  <Undo2 size={10} />
+                )}
                 Unsend
               </button>
             )}
@@ -264,10 +296,12 @@ function QuoteCard({
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
       <Avatar name={isMine ? 'You' : senderName} avatarUrl={isMine ? null : avatarUrl} />
-      <div className={`max-w-[80%] w-full flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`flex w-full max-w-[80%] flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}
+      >
         <MessageMeta isMine={isMine} senderName={senderName} createdAt={createdAt} />
         <div
-          className="w-full px-3 py-2.5 rounded-2xl border text-sm"
+          className="w-full rounded-2xl border px-3 py-2.5 text-sm"
           style={{
             background: 'var(--card-bg)',
             borderColor: payload.booked
@@ -284,26 +318,32 @@ function QuoteCard({
           }}
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium" style={{ color: '#8b6200' }}>
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium"
+              style={{ color: '#8b6200' }}
+            >
               <DollarSign size={12} />
               Quote
             </span>
             {payload.booked ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                 style={{ background: 'rgba(22,163,74,0.12)', color: '#15803d' }}
               >
                 <CheckCircle size={10} />
                 Booked
               </span>
             ) : payload.rejected ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                 style={{ background: 'rgba(220,38,38,0.10)', color: '#b91c1c' }}
               >
                 <XCircle size={10} />
                 Rejected
               </span>
             ) : payload.accepted ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                 style={{ background: 'rgba(201,151,58,0.16)', color: '#8b6200' }}
               >
                 <CheckCircle size={10} />
@@ -311,11 +351,16 @@ function QuoteCard({
               </span>
             ) : null}
           </div>
-          <p className="mt-1 font-display text-lg font-semibold">
-            ${amount} <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>{payload.currency}</span>
+          <p className="font-display mt-1 text-lg font-semibold">
+            ${amount}{' '}
+            <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
+              {payload.currency}
+            </span>
           </p>
           {payload.note && (
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>{payload.note}</p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
+              {payload.note}
+            </p>
           )}
           <Disclaimer compact />
           {canRespond && !locked && (
@@ -325,11 +370,13 @@ function QuoteCard({
                   type="button"
                   onClick={onAccept}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40 transition-colors"
+                  className="bg-gold-600 hover:bg-gold-700 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
                 >
-                  {accepting
-                    ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <CheckCircle size={12} />}
+                  {accepting ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <CheckCircle size={12} />
+                  )}
                   Accept quote
                 </button>
               )}
@@ -337,12 +384,14 @@ function QuoteCard({
                 type="button"
                 onClick={onReject}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border hover:opacity-80 disabled:opacity-40 transition-opacity"
+                className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
               >
-                {rejecting
-                  ? <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  : <XCircle size={12} />}
+                {rejecting ? (
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+                ) : (
+                  <XCircle size={12} />
+                )}
                 Reject quote
               </button>
             </div>
@@ -360,12 +409,14 @@ function QuoteCard({
                 type="button"
                 onClick={onUnsend}
                 disabled={unsending}
-                className="inline-flex items-center gap-1 text-[10px] hover:opacity-80 transition-opacity disabled:opacity-40"
+                className="inline-flex items-center gap-1 text-[10px] transition-opacity hover:opacity-80 disabled:opacity-40"
                 style={{ color: 'var(--color-muted)' }}
               >
-                {unsending
-                  ? <span className="w-2.5 h-2.5 border border-current/30 border-t-current rounded-full animate-spin" />
-                  : <Undo2 size={10} />}
+                {unsending ? (
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border border-current/30 border-t-current" />
+                ) : (
+                  <Undo2 size={10} />
+                )}
                 Unsend
               </button>
             )}
@@ -402,10 +453,12 @@ function LinkCard({
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
       <Avatar name={isMine ? 'You' : senderName} avatarUrl={isMine ? null : avatarUrl} />
-      <div className={`max-w-[80%] w-full flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`flex w-full max-w-[80%] flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}
+      >
         <MessageMeta isMine={isMine} senderName={senderName} createdAt={createdAt} />
         <div
-          className="w-full px-3 py-2.5 rounded-2xl border text-sm"
+          className="w-full rounded-2xl border px-3 py-2.5 text-sm"
           style={{
             background: 'var(--card-bg)',
             borderColor: 'var(--color-border)',
@@ -414,7 +467,10 @@ function LinkCard({
             borderBottomLeftRadius: isMine ? undefined : 4,
           }}
         >
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium" style={{ color: '#8b6200' }}>
+          <span
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium"
+            style={{ color: '#8b6200' }}
+          >
             {isCalendar ? <CalendarDays size={12} /> : <Link2 size={12} />}
             {isCalendar ? 'Calendar' : 'Booking link'}
           </span>
@@ -422,7 +478,7 @@ function LinkCard({
             href={payload.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-gold-700 dark:text-gold-400 hover:underline break-all"
+            className="text-gold-700 dark:text-gold-400 mt-1.5 flex items-center gap-1.5 text-sm font-medium break-all hover:underline"
           >
             {title}
             <ExternalLink size={12} className="shrink-0" />
@@ -441,12 +497,14 @@ function LinkCard({
                 type="button"
                 onClick={onUnsend}
                 disabled={unsending}
-                className="inline-flex items-center gap-1 text-[10px] hover:opacity-80 transition-opacity disabled:opacity-40"
+                className="inline-flex items-center gap-1 text-[10px] transition-opacity hover:opacity-80 disabled:opacity-40"
                 style={{ color: 'var(--color-muted)' }}
               >
-                {unsending
-                  ? <span className="w-2.5 h-2.5 border border-current/30 border-t-current rounded-full animate-spin" />
-                  : <Undo2 size={10} />}
+                {unsending ? (
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border border-current/30 border-t-current" />
+                ) : (
+                  <Undo2 size={10} />
+                )}
                 Unsend
               </button>
             )}
@@ -491,12 +549,14 @@ function InspirationLookCard({
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
       <Avatar name={isMine ? 'You' : senderName} avatarUrl={isMine ? null : avatarUrl} />
-      <div className={`max-w-[80%] w-full flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`flex w-full max-w-[80%] flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}
+      >
         <MessageMeta isMine={isMine} senderName={senderName} createdAt={createdAt} />
         <button
           type="button"
           onClick={onOpen}
-          className="w-full rounded-2xl border overflow-hidden text-sm text-left transition-opacity hover:opacity-90"
+          className="w-full overflow-hidden rounded-2xl border text-left text-sm transition-opacity hover:opacity-90"
           style={{
             background: 'var(--card-bg)',
             borderColor: 'var(--color-border)',
@@ -507,14 +567,19 @@ function InspirationLookCard({
         >
           {payload.coverUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={payload.coverUrl} alt={payload.title} className="w-full h-28 object-cover" />
+            <img src={payload.coverUrl} alt={payload.title} className="h-28 w-full object-cover" />
           )}
-          <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 px-3 py-2.5">
             <div className="min-w-0">
-              <span className="text-[11px] font-medium" style={{ color: '#8b6200' }}>Asked about this look</span>
-              <p className="mt-0.5 font-medium truncate">{payload.title}</p>
+              <span className="text-[11px] font-medium" style={{ color: '#8b6200' }}>
+                Asked about this look
+              </span>
+              <p className="mt-0.5 truncate font-medium">{payload.title}</p>
             </div>
-            <span className="shrink-0 text-[11px] font-medium" style={{ color: 'var(--color-brand-primary)' }}>
+            <span
+              className="shrink-0 text-[11px] font-medium"
+              style={{ color: 'var(--color-brand-primary)' }}
+            >
               View
             </span>
           </div>
@@ -575,9 +640,11 @@ export function InquiryThread({
 
       if (!data.readAt || data.messageIds.length === 0) return
 
-      setMessages((prev) => prev.map((msg) => (
-        data.messageIds.includes(msg.id) ? { ...msg, readAt: data.readAt } : msg
-      )))
+      setMessages((prev) =>
+        prev.map((msg) =>
+          data.messageIds.includes(msg.id) ? { ...msg, readAt: data.readAt } : msg,
+        ),
+      )
     } catch {
       // Read receipts should never block reading/replying.
     }
@@ -588,7 +655,8 @@ export function InquiryThread({
     queueMicrotask(() => {
       if (cancelled) return
       setLoading(true)
-      proxyClient.get(`/inquiries/${inquiryId}/messages`)
+      proxyClient
+        .get(`/inquiries/${inquiryId}/messages`)
         .then(({ data }) => {
           if (!cancelled) {
             setMessages(Array.isArray(data) ? data : [])
@@ -602,7 +670,9 @@ export function InquiryThread({
           if (!cancelled) setLoading(false)
         })
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [inquiryId, markMessagesRead])
 
   useEffect(() => {
@@ -616,19 +686,23 @@ export function InquiryThread({
       }
 
       if (event.type === 'message_updated' && event.inquiryId === inquiryId && event.message) {
-        setMessages((prev) => prev.map((msg) => (
-          msg.id === event.message!.id
-            ? { ...(event.message as ThreadMessage), isCurrentUser: msg.isCurrentUser }
-            : msg
-        )))
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === event.message!.id
+              ? { ...(event.message as ThreadMessage), isCurrentUser: msg.isCurrentUser }
+              : msg,
+          ),
+        )
       }
 
       if (event.type === 'message_unsent' && event.inquiryId === inquiryId && event.unsent) {
-        setMessages((prev) => prev.map((msg) => (
-          msg.id === event.unsent!.messageId
-            ? { ...msg, message: '', unsentAt: event.unsent!.unsentAt }
-            : msg
-        )))
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === event.unsent!.messageId
+              ? { ...msg, message: '', unsentAt: event.unsent!.unsentAt }
+              : msg,
+          ),
+        )
         if (editingId === event.unsent.messageId) {
           setEditingId(null)
           setEditingDraft('')
@@ -637,9 +711,9 @@ export function InquiryThread({
 
       if (event.type === 'messages_read' && event.inquiryId === inquiryId && event.read) {
         const ids = new Set(event.read.messageIds)
-        setMessages((prev) => prev.map((msg) => (
-          ids.has(msg.id) ? { ...msg, readAt: event.read!.readAt } : msg
-        )))
+        setMessages((prev) =>
+          prev.map((msg) => (ids.has(msg.id) ? { ...msg, readAt: event.read!.readAt } : msg)),
+        )
       }
 
       if (event.type === 'inquiry_status' && event.inquiryId === inquiryId && event.status) {
@@ -680,12 +754,15 @@ export function InquiryThread({
       }
       startTransition(async () => {
         try {
-          const { data: msg } = await proxyClient.post<ThreadMessage>(`/inquiries/${inquiryId}/messages`, {
-            kind: 'QUOTE',
-            amount,
-            currency: quoteCurrency,
-            note: quoteNote.trim() || undefined,
-          })
+          const { data: msg } = await proxyClient.post<ThreadMessage>(
+            `/inquiries/${inquiryId}/messages`,
+            {
+              kind: 'QUOTE',
+              amount,
+              currency: quoteCurrency,
+              note: quoteNote.trim() || undefined,
+            },
+          )
           setMessages((prev) => [...prev, msg])
           resetShare()
           if (inquiryStatus !== 'BOOKED') onStatusChange?.('QUOTED')
@@ -704,12 +781,15 @@ export function InquiryThread({
       }
       startTransition(async () => {
         try {
-          const { data: msg } = await proxyClient.post<ThreadMessage>(`/inquiries/${inquiryId}/messages`, {
-            kind: 'LINK',
-            url,
-            label: linkLabel.trim() || undefined,
-            linkKind: shareMode,
-          })
+          const { data: msg } = await proxyClient.post<ThreadMessage>(
+            `/inquiries/${inquiryId}/messages`,
+            {
+              kind: 'LINK',
+              url,
+              label: linkLabel.trim() || undefined,
+              linkKind: shareMode,
+            },
+          )
           setMessages((prev) => [...prev, msg])
           resetShare()
         } catch {
@@ -723,7 +803,10 @@ export function InquiryThread({
     if (!text) return
     startTransition(async () => {
       try {
-        const { data: msg } = await proxyClient.post<ThreadMessage>(`/inquiries/${inquiryId}/messages`, { message: text })
+        const { data: msg } = await proxyClient.post<ThreadMessage>(
+          `/inquiries/${inquiryId}/messages`,
+          { message: text },
+        )
         setMessages((prev) => [...prev, msg])
         setDraft('')
       } catch {
@@ -769,11 +852,11 @@ export function InquiryThread({
       const { data } = await proxyClient.delete<{ id: string; unsentAt: string }>(
         `/inquiries/${inquiryId}/messages/${messageId}`,
       )
-      setMessages((prev) => prev.map((item) => (
-        item.id === messageId
-          ? { ...item, message: '', unsentAt: data.unsentAt }
-          : item
-      )))
+      setMessages((prev) =>
+        prev.map((item) =>
+          item.id === messageId ? { ...item, message: '', unsentAt: data.unsentAt } : item,
+        ),
+      )
       if (editingId === messageId) {
         setEditingId(null)
         setEditingDraft('')
@@ -790,19 +873,23 @@ export function InquiryThread({
     setError(null)
     try {
       await proxyClient.post(`/inquiries/${inquiryId}/accept-quote`, { messageId })
-      setMessages((prev) => prev.map((item) => {
-        if (item.kind !== 'QUOTE') return item
-        const payload = item.payload as QuotePayload
-        if (item.id === messageId) {
-          return { ...item, payload: { ...payload, accepted: true, rejected: false } }
-        }
-        if (payload.accepted) {
-          return { ...item, payload: { ...payload, accepted: false } }
-        }
-        return item
-      }))
+      setMessages((prev) =>
+        prev.map((item) => {
+          if (item.kind !== 'QUOTE') return item
+          const payload = item.payload as QuotePayload
+          if (item.id === messageId) {
+            return { ...item, payload: { ...payload, accepted: true, rejected: false } }
+          }
+          if (payload.accepted) {
+            return { ...item, payload: { ...payload, accepted: false } }
+          }
+          return item
+        }),
+      )
     } catch {
-      setError('Could not accept this quote. Quotes are not a contract — confirm details with the vendor directly.')
+      setError(
+        'Could not accept this quote. Quotes are not a contract — confirm details with the vendor directly.',
+      )
     } finally {
       setAcceptingId(null)
     }
@@ -813,13 +900,15 @@ export function InquiryThread({
     setError(null)
     try {
       await proxyClient.post(`/inquiries/${inquiryId}/reject-quote`, { messageId })
-      setMessages((prev) => prev.map((item) => {
-        if (item.id !== messageId || item.kind !== 'QUOTE') return item
-        return {
-          ...item,
-          payload: { ...(item.payload as QuotePayload), rejected: true, accepted: false },
-        }
-      }))
+      setMessages((prev) =>
+        prev.map((item) => {
+          if (item.id !== messageId || item.kind !== 'QUOTE') return item
+          return {
+            ...item,
+            payload: { ...(item.payload as QuotePayload), rejected: true, accepted: false },
+          }
+        }),
+      )
     } catch {
       setError('Could not reject this quote.')
     } finally {
@@ -841,26 +930,31 @@ export function InquiryThread({
     setError(null)
     try {
       await proxyClient.post(`/inquiries/${inquiryId}/book`, { messageId: accepted.id })
-      setMessages((prev) => prev.map((item) => {
-        if (item.id !== accepted.id || item.kind !== 'QUOTE') return item
-        return {
-          ...item,
-          payload: { ...(item.payload as QuotePayload), booked: true },
-        }
-      }))
+      setMessages((prev) =>
+        prev.map((item) => {
+          if (item.id !== accepted.id || item.kind !== 'QUOTE') return item
+          return {
+            ...item,
+            payload: { ...(item.payload as QuotePayload), booked: true },
+          }
+        }),
+      )
       onStatusChange?.('BOOKED')
     } catch {
-      setError('Could not update booking. This is not a contract — confirm details with the vendor directly.')
+      setError(
+        'Could not update booking. This is not a contract — confirm details with the vendor directly.',
+      )
     } finally {
       setBookingId(null)
     }
   }
 
-  const canSend = shareMode === 'text'
-    ? !!draft.trim()
-    : shareMode === 'quote'
-      ? Number(quoteAmount) >= 1
-      : !!linkUrl.trim()
+  const canSend =
+    shareMode === 'text'
+      ? !!draft.trim()
+      : shareMode === 'quote'
+        ? Number(quoteAmount) >= 1
+        : !!linkUrl.trim()
 
   const acceptedQuote = messages.find((item) => {
     if (item.kind !== 'QUOTE' || item.unsentAt) return false
@@ -870,149 +964,276 @@ export function InquiryThread({
 
   return (
     <>
-    <div className="border-t flex flex-col flex-1 overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-      {inquiryStatus === 'BOOKED' && (
-        <div
-          className="px-4 py-2 text-[11px] leading-snug border-b shrink-0"
-          style={{ borderColor: 'var(--color-border)', background: 'rgba(22,163,74,0.06)', color: 'var(--color-muted)' }}
-        >
-          {isHost
-            ? 'You marked this person as booked in Djanora.'
-            : 'The host marked you as booked in Djanora.'}{' '}
-          {DISCLAIMER}
-        </div>
-      )}
-
-      {isHost && !closed && inquiryStatus !== 'BOOKED' && acceptedQuote && (
-        <div
-          className="px-4 py-2.5 border-b shrink-0 flex items-center gap-3"
-          style={{ borderColor: 'var(--color-border)', background: 'rgba(201,151,58,0.06)' }}
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium" style={{ color: 'var(--color-foreground)' }}>
-              Did you book this person?
-            </p>
-            <p className="text-[10px] leading-snug mt-0.5" style={{ color: 'var(--color-muted)' }}>
-              {DISCLAIMER}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={confirmBooked}
-            disabled={!!bookingId}
-            className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40 transition-colors"
-          >
-            {bookingId
-              ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <CheckCircle size={12} />}
-            Yes, we booked
-          </button>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {originLook && (
-          <button
-            type="button"
-            onClick={() => {
-              setLookSaved(false)
-              setOpenLook(lookStub(originLook.id, originLook.title, originLook.coverUrl))
+      <div
+        className="flex flex-1 flex-col overflow-hidden border-t"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        {inquiryStatus === 'BOOKED' && (
+          <div
+            className="shrink-0 border-b px-4 py-2 text-[11px] leading-snug"
+            style={{
+              borderColor: 'var(--color-border)',
+              background: 'rgba(22,163,74,0.06)',
+              color: 'var(--color-muted)',
             }}
-            className="w-full flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-opacity hover:opacity-90"
-            style={{ background: 'var(--card-bg)', borderColor: 'var(--color-border)' }}
           >
-            {originLook.coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={originLook.coverUrl} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />
-            ) : (
-              <div className="w-11 h-11 rounded-lg shrink-0" style={{ background: 'var(--input-bg)' }} />
-            )}
+            {isHost
+              ? 'You marked this person as booked in Djanora.'
+              : 'The host marked you as booked in Djanora.'}{' '}
+            {DISCLAIMER}
+          </div>
+        )}
+
+        {isHost && !closed && inquiryStatus !== 'BOOKED' && acceptedQuote && (
+          <div
+            className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5"
+            style={{ borderColor: 'var(--color-border)', background: 'rgba(201,151,58,0.06)' }}
+          >
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>
-                About this look
+              <p className="text-xs font-medium" style={{ color: 'var(--color-foreground)' }}>
+                Did you book this person?
               </p>
-              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
-                {originLook.title}
+              <p
+                className="mt-0.5 text-[10px] leading-snug"
+                style={{ color: 'var(--color-muted)' }}
+              >
+                {DISCLAIMER}
               </p>
             </div>
-            <span className="text-[11px] font-medium shrink-0" style={{ color: 'var(--color-brand-primary)' }}>
-              View
-            </span>
-          </button>
-        )}
-        <MessageBubble
-          text={originalMessage}
-          senderName={originalSenderName}
-          avatarUrl={null}
-          isMine={originalIsCurrentUser}
-          createdAt={originalCreatedAt}
-          isOriginal
-        />
-
-        {loading ? (
-          <div className="flex justify-center py-1">
-            <span className="w-4 h-4 border-2 border-gold-400/30 border-t-gold-600 rounded-full animate-spin" />
+            <button
+              type="button"
+              onClick={confirmBooked}
+              disabled={!!bookingId}
+              className="bg-gold-600 hover:bg-gold-700 inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
+            >
+              {bookingId ? (
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <CheckCircle size={12} />
+              )}
+              Yes, we booked
+            </button>
           </div>
-        ) : (
-          messages.map((msg) => {
-            const name = msg.sender.vendorProfile?.businessName
-              || [msg.sender.firstName, msg.sender.lastName].filter(Boolean).join(' ')
-              || 'User'
-            const kind = msg.kind ?? 'TEXT'
-            const canMutate =
-              msg.isCurrentUser &&
-              !msg.unsentAt &&
-              now - new Date(msg.createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS
-            const quote = kind === 'QUOTE' ? (msg.payload as QuotePayload | null) : null
-            const link = kind === 'LINK' ? (msg.payload as LinkPayload | null) : null
-            const inspiration = kind === 'INSPIRATION' ? (msg.payload as InspirationPayload | null) : null
+        )}
 
-            if (editingId === msg.id && canMutate && kind === 'TEXT') {
-              return (
-                <div key={msg.id} className="flex justify-end">
-                  <div className="w-full max-w-[80%] space-y-2">
-                    <textarea
-                      rows={3}
-                      value={editingDraft}
-                      onChange={(e) => setEditingDraft(e.target.value)}
-                      className="w-full text-sm px-3 py-2 rounded-2xl border resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition"
-                      style={{
-                        background: 'var(--input-bg)',
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-foreground)',
-                      }}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(null)
-                          setEditingDraft('')
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+          {originLook && (
+            <button
+              type="button"
+              onClick={() => {
+                setLookSaved(false)
+                setOpenLook(lookStub(originLook.id, originLook.title, originLook.coverUrl))
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-opacity hover:opacity-90"
+              style={{ background: 'var(--card-bg)', borderColor: 'var(--color-border)' }}
+            >
+              {originLook.coverUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={originLook.coverUrl}
+                  alt=""
+                  className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div
+                  className="h-11 w-11 shrink-0 rounded-lg"
+                  style={{ background: 'var(--input-bg)' }}
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p
+                  className="text-[10px] font-semibold tracking-wider uppercase"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  About this look
+                </p>
+                <p
+                  className="truncate text-sm font-medium"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  {originLook.title}
+                </p>
+              </div>
+              <span
+                className="shrink-0 text-[11px] font-medium"
+                style={{ color: 'var(--color-brand-primary)' }}
+              >
+                View
+              </span>
+            </button>
+          )}
+          <MessageBubble
+            text={originalMessage}
+            senderName={originalSenderName}
+            avatarUrl={null}
+            isMine={originalIsCurrentUser}
+            createdAt={originalCreatedAt}
+            isOriginal
+          />
+
+          {loading ? (
+            <div className="flex justify-center py-1">
+              <span className="border-gold-400/30 border-t-gold-600 h-4 w-4 animate-spin rounded-full border-2" />
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const name =
+                msg.sender.vendorProfile?.businessName ||
+                [msg.sender.firstName, msg.sender.lastName].filter(Boolean).join(' ') ||
+                'User'
+              const kind = msg.kind ?? 'TEXT'
+              const canMutate =
+                msg.isCurrentUser &&
+                !msg.unsentAt &&
+                now - new Date(msg.createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS
+              const quote = kind === 'QUOTE' ? (msg.payload as QuotePayload | null) : null
+              const link = kind === 'LINK' ? (msg.payload as LinkPayload | null) : null
+              const inspiration =
+                kind === 'INSPIRATION' ? (msg.payload as InspirationPayload | null) : null
+
+              if (editingId === msg.id && canMutate && kind === 'TEXT') {
+                return (
+                  <div key={msg.id} className="flex justify-end">
+                    <div className="w-full max-w-[80%] space-y-2">
+                      <textarea
+                        rows={3}
+                        value={editingDraft}
+                        onChange={(e) => setEditingDraft(e.target.value)}
+                        className="focus:ring-gold-500/40 w-full resize-none rounded-2xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
+                        style={{
+                          background: 'var(--input-bg)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-foreground)',
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border hover:opacity-80 transition-opacity"
-                        style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
-                      >
-                        <X size={12} />
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => saveEdit(msg.id)}
-                        disabled={savingEditId === msg.id || !editingDraft.trim()}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-                      >
-                        {savingEditId === msg.id
-                          ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          : <Check size={12} />}
-                        Save
-                      </button>
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(null)
+                            setEditingDraft('')
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-opacity hover:opacity-80"
+                          style={{
+                            borderColor: 'var(--color-border)',
+                            color: 'var(--color-muted)',
+                          }}
+                        >
+                          <X size={12} />
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(msg.id)}
+                          disabled={savingEditId === msg.id || !editingDraft.trim()}
+                          className="bg-gold-600 hover:bg-gold-700 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {savingEditId === msg.id ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          ) : (
+                            <Check size={12} />
+                          )}
+                          Save
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            }
+                )
+              }
 
-            if (msg.unsentAt || (kind === 'TEXT' && !quote && !link)) {
+              if (msg.unsentAt || (kind === 'TEXT' && !quote && !link)) {
+                return (
+                  <MessageBubble
+                    key={msg.id}
+                    text={msg.message}
+                    senderName={name}
+                    avatarUrl={msg.sender.avatarUrl}
+                    isMine={msg.isCurrentUser}
+                    createdAt={msg.createdAt}
+                    readAt={msg.readAt}
+                    editedAt={msg.editedAt}
+                    unsentAt={msg.unsentAt}
+                    canEdit={canMutate && kind === 'TEXT'}
+                    onEdit={canMutate && kind === 'TEXT' ? () => startEdit(msg) : undefined}
+                    canUnsend={canMutate}
+                    onUnsend={canMutate ? () => unsendMessage(msg.id) : undefined}
+                    unsending={unsendingId === msg.id}
+                  />
+                )
+              }
+
+              if (kind === 'QUOTE' && quote) {
+                return (
+                  <QuoteCard
+                    key={msg.id}
+                    payload={quote}
+                    senderName={name}
+                    avatarUrl={msg.sender.avatarUrl}
+                    isMine={msg.isCurrentUser}
+                    createdAt={msg.createdAt}
+                    readAt={msg.readAt}
+                    canUnsend={canMutate && !quote.booked && !quote.accepted && !quote.rejected}
+                    onUnsend={
+                      canMutate && !quote.booked && !quote.accepted && !quote.rejected
+                        ? () => unsendMessage(msg.id)
+                        : undefined
+                    }
+                    unsending={unsendingId === msg.id}
+                    canRespond={
+                      isHost &&
+                      !closed &&
+                      inquiryStatus !== 'BOOKED' &&
+                      !quote.booked &&
+                      !quote.rejected
+                    }
+                    onAccept={() => acceptQuote(msg.id)}
+                    onReject={() => rejectQuote(msg.id)}
+                    accepting={acceptingId === msg.id}
+                    rejecting={rejectingId === msg.id}
+                  />
+                )
+              }
+
+              if (kind === 'LINK' && link) {
+                return (
+                  <LinkCard
+                    key={msg.id}
+                    payload={link}
+                    senderName={name}
+                    avatarUrl={msg.sender.avatarUrl}
+                    isMine={msg.isCurrentUser}
+                    createdAt={msg.createdAt}
+                    readAt={msg.readAt}
+                    canUnsend={canMutate}
+                    onUnsend={canMutate ? () => unsendMessage(msg.id) : undefined}
+                    unsending={unsendingId === msg.id}
+                  />
+                )
+              }
+
+              if (kind === 'INSPIRATION' && inspiration) {
+                return (
+                  <InspirationLookCard
+                    key={msg.id}
+                    payload={inspiration}
+                    senderName={name}
+                    avatarUrl={msg.sender.avatarUrl}
+                    isMine={msg.isCurrentUser}
+                    createdAt={msg.createdAt}
+                    onOpen={() => {
+                      setLookSaved(false)
+                      setOpenLook(
+                        lookStub(
+                          inspiration.inspirationItemId,
+                          inspiration.title,
+                          inspiration.coverUrl,
+                        ),
+                      )
+                    }}
+                  />
+                )
+              }
+
               return (
                 <MessageBubble
                   key={msg.id}
@@ -1024,245 +1245,208 @@ export function InquiryThread({
                   readAt={msg.readAt}
                   editedAt={msg.editedAt}
                   unsentAt={msg.unsentAt}
-                  canEdit={canMutate && kind === 'TEXT'}
-                  onEdit={canMutate && kind === 'TEXT' ? () => startEdit(msg) : undefined}
-                  canUnsend={canMutate}
-                  onUnsend={canMutate ? () => unsendMessage(msg.id) : undefined}
-                  unsending={unsendingId === msg.id}
                 />
               )
-            }
+            })
+          )}
+          <div ref={bottomRef} />
+        </div>
 
-            if (kind === 'QUOTE' && quote) {
-              return (
-                <QuoteCard
-                  key={msg.id}
-                  payload={quote}
-                  senderName={name}
-                  avatarUrl={msg.sender.avatarUrl}
-                  isMine={msg.isCurrentUser}
-                  createdAt={msg.createdAt}
-                  readAt={msg.readAt}
-                  canUnsend={canMutate && !quote.booked && !quote.accepted && !quote.rejected}
-                  onUnsend={canMutate && !quote.booked && !quote.accepted && !quote.rejected ? () => unsendMessage(msg.id) : undefined}
-                  unsending={unsendingId === msg.id}
-                  canRespond={isHost && !closed && inquiryStatus !== 'BOOKED' && !quote.booked && !quote.rejected}
-                  onAccept={() => acceptQuote(msg.id)}
-                  onReject={() => rejectQuote(msg.id)}
-                  accepting={acceptingId === msg.id}
-                  rejecting={rejectingId === msg.id}
-                />
-              )
-            }
+        {closed ? (
+          <p
+            className="shrink-0 border-t px-4 py-3 text-xs"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
+          >
+            This inquiry is closed. Quotes and replies are no longer available.
+          </p>
+        ) : (
+          <div
+            className="flex shrink-0 flex-col gap-2 border-t px-4 py-3"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--card-bg)' }}
+          >
+            {isVendor && (
+              <div className="flex items-center gap-1">
+                {(
+                  [
+                    { key: 'text', label: 'Message' },
+                    { key: 'quote', label: 'Quote' },
+                    { key: 'calendar', label: 'Calendar' },
+                    { key: 'booking', label: 'Booking link' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setShareMode(tab.key)}
+                    className="rounded-md px-2 py-1 text-[11px] font-medium transition-colors"
+                    style={
+                      shareMode === tab.key
+                        ? {
+                            background: 'rgba(201,151,58,0.14)',
+                            color: '#8b6200',
+                          }
+                        : { color: 'var(--color-muted)' }
+                    }
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            if (kind === 'LINK' && link) {
-              return (
-                <LinkCard
-                  key={msg.id}
-                  payload={link}
-                  senderName={name}
-                  avatarUrl={msg.sender.avatarUrl}
-                  isMine={msg.isCurrentUser}
-                  createdAt={msg.createdAt}
-                  readAt={msg.readAt}
-                  canUnsend={canMutate}
-                  onUnsend={canMutate ? () => unsendMessage(msg.id) : undefined}
-                  unsending={unsendingId === msg.id}
-                />
-              )
-            }
-
-            if (kind === 'INSPIRATION' && inspiration) {
-              return (
-                <InspirationLookCard
-                  key={msg.id}
-                  payload={inspiration}
-                  senderName={name}
-                  avatarUrl={msg.sender.avatarUrl}
-                  isMine={msg.isCurrentUser}
-                  createdAt={msg.createdAt}
-                  onOpen={() => {
-                    setLookSaved(false)
-                    setOpenLook(lookStub(inspiration.inspirationItemId, inspiration.title, inspiration.coverUrl))
+            {shareMode === 'quote' && (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    placeholder="Amount"
+                    value={quoteAmount}
+                    onChange={(e) => setQuoteAmount(e.target.value)}
+                    className="focus:ring-gold-500/40 flex-1 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                    style={{
+                      background: 'var(--input-bg)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-foreground)',
+                    }}
+                  />
+                  <select
+                    value={quoteCurrency}
+                    onChange={(e) => setQuoteCurrency(e.target.value)}
+                    className="rounded-xl border px-2 py-2 text-sm focus:outline-none"
+                    style={{
+                      background: 'var(--input-bg)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-foreground)',
+                    }}
+                  >
+                    <option value="CAD">CAD</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Optional note (what's included)"
+                  value={quoteNote}
+                  onChange={(e) => setQuoteNote(e.target.value)}
+                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  style={{
+                    background: 'var(--input-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
                   }}
                 />
-              )
-            }
-
-            return (
-              <MessageBubble
-                key={msg.id}
-                text={msg.message}
-                senderName={name}
-                avatarUrl={msg.sender.avatarUrl}
-                isMine={msg.isCurrentUser}
-                createdAt={msg.createdAt}
-                readAt={msg.readAt}
-                editedAt={msg.editedAt}
-                unsentAt={msg.unsentAt}
-              />
-            )
-          })
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      {closed ? (
-        <p className="px-4 py-3 text-xs shrink-0 border-t" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
-          This inquiry is closed. Quotes and replies are no longer available.
-        </p>
-      ) : (
-        <div
-          className="px-4 py-3 border-t flex flex-col gap-2 shrink-0"
-          style={{ borderColor: 'var(--color-border)', background: 'var(--card-bg)' }}
-        >
-          {isVendor && (
-            <div className="flex items-center gap-1">
-              {([
-                { key: 'text', label: 'Message' },
-                { key: 'quote', label: 'Quote' },
-                { key: 'calendar', label: 'Calendar' },
-                { key: 'booking', label: 'Booking link' },
-              ] as const).map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setShareMode(tab.key)}
-                  className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
-                  style={shareMode === tab.key ? {
-                    background: 'rgba(201,151,58,0.14)',
-                    color: '#8b6200',
-                  } : { color: 'var(--color-muted)' }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {shareMode === 'quote' && (
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  placeholder="Amount"
-                  value={quoteAmount}
-                  onChange={(e) => setQuoteAmount(e.target.value)}
-                  className="flex-1 text-sm px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                  style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-                />
-                <select
-                  value={quoteCurrency}
-                  onChange={(e) => setQuoteCurrency(e.target.value)}
-                  className="text-sm px-2 py-2 rounded-xl border focus:outline-none"
-                  style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-                >
-                  <option value="CAD">CAD</option>
-                  <option value="USD">USD</option>
-                </select>
               </div>
-              <input
-                type="text"
-                placeholder="Optional note (what's included)"
-                value={quoteNote}
-                onChange={(e) => setQuoteNote(e.target.value)}
-                className="text-sm px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-              />
-            </div>
-          )}
+            )}
 
-          {(shareMode === 'calendar' || shareMode === 'booking') && (
-            <div className="flex flex-col gap-2">
-              <input
-                type="url"
-                placeholder={shareMode === 'calendar' ? 'https://calendar.google.com/…' : 'https://calendly.com/…'}
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                className="text-sm px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-              />
-              <input
-                type="text"
-                placeholder="Optional label"
-                value={linkLabel}
-                onChange={(e) => setLinkLabel(e.target.value)}
-                className="text-sm px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-              />
-            </div>
-          )}
+            {(shareMode === 'calendar' || shareMode === 'booking') && (
+              <div className="flex flex-col gap-2">
+                <input
+                  type="url"
+                  placeholder={
+                    shareMode === 'calendar'
+                      ? 'https://calendar.google.com/…'
+                      : 'https://calendly.com/…'
+                  }
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  style={{
+                    background: 'var(--input-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Optional label"
+                  value={linkLabel}
+                  onChange={(e) => setLinkLabel(e.target.value)}
+                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  style={{
+                    background: 'var(--input-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
+                />
+              </div>
+            )}
 
-          {shareMode === 'text' && (
-            <div className="flex items-end gap-2">
-              <textarea
-                rows={2}
-                placeholder="Reply… (Ctrl/Cmd + Enter to send)"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send() }}
-                className="flex-1 text-sm px-3 py-2 rounded-xl border resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition"
-                style={{
-                  background: 'var(--input-bg)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-foreground)',
-                }}
-              />
-              <button
-                onClick={send}
-                disabled={isPending || !canSend}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
-              >
-                {isPending
-                  ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <Send size={13} />}
-              </button>
-            </div>
-          )}
+            {shareMode === 'text' && (
+              <div className="flex items-end gap-2">
+                <textarea
+                  rows={2}
+                  placeholder="Reply… (Ctrl/Cmd + Enter to send)"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send()
+                  }}
+                  className="focus:ring-gold-500/40 flex-1 resize-none rounded-xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
+                  style={{
+                    background: 'var(--input-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
+                />
+                <button
+                  onClick={send}
+                  disabled={isPending || !canSend}
+                  className="bg-gold-600 hover:bg-gold-700 flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isPending ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <Send size={13} />
+                  )}
+                </button>
+              </div>
+            )}
 
-          {shareMode !== 'text' && (
-            <div className="flex items-center justify-between gap-2">
-              <Disclaimer />
-              <button
-                onClick={send}
-                disabled={isPending || !canSend}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
-              >
-                {isPending
-                  ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <Send size={13} />}
-                Share
-              </button>
-            </div>
-          )}
-        </div>
+            {shareMode !== 'text' && (
+              <div className="flex items-center justify-between gap-2">
+                <Disclaimer />
+                <button
+                  onClick={send}
+                  disabled={isPending || !canSend}
+                  className="bg-gold-600 hover:bg-gold-700 flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isPending ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <Send size={13} />
+                  )}
+                  Share
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <p className="shrink-0 px-4 pb-2 text-xs text-red-600 dark:text-red-400">{error}</p>
+        )}
+      </div>
+      {openLook && (
+        <InspirationDetail
+          item={openLook}
+          saved={lookSaved}
+          onClose={() => setOpenLook(null)}
+          onSaveClick={() => setSaveLook(openLook)}
+          onFindVendors={() => setOpenLook(null)}
+        />
       )}
-
-      {error && (
-        <p className="text-xs px-4 pb-2 shrink-0 text-red-600 dark:text-red-400">{error}</p>
+      {saveLook && (
+        <ThreadSaveLookModal
+          item={saveLook}
+          onClose={() => setSaveLook(null)}
+          onSaved={() => {
+            setLookSaved(true)
+            setSaveLook(null)
+          }}
+        />
       )}
-    </div>
-    {openLook && (
-      <InspirationDetail
-        item={openLook}
-        saved={lookSaved}
-        onClose={() => setOpenLook(null)}
-        onSaveClick={() => setSaveLook(openLook)}
-        onFindVendors={() => setOpenLook(null)}
-      />
-    )}
-    {saveLook && (
-      <ThreadSaveLookModal
-        item={saveLook}
-        onClose={() => setSaveLook(null)}
-        onSaved={() => {
-          setLookSaved(true)
-          setSaveLook(null)
-        }}
-      />
-    )}
     </>
   )
 }
@@ -1282,7 +1466,8 @@ function ThreadSaveLookModal({
   const [error, setError] = useState('')
 
   useEffect(() => {
-    proxyClient.get('/events')
+    proxyClient
+      .get('/events')
       .then(({ data }) => {
         const list = Array.isArray(data)
           ? data.map((e: { id: string; title: string }) => ({ id: e.id, title: e.title }))
@@ -1308,31 +1493,41 @@ function ThreadSaveLookModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="relative w-full max-w-sm rounded-2xl p-5 space-y-3"
+        className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
         style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Save to mood board</h3>
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+            Save to mood board
+          </h3>
           <button type="button" onClick={onClose} aria-label="Close">
             <X size={16} style={{ color: 'var(--color-muted)' }} />
           </button>
         </div>
         {events.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Create an event first, then save looks to it.</p>
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            Create an event first, then save looks to it.
+          </p>
         ) : (
           <>
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl text-sm"
-              style={{ background: 'var(--input-bg)', border: '1px solid var(--color-border)', color: 'var(--color-foreground)' }}
+              className="h-9 w-full rounded-xl px-3 text-sm"
+              style={{
+                background: 'var(--input-bg)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-foreground)',
+              }}
             >
               <option value="">Choose an event</option>
               {events.map((e) => (
-                <option key={e.id} value={e.id}>{e.title}</option>
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
               ))}
             </select>
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
@@ -1340,7 +1535,7 @@ function ThreadSaveLookModal({
               type="button"
               disabled={saving || !eventId}
               onClick={() => void save()}
-              className="w-full h-9 rounded-xl text-sm font-semibold disabled:opacity-40"
+              className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
               style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
             >
               {saving ? 'Saving…' : 'Save'}

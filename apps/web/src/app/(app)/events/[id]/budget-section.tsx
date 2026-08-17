@@ -3,13 +3,32 @@
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Plus, Pencil, Trash2, X, Check, Upload, FileText,
-  Image as ImageIcon, Loader2, ChevronDown, ChevronUp,
-  Store, Search, Star, BadgeCheck, MessageSquare, Send,
-  Mail, Phone, Globe, BookUser, Sparkles,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Upload,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Store,
+  Search,
+  Star,
+  BadgeCheck,
+  MessageSquare,
+  Send,
+  Mail,
+  Phone,
+  Globe,
+  BookUser,
+  Sparkles,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/errors'
 import { proxyClient } from '@/lib/proxy-client'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
 import type { EventBudgetItem, BudgetReceipt, UserVendorContact } from '@/lib/api.types'
@@ -32,17 +51,6 @@ interface VendorOption {
   currency: string
   city: string | null
   avatarUrl: string | null
-}
-
-function getErrorMessage(err: unknown, fallback: string) {
-  const maybe = err as {
-    response?: { data?: { message?: unknown } }
-    message?: unknown
-  }
-  const apiMessage = maybe.response?.data?.message
-  if (typeof apiMessage === 'string') return apiMessage
-  if (typeof maybe.message === 'string') return maybe.message
-  return fallback
 }
 
 function existingInquiryId(err: unknown): string | null {
@@ -124,9 +132,13 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
   // Fetch user's personal contacts
   const fetchContacts = useCallback(async (cat: string) => {
     try {
-      const { data } = await proxyClient.get<UserVendorContact[]>(`/vendor-contacts?category=${cat}`)
+      const { data } = await proxyClient.get<UserVendorContact[]>(
+        `/vendor-contacts?category=${cat}`,
+      )
       setMyContacts(Array.isArray(data) ? data : [])
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   }, [])
 
   useEffect(() => {
@@ -136,12 +148,15 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
       fetchVendors(category)
       fetchContacts(category)
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [category, fetchVendors, fetchContacts])
 
-  const filteredVendors = vendors.filter((v) =>
-    v.businessName.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-    (v.city ?? '').toLowerCase().includes(vendorSearch.toLowerCase()),
+  const filteredVendors = vendors.filter(
+    (v) =>
+      v.businessName.toLowerCase().includes(vendorSearch.toLowerCase()) ||
+      (v.city ?? '').toLowerCase().includes(vendorSearch.toLowerCase()),
   )
 
   const filteredContacts = myContacts.filter((c) =>
@@ -185,9 +200,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
           resolvedContactId = created.id
         }
 
-        const url = isNew
-          ? `/events/${eventId}/budget`
-          : `/events/${eventId}/budget/${item.id}`
+        const url = isNew ? `/events/${eventId}/budget` : `/events/${eventId}/budget/${item.id}`
 
         const payload = {
           ...(isNew && { category }),
@@ -215,27 +228,27 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-brand-800 border border-white/10 shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-brand-800 relative z-10 flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
-          <h3 className="font-semibold text-white text-sm">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-5 py-4">
+          <h3 className="text-sm font-semibold text-white">
             {isNew ? 'Add budget item' : 'Edit budget item'}
           </h3>
-          <button onClick={onClose} className="text-brand-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-brand-400 transition-colors hover:text-white">
             <X size={16} />
           </button>
         </div>
 
         {/* Body — scrollable */}
-        <div className="px-5 py-4 space-y-4 overflow-y-auto">
+        <div className="space-y-4 overflow-y-auto px-5 py-4">
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-brand-300 mb-1.5">Category</label>
+            <label className="text-brand-300 mb-1.5 block text-xs font-medium">Category</label>
             <select
               value={category}
               onChange={(e) => handleCategoryChange(e.target.value)}
               disabled={!isNew}
-              className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 disabled:opacity-50"
+              className="focus:ring-gold-500/40 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none disabled:opacity-50"
             >
               {VENDOR_CATEGORY_KEYS.map((key) => (
                 <option key={key} value={key} className="bg-brand-800">
@@ -247,7 +260,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
 
           {/* Custom label */}
           <div>
-            <label className="block text-xs font-medium text-brand-300 mb-1.5">
+            <label className="text-brand-300 mb-1.5 block text-xs font-medium">
               Custom label <span className="text-brand-500">(optional)</span>
             </label>
             <input
@@ -255,20 +268,20 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder={`e.g. "Second photographer"`}
-              className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white placeholder:text-brand-500 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+              className="placeholder:text-brand-500 focus:ring-gold-500/40 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none"
             />
           </div>
 
           {/* ── Vendor picker ── */}
           <div>
-            <label className="block text-xs font-medium text-brand-300 mb-2">
+            <label className="text-brand-300 mb-2 block text-xs font-medium">
               Vendor <span className="text-brand-500">(optional)</span>
             </label>
 
             {/* Selected vendor chip */}
             {vendorName && (
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-gold-500/10 border border-gold-500/25 text-gold-300 text-sm">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="bg-gold-500/10 border-gold-500/25 text-gold-300 flex flex-1 items-center gap-2 rounded-xl border px-3 py-2 text-sm">
                   {selectedContactId ? (
                     <BookUser size={13} className="text-gold-400 shrink-0" />
                   ) : (
@@ -276,10 +289,14 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                   )}
                   <span className="truncate">{vendorName}</span>
                   {selectedContactId && (
-                    <span className="text-[10px] text-brand-500 shrink-0">saved contact</span>
+                    <span className="text-brand-500 shrink-0 text-[10px]">saved contact</span>
                   )}
                   {selectedVendorProfileId && (
-                    <BadgeCheck size={11} className="text-gold-400 shrink-0" aria-label="Registered vendor" />
+                    <BadgeCheck
+                      size={11}
+                      className="text-gold-400 shrink-0"
+                      aria-label="Registered vendor"
+                    />
                   )}
                 </div>
                 <button
@@ -295,7 +312,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     setNewContactWebsite('')
                     setSaveToContacts(false)
                   }}
-                  className="p-1.5 rounded-lg text-brand-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  className="text-brand-500 rounded-lg p-1.5 transition-colors hover:bg-red-500/10 hover:text-red-400"
                   title="Remove"
                 >
                   <X size={13} />
@@ -304,9 +321,9 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
             )}
 
             {!vendorName && (
-              <div className="rounded-xl border border-white/10 bg-white/4 overflow-hidden">
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-white/4">
                 {loadingVendors ? (
-                  <div className="flex items-center justify-center gap-2 py-6 text-brand-500 text-xs">
+                  <div className="text-brand-500 flex items-center justify-center gap-2 py-6 text-xs">
                     <Loader2 size={13} className="animate-spin" />
                     Loading…
                   </div>
@@ -315,23 +332,23 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     {/* My saved contacts section */}
                     {filteredContacts.length > 0 && !customMode && (
                       <div className="border-b border-white/8">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold text-brand-500 uppercase tracking-wider">
+                        <div className="text-brand-500 flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase">
                           <BookUser size={9} />
                           My contacts
                         </div>
                         {myContacts.length > 3 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/6">
+                          <div className="flex items-center gap-2 border-b border-white/6 px-3 py-1.5">
                             <Search size={10} className="text-brand-600 shrink-0" />
                             <input
                               type="text"
                               value={contactSearch}
                               onChange={(e) => setContactSearch(e.target.value)}
                               placeholder="Search contacts…"
-                              className="flex-1 bg-transparent text-xs text-white placeholder:text-brand-600 focus:outline-none"
+                              className="placeholder:text-brand-600 flex-1 bg-transparent text-xs text-white focus:outline-none"
                             />
                           </div>
                         )}
-                        <ul className="divide-y divide-white/5 max-h-32 overflow-y-auto">
+                        <ul className="max-h-32 divide-y divide-white/5 overflow-y-auto">
                           {filteredContacts.map((c) => (
                             <li key={c.id}>
                               <button
@@ -345,22 +362,25 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                   // Clear registered-vendor state — mutually exclusive
                                   setSelectedVendorProfileId(null)
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/6 transition-colors text-left group"
+                                className="group flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-white/6"
                               >
-                                <div className="w-6 h-6 rounded-full bg-white/8 flex items-center justify-center shrink-0">
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/8">
                                   <BookUser size={10} className="text-brand-500" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-sm text-white truncate block group-hover:text-gold-200 transition-colors">
+                                <div className="min-w-0 flex-1">
+                                  <span className="group-hover:text-gold-200 block truncate text-sm text-white transition-colors">
                                     {c.name}
                                   </span>
                                   {(c.email || c.phone) && (
-                                    <span className="text-[10px] text-brand-500 truncate block">
+                                    <span className="text-brand-500 block truncate text-[10px]">
                                       {c.email ?? c.phone}
                                     </span>
                                   )}
                                 </div>
-                                <Check size={11} className="text-gold-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Check
+                                  size={11}
+                                  className="text-gold-400 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                />
                               </button>
                             </li>
                           ))}
@@ -371,12 +391,12 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     {/* Registered vendors list */}
                     {vendors.length > 0 && !customMode && (
                       <>
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold text-brand-500 uppercase tracking-wider border-b border-white/6">
+                        <div className="text-brand-500 flex items-center gap-1.5 border-b border-white/6 px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase">
                           <Store size={9} />
                           Registered vendors
                         </div>
                         {/* Search */}
-                        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/8">
+                        <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2">
                           <Search size={11} className="text-brand-600 shrink-0" />
                           <input
                             ref={searchRef}
@@ -384,17 +404,20 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                             value={vendorSearch}
                             onChange={(e) => setVendorSearch(e.target.value)}
                             placeholder={`Search ${vendors.length} ${getVendorCategoryLabel(category, tCat)} vendors…`}
-                            className="flex-1 bg-transparent text-xs text-white placeholder:text-brand-600 focus:outline-none"
+                            className="placeholder:text-brand-600 flex-1 bg-transparent text-xs text-white focus:outline-none"
                           />
                           {vendorSearch && (
-                            <button onClick={() => setVendorSearch('')} className="text-brand-600 hover:text-white transition-colors">
+                            <button
+                              onClick={() => setVendorSearch('')}
+                              className="text-brand-600 transition-colors hover:text-white"
+                            >
                               <X size={10} />
                             </button>
                           )}
                         </div>
 
                         {/* Vendor rows */}
-                        <ul className="divide-y divide-white/5 max-h-40 overflow-y-auto">
+                        <ul className="max-h-40 divide-y divide-white/5 overflow-y-auto">
                           {filteredVendors.map((v) => (
                             <li key={v.id}>
                               <button
@@ -409,27 +432,37 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                   setNewContactWebsite('')
                                   setSaveToContacts(false)
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/6 transition-colors text-left group"
+                                className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/6"
                               >
                                 {v.avatarUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={v.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                  <img
+                                    src={v.avatarUrl}
+                                    alt=""
+                                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                                  />
                                 ) : (
-                                  <div className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center shrink-0">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/8">
                                     <Store size={13} className="text-brand-500" />
                                   </div>
                                 )}
-                                <div className="flex-1 min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-sm text-white truncate group-hover:text-gold-200 transition-colors">
+                                    <span className="group-hover:text-gold-200 truncate text-sm text-white transition-colors">
                                       {v.businessName}
                                     </span>
                                     {v.isVerified && (
-                                      <BadgeCheck size={12} className="text-gold-400 shrink-0" aria-label="Verified" />
+                                      <BadgeCheck
+                                        size={12}
+                                        className="text-gold-400 shrink-0"
+                                        aria-label="Verified"
+                                      />
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    {v.city && <span className="text-[10px] text-brand-500">{v.city}</span>}
+                                  <div className="mt-0.5 flex items-center gap-2">
+                                    {v.city && (
+                                      <span className="text-brand-500 text-[10px]">{v.city}</span>
+                                    )}
                                     {v.averageRating !== null && (
                                       <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
                                         <Star size={8} fill="currentColor" />
@@ -438,19 +471,22 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                       </span>
                                     )}
                                     {v.estimatedPriceFrom !== null && (
-                                      <span className="text-[10px] text-brand-500">
+                                      <span className="text-brand-500 text-[10px]">
                                         from {v.currency}${v.estimatedPriceFrom.toLocaleString()}
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                                <Check size={12} className="text-gold-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Check
+                                  size={12}
+                                  className="text-gold-400 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                />
                               </button>
                             </li>
                           ))}
 
                           {filteredVendors.length === 0 && (
-                            <li className="px-3 py-4 text-xs text-brand-600 text-center italic">
+                            <li className="text-brand-600 px-3 py-4 text-center text-xs italic">
                               No vendors found for &ldquo;{vendorSearch}&rdquo;
                             </li>
                           )}
@@ -460,8 +496,11 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                         <div className="border-t border-white/8">
                           <button
                             type="button"
-                            onClick={() => { setCustomMode(true); setVendorSearch('') }}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-brand-400 hover:text-gold-300 hover:bg-white/5 transition-colors"
+                            onClick={() => {
+                              setCustomMode(true)
+                              setVendorSearch('')
+                            }}
+                            className="text-brand-400 hover:text-gold-300 flex w-full items-center gap-2 px-3 py-2.5 text-xs transition-colors hover:bg-white/5"
                           >
                             <Plus size={11} />
                             My vendor isn&apos;t listed — add manually
@@ -476,8 +515,11 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                         {customMode && vendors.length > 0 && (
                           <button
                             type="button"
-                            onClick={() => { setCustomMode(false); setVendorSearch('') }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-brand-500 hover:text-brand-200 border-b border-white/8 transition-colors"
+                            onClick={() => {
+                              setCustomMode(false)
+                              setVendorSearch('')
+                            }}
+                            className="text-brand-500 hover:text-brand-200 flex w-full items-center gap-2 border-b border-white/8 px-3 py-2 text-[11px] transition-colors"
                           >
                             ← Back to vendor list
                           </button>
@@ -501,7 +543,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                 ? 'No vendors registered — type a name & press Enter'
                                 : 'Type vendor name and press Enter'
                             }
-                            className="flex-1 bg-transparent text-sm text-white placeholder:text-brand-600 focus:outline-none"
+                            className="placeholder:text-brand-600 flex-1 bg-transparent text-sm text-white focus:outline-none"
                           />
                           {vendorSearch.trim() && (
                             <button
@@ -511,14 +553,14 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                 setVendorSearch('')
                                 setSaveToContacts(true)
                               }}
-                              className="shrink-0 text-[10px] px-2 py-0.5 rounded-md bg-gold-600/15 border border-gold-500/25 text-gold-300 hover:bg-gold-600/25 transition-colors"
+                              className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 shrink-0 rounded-md border px-2 py-0.5 text-[10px] transition-colors"
                             >
                               Add
                             </button>
                           )}
                         </div>
                         {vendors.length === 0 && (
-                          <p className="px-3 pb-2.5 text-[10px] text-brand-600">
+                          <p className="text-brand-600 px-3 pb-2.5 text-[10px]">
                             Vendors who sign up will appear here automatically.
                           </p>
                         )}
@@ -534,7 +576,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
           {showContactFields && (
             <div className="space-y-3 rounded-xl border border-white/10 bg-white/3 px-4 py-3">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold text-brand-300 uppercase tracking-wider">
+                <p className="text-brand-300 text-[11px] font-semibold tracking-wider uppercase">
                   Contact details
                 </p>
                 {/* Save to contacts toggle */}
@@ -543,10 +585,10 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     type="button"
                     onClick={() => setSaveToContacts((v) => !v)}
                     className={cn(
-                      'flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-lg border transition-colors',
+                      'flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] transition-colors',
                       saveToContacts
                         ? 'bg-gold-600/20 border-gold-500/30 text-gold-300'
-                        : 'bg-white/5 border-white/10 text-brand-500 hover:text-brand-300',
+                        : 'text-brand-500 hover:text-brand-300 border-white/10 bg-white/5',
                     )}
                   >
                     <BookUser size={9} />
@@ -569,7 +611,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     value={newContactEmail}
                     onChange={(e) => setNewContactEmail(e.target.value)}
                     placeholder="vendor@email.com"
-                    className="flex-1 rounded-xl bg-white/6 border border-white/10 px-3 py-2 text-white placeholder:text-brand-600 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+                    className="placeholder:text-brand-600 focus:ring-gold-500/40 flex-1 rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-white focus:ring-2 focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center gap-2.5">
@@ -579,7 +621,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     value={newContactPhone}
                     onChange={(e) => setNewContactPhone(e.target.value)}
                     placeholder="+1 (555) 000-0000"
-                    className="flex-1 rounded-xl bg-white/6 border border-white/10 px-3 py-2 text-white placeholder:text-brand-600 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+                    className="placeholder:text-brand-600 focus:ring-gold-500/40 flex-1 rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-white focus:ring-2 focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center gap-2.5">
@@ -589,7 +631,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     value={newContactWebsite}
                     onChange={(e) => setNewContactWebsite(e.target.value)}
                     placeholder="https://vendor-website.com"
-                    className="flex-1 rounded-xl bg-white/6 border border-white/10 px-3 py-2 text-white placeholder:text-brand-600 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+                    className="placeholder:text-brand-600 focus:ring-gold-500/40 flex-1 rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-white focus:ring-2 focus:outline-none"
                   />
                 </div>
               </div>
@@ -599,7 +641,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
           {/* Amounts */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-brand-300 mb-1.5">
+              <label className="text-brand-300 mb-1.5 block text-xs font-medium">
                 Allocated (CA$) <span className="text-gold-500">*</span>
               </label>
               <input
@@ -608,27 +650,25 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                 onChange={(e) => setAllocated(e.target.value)}
                 min={0}
                 placeholder="0"
-                className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white placeholder:text-brand-500 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+                className="placeholder:text-brand-500 focus:ring-gold-500/40 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-brand-300 mb-1.5">
-                Spent (CA$)
-              </label>
+              <label className="text-brand-300 mb-1.5 block text-xs font-medium">Spent (CA$)</label>
               <input
                 type="number"
                 value={spent}
                 onChange={(e) => setSpent(e.target.value)}
                 min={0}
                 placeholder="0"
-                className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white placeholder:text-brand-500 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+                className="placeholder:text-brand-500 focus:ring-gold-500/40 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-brand-300 mb-1.5">
+            <label className="text-brand-300 mb-1.5 block text-xs font-medium">
               Notes <span className="text-brand-500">(optional)</span>
             </label>
             <textarea
@@ -636,25 +676,25 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Payment terms, contract info, etc."
-              className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white placeholder:text-brand-500 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 resize-none"
+              className="placeholder:text-brand-500 focus:ring-gold-500/40 w-full resize-none rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-red-400 text-xs">{error}</p>}
+          {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-white/8 shrink-0">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-white/8 px-5 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm text-brand-300 hover:text-white hover:bg-white/8 transition-colors"
+            className="text-brand-300 rounded-xl px-4 py-2 text-sm transition-colors hover:bg-white/8 hover:text-white"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isPending || !allocated}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-brand-900 font-semibold text-sm transition-colors"
+            className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
           >
             {isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
             {isNew ? 'Add item' : 'Save changes'}
@@ -676,21 +716,26 @@ function LinkedBudgetInspirations({ budgetItemId }: { budgetItemId: string }) {
 
   return (
     <div>
-      <p className="text-[10px] font-medium text-brand-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+      <p className="text-brand-500 mb-2 flex items-center gap-1.5 text-[10px] font-medium tracking-wider uppercase">
         <Sparkles size={10} /> Linked Inspiration ({items.length})
       </p>
       <div className="flex flex-wrap gap-2">
         {items.map(({ id, inspirationItem: insp }) => (
           <div
             key={id}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
           >
             {insp.imageUrl && (
-              <img src={insp.imageUrl} alt={insp.title} className="w-5 h-5 rounded object-cover" />
+              <img src={insp.imageUrl} alt={insp.title} className="h-5 w-5 rounded object-cover" />
             )}
-            <span className="text-brand-300 truncate max-w-[120px]">{insp.title}</span>
-            <span className="text-brand-600 text-[10px]">{insp.category.charAt(0) + insp.category.slice(1).toLowerCase()}</span>
+            <span className="text-brand-300 max-w-[120px] truncate">{insp.title}</span>
+            <span className="text-brand-600 text-[10px]">
+              {insp.category.charAt(0) + insp.category.slice(1).toLowerCase()}
+            </span>
           </div>
         ))}
       </div>
@@ -746,12 +791,12 @@ function ReceiptUploader({ eventId, item, onUploaded }: ReceiptUploaderProps) {
       <button
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-1.5 text-xs text-brand-400 hover:text-gold-400 transition-colors disabled:opacity-50"
+        className="text-brand-400 hover:text-gold-400 flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
       >
         {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
         {uploading ? 'Uploading…' : 'Add receipt'}
       </button>
-      {error && <p className="text-red-400 text-[10px] mt-1">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
     </div>
   )
 }
@@ -774,9 +819,7 @@ function ReceiptThumb({
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      await proxyClient.delete(
-        `/events/${eventId}/budget/unused/receipts/${receipt.id}`,
-      )
+      await proxyClient.delete(`/events/${eventId}/budget/unused/receipts/${receipt.id}`)
       onDeleted(receipt.id)
     } finally {
       setDeleting(false)
@@ -784,29 +827,29 @@ function ReceiptThumb({
   }
 
   return (
-    <div className="relative group">
+    <div className="group relative">
       <a
         href={receipt.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-12 h-12 rounded-lg border border-white/10 bg-white/5 hover:border-gold-500/40 overflow-hidden transition-colors"
+        className="hover:border-gold-500/40 flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 transition-colors"
         title={receipt.filename}
       >
         {isPdf ? (
           <FileText size={18} className="text-brand-400" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={receipt.url} alt={receipt.filename} className="w-full h-full object-cover" />
+          <img src={receipt.url} alt={receipt.filename} className="h-full w-full object-cover" />
         )}
       </a>
       {canEdit('BUDGET') && (
-      <button
-        onClick={handleDelete}
-        disabled={deleting}
-        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-      >
-        {deleting ? <Loader2 size={8} className="animate-spin" /> : <X size={8} />}
-      </button>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          {deleting ? <Loader2 size={8} className="animate-spin" /> : <X size={8} />}
+        </button>
       )}
     </div>
   )
@@ -822,7 +865,13 @@ interface ContactModalProps {
   onSent: () => void
 }
 
-function ContactModal({ eventId, vendorName, vendorProfileId, onClose, onSent }: ContactModalProps) {
+function ContactModal({
+  eventId,
+  vendorName,
+  vendorProfileId,
+  onClose,
+  onSent,
+}: ContactModalProps) {
   const router = useRouter()
   const [message, setMessage] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -854,22 +903,22 @@ function ContactModal({ eventId, vendorName, vendorProfileId, onClose, onSent }:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-brand-800 border border-white/10 shadow-2xl flex flex-col">
+      <div className="bg-brand-800 relative z-10 flex w-full max-w-sm flex-col rounded-2xl border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+        <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
           <div>
-            <h3 className="font-semibold text-white text-sm">Contact vendor</h3>
-            <p className="text-xs text-brand-400 mt-0.5">{vendorName}</p>
+            <h3 className="text-sm font-semibold text-white">Contact vendor</h3>
+            <p className="text-brand-400 mt-0.5 text-xs">{vendorName}</p>
           </div>
-          <button onClick={onClose} className="text-brand-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-brand-400 transition-colors hover:text-white">
             <X size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-4">
+        <div className="space-y-4 px-5 py-4">
           <div>
-            <label className="block text-xs font-medium text-brand-300 mb-1.5">
+            <label className="text-brand-300 mb-1.5 block text-xs font-medium">
               Your message <span className="text-gold-500">*</span>
             </label>
             <textarea
@@ -878,28 +927,28 @@ function ContactModal({ eventId, vendorName, vendorProfileId, onClose, onSent }:
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
               placeholder={`Hi ${vendorName}, I'm interested in booking you for my event…`}
-              className="w-full rounded-xl bg-white/6 border border-white/10 px-3 py-2.5 text-white placeholder:text-brand-500 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 resize-none"
+              className="placeholder:text-brand-500 focus:ring-gold-500/40 w-full resize-none rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white focus:ring-2 focus:outline-none"
             />
-            <p className="text-[10px] text-brand-600 mt-1">
+            <p className="text-brand-600 mt-1 text-[10px]">
               {message.trim().length} / 2000 chars — minimum {MIN}
             </p>
           </div>
 
-          {error && <p className="text-red-400 text-xs">{error}</p>}
+          {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-white/8">
+        <div className="flex items-center justify-end gap-2 border-t border-white/8 px-5 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm text-brand-300 hover:text-white hover:bg-white/8 transition-colors"
+            className="text-brand-300 rounded-xl px-4 py-2 text-sm transition-colors hover:bg-white/8 hover:text-white"
           >
             Cancel
           </button>
           <button
             onClick={handleSend}
             disabled={isPending || message.trim().length < MIN}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-brand-900 font-semibold text-sm transition-colors"
+            className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
           >
             {isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             Send inquiry
@@ -922,7 +971,15 @@ interface BudgetRowProps {
   initiallyExpanded?: boolean
 }
 
-function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onReceiptDeleted, initiallyExpanded = false }: BudgetRowProps) {
+function BudgetRow({
+  item,
+  eventId,
+  onEdit,
+  onDelete,
+  onReceiptUploaded,
+  onReceiptDeleted,
+  initiallyExpanded = false,
+}: BudgetRowProps) {
   const tCat = useTranslations('vendorCategories')
   const { canEdit } = useEventAccess()
   const [expanded, setExpanded] = useState(initiallyExpanded)
@@ -934,108 +991,124 @@ function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onRecei
   return (
     <div
       id={`budget-item-${item.id}`}
-      className="rounded-xl border border-white/8 bg-white/3 overflow-hidden"
-      style={initiallyExpanded ? { outline: '1px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent)' } : undefined}
+      className="overflow-hidden rounded-xl border border-white/8 bg-white/3"
+      style={
+        initiallyExpanded
+          ? { outline: '1px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent)' }
+          : undefined
+      }
     >
       {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Name + vendor */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white truncate">{displayLabel}</span>
+            <span className="truncate text-sm font-medium text-white">{displayLabel}</span>
             {item.vendorName && (
-              <span className="text-xs text-brand-500 truncate hidden sm:block">· {item.vendorName}</span>
+              <span className="text-brand-500 hidden truncate text-xs sm:block">
+                · {item.vendorName}
+              </span>
             )}
           </div>
           {/* Progress bar */}
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex-1 h-1 rounded-full bg-white/8 overflow-hidden">
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/8">
               <div
                 className={cn(
                   'h-full rounded-full transition-all',
-                  pct >= 100 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-gradient-to-r from-gold-600 to-gold-400',
+                  pct >= 100
+                    ? 'bg-red-500'
+                    : pct > 75
+                      ? 'bg-amber-500'
+                      : 'from-gold-600 to-gold-400 bg-gradient-to-r',
                 )}
                 style={{ width: `${Math.min(pct, 100)}%` }}
               />
             </div>
-            <span className="text-[10px] text-brand-500 shrink-0">
-              {Math.round(pct)}%
-            </span>
+            <span className="text-brand-500 shrink-0 text-[10px]">{Math.round(pct)}%</span>
           </div>
         </div>
 
         {/* Amounts */}
-        <div className="text-right shrink-0">
+        <div className="shrink-0 text-right">
           <p className="text-sm font-semibold text-white">
             CA${item.spentAmount.toLocaleString('en-CA')}
           </p>
-          <p className="text-[10px] text-brand-500">
+          <p className="text-brand-500 text-[10px]">
             of CA${item.allocatedAmount.toLocaleString('en-CA')}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="p-1.5 rounded-lg text-brand-400 hover:text-white hover:bg-white/8 transition-colors"
+            className="text-brand-400 rounded-lg p-1.5 transition-colors hover:bg-white/8 hover:text-white"
             title="Details & receipts"
           >
             {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
           {canEdit('BUDGET') && (
-          <>
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg text-brand-400 hover:text-white hover:bg-white/8 transition-colors"
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded-lg text-brand-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
-          </>
+            <>
+              <button
+                onClick={onEdit}
+                className="text-brand-400 rounded-lg p-1.5 transition-colors hover:bg-white/8 hover:text-white"
+                title="Edit"
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                onClick={onDelete}
+                className="text-brand-400 rounded-lg p-1.5 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                title="Delete"
+              >
+                <Trash2 size={13} />
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {/* Expanded panel */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-white/6 pt-3 space-y-3">
+        <div className="space-y-3 border-t border-white/6 px-4 pt-3 pb-4">
           {/* Notes */}
-          {item.notes && (
-            <p className="text-xs text-brand-300 leading-relaxed">{item.notes}</p>
-          )}
+          {item.notes && <p className="text-brand-300 text-xs leading-relaxed">{item.notes}</p>}
 
           {/* Vendor contact — from personal contact book */}
           {!item.vendorProfileId && item.userVendorContact && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <BookUser size={10} className="text-brand-500" />
-                <p className="text-[10px] font-medium text-brand-500 uppercase tracking-wider">Vendor contact</p>
+                <p className="text-brand-500 text-[10px] font-medium tracking-wider uppercase">
+                  Vendor contact
+                </p>
               </div>
               {item.userVendorContact.email && (
-                <a href={`mailto:${item.userVendorContact.email}`}
-                  className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors">
+                <a
+                  href={`mailto:${item.userVendorContact.email}`}
+                  className="text-brand-300 hover:text-gold-300 flex items-center gap-2 text-xs transition-colors"
+                >
                   <Mail size={11} className="text-brand-500 shrink-0" />
                   {item.userVendorContact.email}
                 </a>
               )}
               {item.userVendorContact.phone && (
-                <a href={`tel:${item.userVendorContact.phone}`}
-                  className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors">
+                <a
+                  href={`tel:${item.userVendorContact.phone}`}
+                  className="text-brand-300 hover:text-gold-300 flex items-center gap-2 text-xs transition-colors"
+                >
                   <Phone size={11} className="text-brand-500 shrink-0" />
                   {item.userVendorContact.phone}
                 </a>
               )}
               {item.userVendorContact.website && (
-                <a href={item.userVendorContact.website} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors truncate">
+                <a
+                  href={item.userVendorContact.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-300 hover:text-gold-300 flex items-center gap-2 truncate text-xs transition-colors"
+                >
                   <Globe size={11} className="text-brand-500 shrink-0" />
                   {item.userVendorContact.website}
                 </a>
@@ -1045,25 +1118,25 @@ function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onRecei
 
           {/* Contact vendor — only when linked to a registered profile */}
           {item.vendorProfileId && item.vendorName && (
-            <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-gold-500/8 border border-gold-500/20">
+            <div className="bg-gold-500/8 border-gold-500/20 flex items-center justify-between rounded-xl border px-3 py-2">
               <div className="flex items-center gap-2">
                 <Store size={12} className="text-gold-400 shrink-0" />
-                <span className="text-xs text-gold-300 font-medium">{item.vendorName}</span>
+                <span className="text-gold-300 text-xs font-medium">{item.vendorName}</span>
                 {inquirySent && (
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
+                  <span className="flex items-center gap-0.5 text-[10px] text-emerald-400">
                     <Check size={9} /> Inquiry sent
                   </span>
                 )}
               </div>
               {canEdit('VENDORS') && (
-              <button
-                onClick={() => setShowContact(true)}
-                disabled={inquirySent}
-                className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gold-600/20 border border-gold-500/30 text-gold-300 hover:bg-gold-600/35 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <MessageSquare size={11} />
-                {inquirySent ? 'Inquiry sent' : 'Contact vendor'}
-              </button>
+                <button
+                  onClick={() => setShowContact(true)}
+                  disabled={inquirySent}
+                  className="bg-gold-600/20 border-gold-500/30 text-gold-300 hover:bg-gold-600/35 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <MessageSquare size={11} />
+                  {inquirySent ? 'Inquiry sent' : 'Contact vendor'}
+                </button>
               )}
             </div>
           )}
@@ -1075,10 +1148,10 @@ function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onRecei
 
           {/* Receipts */}
           <div>
-            <p className="text-[10px] font-medium text-brand-500 uppercase tracking-wider mb-2">
+            <p className="text-brand-500 mb-2 text-[10px] font-medium tracking-wider uppercase">
               Receipts & attachments
             </p>
-            <div className="flex items-center flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {item.receipts.map((r) => (
                 <ReceiptThumb
                   key={r.id}
@@ -1088,16 +1161,12 @@ function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onRecei
                 />
               ))}
               {item.receipts.length === 0 && (
-                <div className="flex items-center gap-1.5 w-12 h-12 rounded-lg border border-dashed border-white/15 bg-white/3 justify-center">
+                <div className="flex h-12 w-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/3">
                   <ImageIcon size={14} className="text-brand-600" />
                 </div>
               )}
               {canEdit('BUDGET') && (
-              <ReceiptUploader
-                eventId={eventId}
-                item={item}
-                onUploaded={onReceiptUploaded}
-              />
+                <ReceiptUploader eventId={eventId} item={item} onUploaded={onReceiptUploaded} />
               )}
             </div>
           </div>
@@ -1120,7 +1189,12 @@ function BudgetRow({ item, eventId, onEdit, onDelete, onReceiptUploaded, onRecei
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function BudgetSection({ eventId, initialItems, totalBudget, focusItemId }: BudgetSectionProps) {
+export function BudgetSection({
+  eventId,
+  initialItems,
+  totalBudget,
+  focusItemId,
+}: BudgetSectionProps) {
   const { canEdit } = useEventAccess()
   const [items, setItems] = useState<EventBudgetItem[]>(initialItems)
   const [editingItem, setEditingItem] = useState<EventBudgetItem | null | 'new'>(null)
@@ -1132,7 +1206,9 @@ export function BudgetSection({ eventId, initialItems, totalBudget, focusItemId 
 
   useEffect(() => {
     if (!focusItemId) return
-    document.getElementById(`budget-item-${focusItemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    document
+      .getElementById(`budget-item-${focusItemId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [focusItemId])
 
   const handleSaved = (saved: EventBudgetItem) => {
@@ -1152,13 +1228,15 @@ export function BudgetSection({ eventId, initialItems, totalBudget, focusItemId 
       try {
         await proxyClient.delete(`/events/${eventId}/budget/${itemId}`)
         setItems((prev) => prev.filter((i) => i.id !== itemId))
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     })
   }
 
   const handleReceiptUploaded = (itemId: string, receipt: BudgetReceipt) => {
     setItems((prev) =>
-      prev.map((i) => i.id === itemId ? { ...i, receipts: [...i.receipts, receipt] } : i),
+      prev.map((i) => (i.id === itemId ? { ...i, receipts: [...i.receipts, receipt] } : i)),
     )
   }
 
@@ -1171,46 +1249,48 @@ export function BudgetSection({ eventId, initialItems, totalBudget, focusItemId 
   }
 
   return (
-    <div className="rounded-2xl bg-white/4 border border-white/10 p-5">
+    <div className="rounded-2xl border border-white/10 bg-white/4 p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="font-semibold text-white">Budget</h2>
         {canEdit('BUDGET') && (
-        <button
-          onClick={() => setEditingItem('new')}
-          className="flex items-center gap-1.5 text-xs text-brand-400 hover:text-gold-400 hover:bg-gold-500/10 px-2.5 py-1.5 rounded-lg transition-colors border border-transparent hover:border-gold-500/20"
-        >
-          <Plus size={13} /> Add item
-        </button>
+          <button
+            onClick={() => setEditingItem('new')}
+            className="text-brand-400 hover:text-gold-400 hover:bg-gold-500/10 hover:border-gold-500/20 flex items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-xs transition-colors"
+          >
+            <Plus size={13} /> Add item
+          </button>
         )}
       </div>
 
       {/* Overall progress */}
       <div className="mb-1">
-        <div className="flex justify-between text-xs text-brand-400 mb-1.5">
+        <div className="text-brand-400 mb-1.5 flex justify-between text-xs">
           <span>CA${totalSpent.toLocaleString('en-CA')} spent</span>
           <span>CA${totalBudget.toLocaleString('en-CA')} total</span>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-white/8 overflow-hidden mb-1">
+        <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-white/8">
           <div
             className={cn(
               'h-full rounded-full transition-all duration-500',
-              overallPct >= 100 ? 'bg-red-500' : 'bg-gradient-to-r from-gold-600 to-gold-400',
+              overallPct >= 100 ? 'bg-red-500' : 'from-gold-600 to-gold-400 bg-gradient-to-r',
             )}
             style={{ width: `${Math.min(overallPct, 100)}%` }}
           />
         </div>
         {totalAllocated !== totalBudget && (
-          <p className="text-[10px] text-brand-600">
+          <p className="text-brand-600 text-[10px]">
             CA${totalAllocated.toLocaleString('en-CA')} allocated across categories
           </p>
         )}
       </div>
 
       {/* Items */}
-      <div className="space-y-2 mt-4 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
+      <div className="mt-4 max-h-[420px] scrollbar-thin space-y-2 overflow-y-auto pr-1">
         {items.length === 0 ? (
-          <p className="text-center text-brand-500 text-sm py-6">No budget items yet — add one above.</p>
+          <p className="text-brand-500 py-6 text-center text-sm">
+            No budget items yet — add one above.
+          </p>
         ) : (
           items.map((item) => (
             <BudgetRow

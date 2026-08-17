@@ -5,7 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Check, Plus, Trash2, Unlink } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
-import { CEREMONY_PRESETS, EVENT_TYPE_LABELS, THEME_OPTIONS, TRIBE_OPTIONS } from '@/lib/event-type-labels'
+import {
+  CEREMONY_PRESETS,
+  EVENT_TYPE_LABELS,
+  THEME_OPTIONS,
+  TRIBE_OPTIONS,
+} from '@/lib/event-type-labels'
 import type { Event, EventJourneyStop, EventType, WeddingTheme } from '@/lib/api.types'
 
 function toggleValue<T extends string>(list: T[], value: T): T[] {
@@ -52,13 +57,14 @@ export function EventSubEventsSection({
     if (!budget.trim() || Number.isNaN(dollars)) return 0
     return Math.round(dollars)
   })()
-  const wouldExceed =
-    tree != null && tree.pot > 0 && tree.envelopesTotal + nextBudget > tree.pot
+  const wouldExceed = tree != null && tree.pot > 0 && tree.envelopesTotal + nextBudget > tree.pot
 
   const attachable = useMemo(() => {
     if (!standalone) return []
     const taken = new Set(children.map((stop) => stop.id))
-    return standalone.filter((row) => row.viewer?.isHost && !row.parentId && row.id !== event.id && !taken.has(row.id))
+    return standalone.filter(
+      (row) => row.viewer?.isHost && !row.parentId && row.id !== event.id && !taken.has(row.id),
+    )
   }, [standalone, children, event.id])
 
   async function refresh(next?: Event) {
@@ -112,7 +118,8 @@ export function EventSubEventsSection({
       setShowAdd(false)
       await refresh(data)
     } catch (err) {
-      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+        ?.message
       setError(Array.isArray(msg) ? msg[0] : (msg ?? 'Could not add sub-event.'))
     } finally {
       setPending(false)
@@ -122,7 +129,9 @@ export function EventSubEventsSection({
   async function attach(eventId: string) {
     setError('')
     try {
-      const { data } = await proxyClient.post<Event>(`/events/${event.id}/children/attach`, { eventId })
+      const { data } = await proxyClient.post<Event>(`/events/${event.id}/children/attach`, {
+        eventId,
+      })
       await refresh(data)
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -131,11 +140,14 @@ export function EventSubEventsSection({
   }
 
   async function removeChild(stop: EventJourneyStop) {
-    if (!confirm(`Remove “${stop.title}” from this event? It stays in My Events as its own event.`)) return
+    if (!confirm(`Remove “${stop.title}” from this event? It stays in My Events as its own event.`))
+      return
     setError('')
     setActingId(stop.id)
     try {
-      const { data } = await proxyClient.post<Event>(`/events/${event.id}/children/${stop.id}/detach`)
+      const { data } = await proxyClient.post<Event>(
+        `/events/${event.id}/children/${stop.id}/detach`,
+      )
       await refresh(data)
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -165,11 +177,11 @@ export function EventSubEventsSection({
 
   return (
     <section
-      className="rounded-2xl overflow-hidden mb-8"
+      className="mb-8 overflow-hidden rounded-2xl"
       style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
     >
       <div
-        className="flex items-center justify-between gap-3 px-5 py-4 border-b"
+        className="flex items-center justify-between gap-3 border-b px-5 py-4"
         style={{ borderColor: 'var(--color-border)' }}
       >
         <div>
@@ -177,7 +189,7 @@ export function EventSubEventsSection({
             Sub-events
           </h2>
           {tree && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-muted)' }}>
+            <p className="mt-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
               Budget {money(tree.pot, event.currency)}
               {tree.envelopesTotal > 0
                 ? ` · ${money(tree.envelopesTotal, event.currency)} assigned to sub-events`
@@ -198,7 +210,7 @@ export function EventSubEventsSection({
               setShowAdd((v) => !v)
               void loadStandalone()
             }}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold"
             style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
           >
             <Plus size={14} /> Add
@@ -210,18 +222,20 @@ export function EventSubEventsSection({
         {tree && (
           <>
             <div
-              className={`h-1.5 rounded-full overflow-hidden ${overage > 0 ? 'mb-3' : 'mb-5'}`}
+              className={`h-1.5 overflow-hidden rounded-full ${overage > 0 ? 'mb-3' : 'mb-5'}`}
               style={{ background: 'color-mix(in srgb, var(--color-border) 80%, transparent)' }}
             >
               <div
-                className="h-full rounded-full bg-gold-600"
-                style={{ width: `${tree.pot ? Math.min(100, (tree.envelopesTotal / tree.pot) * 100) : 0}%` }}
+                className="bg-gold-600 h-full rounded-full"
+                style={{
+                  width: `${tree.pot ? Math.min(100, (tree.envelopesTotal / tree.pot) * 100) : 0}%`,
+                }}
               />
             </div>
             {overage > 0 && (
-              <p className="text-xs mb-5" style={{ color: 'var(--color-brand-primary)' }}>
-                Sub-event budgets add up to more than this event&apos;s total.{' '}
-                This event&apos;s budget is still the cap.
+              <p className="mb-5 text-xs" style={{ color: 'var(--color-brand-primary)' }}>
+                Sub-event budgets add up to more than this event&apos;s total. This event&apos;s
+                budget is still the cap.
               </p>
             )}
           </>
@@ -229,7 +243,8 @@ export function EventSubEventsSection({
 
         {children.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Optional. Add bride price, traditional, court, reception — or any sub-event inside this one.
+            Optional. Add bride price, traditional, court, reception — or any sub-event inside this
+            one.
           </p>
         ) : (
           <ol className="relative space-y-0">
@@ -237,9 +252,11 @@ export function EventSubEventsSection({
               <li key={stop.id} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
                     style={{
-                      background: stop.isCompleted ? 'var(--color-brand-primary)' : 'var(--color-card)',
+                      background: stop.isCompleted
+                        ? 'var(--color-brand-primary)'
+                        : 'var(--color-card)',
                       color: stop.isCompleted ? '#fff' : 'var(--color-text-primary)',
                       border: '1.5px solid var(--color-brand-primary)',
                     }}
@@ -247,13 +264,18 @@ export function EventSubEventsSection({
                     {stop.isCompleted ? <Check size={12} /> : index + 1}
                   </span>
                   {index < children.length - 1 && (
-                    <span className="w-px flex-1 min-h-[28px]" style={{ background: 'var(--color-border)' }} />
+                    <span
+                      className="min-h-[28px] w-px flex-1"
+                      style={{ background: 'var(--color-border)' }}
+                    />
                   )}
                 </div>
-                <div className="pb-6 flex-1 min-w-0">
+                <div className="min-w-0 flex-1 pb-6">
                   <Link href={`/events/${stop.id}`} className="block min-w-0">
-                    <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{stop.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                    <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {stop.title}
+                    </p>
+                    <p className="mt-0.5 text-xs" style={{ color: 'var(--color-muted)' }}>
                       {EVENT_TYPE_LABELS[stop.eventType] ?? stop.eventType}
                       {stop.location ? ` · ${stop.location}` : ''}
                       {stop.tribes?.length
@@ -262,16 +284,18 @@ export function EventSubEventsSection({
                       {stop.estimatedDate
                         ? ` · ${new Date(stop.estimatedDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}`
                         : ''}
-                      {stop.allocatedBudget != null ? ` · ${money(stop.allocatedBudget, event.currency)}` : ''}
+                      {stop.allocatedBudget != null
+                        ? ` · ${money(stop.allocatedBudget, event.currency)}`
+                        : ''}
                     </p>
                   </Link>
                   {isHost && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         type="button"
                         disabled={actingId === stop.id}
                         onClick={() => void removeChild(stop)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold disabled:opacity-50"
                         style={{
                           background: 'var(--card-bg)',
                           border: '1px solid var(--color-border)',
@@ -285,7 +309,7 @@ export function EventSubEventsSection({
                         type="button"
                         disabled={actingId === stop.id}
                         onClick={() => void deleteChild(stop)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold disabled:opacity-50"
                         style={{
                           background: 'var(--card-bg)',
                           border: '1px solid var(--color-border)',
@@ -306,21 +330,24 @@ export function EventSubEventsSection({
         {showAdd && isHost && (
           <form
             onSubmit={(e) => void addChild(e)}
-            className="mt-2 rounded-2xl border p-4 space-y-3"
+            className="mt-2 space-y-3 rounded-2xl border p-4"
             style={{ borderColor: 'var(--color-border)' }}
           >
             <div>
               <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                 Add a sub-event
               </p>
-              <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+              <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
                 A sub-event is a full event — its own type, name, location, culture, look, date,
-                guests, and budget. Culture and look start from this event; change them if this
-                part is different.
+                guests, and budget. Culture and look start from this event; change them if this part
+                is different.
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+              <p
+                className="mb-1.5 text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Type
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -330,11 +357,15 @@ export function EventSubEventsSection({
                     type="button"
                     onClick={() => {
                       setEventType(preset.value)
-                      if (!title || CEREMONY_PRESETS.some((p) => p.label === title)) setTitle(preset.label)
+                      if (!title || CEREMONY_PRESETS.some((p) => p.label === title))
+                        setTitle(preset.label)
                     }}
-                    className="px-2.5 py-1 rounded-full text-xs border"
+                    className="rounded-full border px-2.5 py-1 text-xs"
                     style={{
-                      borderColor: eventType === preset.value ? 'var(--color-brand-primary)' : 'var(--color-border)',
+                      borderColor:
+                        eventType === preset.value
+                          ? 'var(--color-brand-primary)'
+                          : 'var(--color-border)',
                       color: 'var(--color-text-primary)',
                     }}
                   >
@@ -344,7 +375,10 @@ export function EventSubEventsSection({
               </div>
             </div>
             <label className="block">
-              <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Name
               </span>
               <input
@@ -352,12 +386,15 @@ export function EventSubEventsSection({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Bride price in Lagos"
                 required
-                className="mt-1 w-full h-10 px-3 rounded-xl border bg-transparent text-sm"
+                className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Location
               </span>
               <input
@@ -365,12 +402,15 @@ export function EventSubEventsSection({
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="City, venue, or address"
                 required
-                className="mt-1 w-full h-10 px-3 rounded-xl border bg-transparent text-sm"
+                className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
               />
             </label>
             <div>
-              <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+              <p
+                className="mb-1.5 text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Culture
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -379,9 +419,11 @@ export function EventSubEventsSection({
                     key={opt.value}
                     type="button"
                     onClick={() => setTribes((current) => toggleValue(current, opt.value))}
-                    className="px-2.5 py-1 rounded-full text-xs border"
+                    className="rounded-full border px-2.5 py-1 text-xs"
                     style={{
-                      borderColor: tribes.includes(opt.value) ? 'var(--color-brand-primary)' : 'var(--color-border)',
+                      borderColor: tribes.includes(opt.value)
+                        ? 'var(--color-brand-primary)'
+                        : 'var(--color-border)',
                       color: 'var(--color-text-primary)',
                     }}
                   >
@@ -391,7 +433,10 @@ export function EventSubEventsSection({
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+              <p
+                className="mb-1.5 text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Look
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -400,9 +445,11 @@ export function EventSubEventsSection({
                     key={opt.value}
                     type="button"
                     onClick={() => setThemes((current) => toggleValue(current, opt.value))}
-                    className="px-2.5 py-1 rounded-full text-xs border"
+                    className="rounded-full border px-2.5 py-1 text-xs"
                     style={{
-                      borderColor: themes.includes(opt.value) ? 'var(--color-brand-primary)' : 'var(--color-border)',
+                      borderColor: themes.includes(opt.value)
+                        ? 'var(--color-brand-primary)'
+                        : 'var(--color-border)',
                       color: 'var(--color-text-primary)',
                     }}
                   >
@@ -413,19 +460,25 @@ export function EventSubEventsSection({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
-                <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   Date <span style={{ color: 'var(--color-muted)' }}>(optional)</span>
                 </span>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="mt-1 w-full h-10 px-3 rounded-xl border bg-transparent text-sm"
+                  className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
                 />
               </label>
               <label className="block">
-                <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   Guests <span style={{ color: 'var(--color-muted)' }}>(optional)</span>
                 </span>
                 <input
@@ -435,13 +488,16 @@ export function EventSubEventsSection({
                   value={guestCount}
                   onChange={(e) => setGuestCount(e.target.value)}
                   placeholder="200"
-                  className="mt-1 w-full h-10 px-3 rounded-xl border bg-transparent text-sm"
+                  className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
                 />
               </label>
             </div>
             <label className="block">
-              <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Budget <span style={{ color: 'var(--color-muted)' }}>(optional)</span>
               </span>
               <input
@@ -451,11 +507,14 @@ export function EventSubEventsSection({
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="0"
-                className="mt-1 w-full h-10 px-3 rounded-xl border bg-transparent text-sm"
+                className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
               />
             </label>
-            <p className="text-xs" style={{ color: wouldExceed ? 'var(--color-brand-primary)' : 'var(--color-muted)' }}>
+            <p
+              className="text-xs"
+              style={{ color: wouldExceed ? 'var(--color-brand-primary)' : 'var(--color-muted)' }}
+            >
               {wouldExceed
                 ? "This would put sub-event budgets over this event's total. You can still add it — this event's budget is still the cap."
                 : remaining > 0
@@ -467,7 +526,7 @@ export function EventSubEventsSection({
             <button
               type="submit"
               disabled={pending}
-              className="h-10 px-4 rounded-xl text-sm font-semibold disabled:opacity-50"
+              className="h-10 rounded-xl px-4 text-sm font-semibold disabled:opacity-50"
               style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
             >
               {pending ? 'Adding…' : 'Add sub-event'}
@@ -475,11 +534,14 @@ export function EventSubEventsSection({
           </form>
         )}
 
-        {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
+        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
         {isHost && attachable.length > 0 && (
           <div className="mt-5">
-            <h3 className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--color-muted)' }}>
+            <h3
+              className="mb-2 text-xs font-medium tracking-wide uppercase"
+              style={{ color: 'var(--color-muted)' }}
+            >
               Attach an existing event
             </h3>
             <div className="space-y-2">
@@ -488,7 +550,7 @@ export function EventSubEventsSection({
                   key={row.id}
                   type="button"
                   onClick={() => void attach(row.id)}
-                  className="w-full text-left rounded-xl border px-3 py-2 text-sm"
+                  className="w-full rounded-xl border px-3 py-2 text-left text-sm"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
                 >
                   {row.title}

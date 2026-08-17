@@ -35,7 +35,11 @@ interface Mentionable {
   email: string
 }
 
-function displayName(person: { firstName: string | null; lastName: string | null; email?: string }) {
+function displayName(person: {
+  firstName: string | null
+  lastName: string | null
+  email?: string
+}) {
   const name = [person.firstName, person.lastName].filter(Boolean).join(' ')
   return name || person.email || 'Someone'
 }
@@ -51,10 +55,15 @@ function surfaceFor(subjectType: SubjectType): EventSurface | null {
 function CommentBody({ text }: { text: string }) {
   const parts = text.split(/(@[^\s@]+)/g)
   return (
-    <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)' }}>
+    <p
+      className="text-xs leading-relaxed whitespace-pre-wrap"
+      style={{ color: 'var(--color-text-secondary)' }}
+    >
       {parts.map((part, i) =>
         part.startsWith('@') ? (
-          <span key={i} className="font-semibold" style={{ color: 'var(--color-brand-primary)' }}>{part}</span>
+          <span key={i} className="font-semibold" style={{ color: 'var(--color-brand-primary)' }}>
+            {part}
+          </span>
         ) : (
           <span key={i}>{part}</span>
         ),
@@ -121,7 +130,9 @@ export function EventItemComments({
       if (!cancelled) setLoading(false)
     }
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [eventId, subjectType, subjectId, allowPost, surface])
 
   useEffect(() => {
@@ -168,12 +179,15 @@ export function EventItemComments({
   const count = comments.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0)
 
   return (
-    <div className={bare ? undefined : 'pt-2 border-t'} style={bare ? undefined : { borderColor: 'var(--color-border)' }}>
+    <div
+      className={bare ? undefined : 'border-t pt-2'}
+      style={bare ? undefined : { borderColor: 'var(--color-border)' }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 w-full text-left mb-2 rounded-md hover:opacity-80"
+        className="mb-2 flex w-full items-center gap-1.5 rounded-md text-left hover:opacity-80"
         style={{ color: 'var(--color-muted)' }}
       >
         <ChevronDown
@@ -182,37 +196,38 @@ export function EventItemComments({
           style={{ transform: open ? undefined : 'rotate(-90deg)' }}
         />
         <MessageSquare size={10} />
-        <span className="text-[10px] font-semibold uppercase tracking-wider">
+        <span className="text-[10px] font-semibold tracking-wider uppercase">
           Notes {count > 0 && `· ${count}`}
         </span>
       </button>
-      {open && (loading ? (
-        <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-muted)' }} />
-      ) : (
-        <div className="space-y-3">
-          {comments.map((comment) => (
-            <CommentThread
-              key={comment.id}
-              comment={comment}
-              mentionable={mentionable}
-              canPost={allowPost}
-              currentUserId={currentUserId}
-              currentUserIsHost={viewer.isHost}
-              focusCommentId={focusCommentId}
-              onReply={(body, ids) => addComment(body, ids, comment.id)}
-              onEdit={editComment}
-              onDelete={(id, parentId) => removeComment(id, parentId)}
-            />
-          ))}
-          {allowPost && (
-            <Composer
-              mentionable={mentionable}
-              placeholder="Add a note… use @ to mention"
-              onSubmit={(body, ids) => addComment(body, ids)}
-            />
-          )}
-        </div>
-      ))}
+      {open &&
+        (loading ? (
+          <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-muted)' }} />
+        ) : (
+          <div className="space-y-3">
+            {comments.map((comment) => (
+              <CommentThread
+                key={comment.id}
+                comment={comment}
+                mentionable={mentionable}
+                canPost={allowPost}
+                currentUserId={currentUserId}
+                currentUserIsHost={viewer.isHost}
+                focusCommentId={focusCommentId}
+                onReply={(body, ids) => addComment(body, ids, comment.id)}
+                onEdit={editComment}
+                onDelete={(id, parentId) => removeComment(id, parentId)}
+              />
+            ))}
+            {allowPost && (
+              <Composer
+                mentionable={mentionable}
+                placeholder="Add a note… use @ to mention"
+                onSubmit={(body, ids) => addComment(body, ids)}
+              />
+            )}
+          </div>
+        ))}
     </div>
   )
 }
@@ -326,7 +341,7 @@ function CommentThread({
         <button
           type="button"
           onClick={() => setReplying(true)}
-          className="text-[11px] pl-6 hover:opacity-70"
+          className="pl-6 text-[11px] hover:opacity-70"
           style={{ color: 'var(--color-muted)' }}
         >
           Reply
@@ -368,7 +383,9 @@ function CommentRow({
   const [pending, start] = useTransition()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(comment.body)
-  const edited = comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 2000
+  const edited =
+    comment.updatedAt &&
+    new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 2000
 
   if (editing) {
     return (
@@ -377,7 +394,7 @@ function CommentRow({
           rows={2}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="w-full text-xs rounded-lg px-2.5 py-2 resize-none focus:outline-none"
+          className="w-full resize-none rounded-lg px-2.5 py-2 text-xs focus:outline-none"
           style={{
             background: 'var(--input-bg)',
             border: '1px solid var(--color-border)',
@@ -385,16 +402,26 @@ function CommentRow({
           }}
         />
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => { setEditing(false); setDraft(comment.body) }} className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(false)
+              setDraft(comment.body)
+            }}
+            className="text-[11px]"
+            style={{ color: 'var(--color-muted)' }}
+          >
             Cancel
           </button>
           <button
             type="button"
             disabled={pending || !draft.trim()}
-            onClick={() => start(async () => {
-              await onEdit(draft.trim())
-              setEditing(false)
-            })}
+            onClick={() =>
+              start(async () => {
+                await onEdit(draft.trim())
+                setEditing(false)
+              })
+            }
             className="text-[11px] font-semibold"
             style={{ color: 'var(--color-brand-primary)' }}
           >
@@ -408,20 +435,33 @@ function CommentRow({
   return (
     <div
       id={`comment-${comment.id}`}
-      className="group flex items-start gap-2 rounded-lg px-1 -mx-1"
-      style={highlighted ? { background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' } : undefined}
+      className="group -mx-1 flex items-start gap-2 rounded-lg px-1"
+      style={
+        highlighted
+          ? { background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' }
+          : undefined
+      }
     >
       <div
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
-        style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 15%, transparent)', color: 'var(--color-brand-primary)' }}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+        style={{
+          background: 'color-mix(in srgb, var(--color-brand-primary) 15%, transparent)',
+          color: 'var(--color-brand-primary)',
+        }}
       >
         {(comment.author.firstName?.[0] ?? '?').toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px]" style={{ color: 'var(--color-text-primary)' }}>
           <span className="font-medium">{displayName(comment.author)}</span>
-          <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>{timeAgo(comment.createdAt)}</span>
-          {edited && <span className="ml-1" style={{ color: 'var(--color-muted)' }}>(edited)</span>}
+          <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>
+            {timeAgo(comment.createdAt)}
+          </span>
+          {edited && (
+            <span className="ml-1" style={{ color: 'var(--color-muted)' }}>
+              (edited)
+            </span>
+          )}
         </p>
         <CommentBody text={comment.body} />
       </div>
@@ -429,8 +469,11 @@ function CommentRow({
         {canEdit && (
           <button
             type="button"
-            onClick={() => { setDraft(comment.body); setEditing(true) }}
-            className="p-1 rounded-md hover:opacity-70"
+            onClick={() => {
+              setDraft(comment.body)
+              setEditing(true)
+            }}
+            className="rounded-md p-1 hover:opacity-70"
             style={{ color: 'var(--color-muted)' }}
             aria-label="Edit comment"
           >
@@ -442,7 +485,7 @@ function CommentRow({
             type="button"
             disabled={pending}
             onClick={() => start(onDelete)}
-            className="p-1 rounded-md hover:opacity-70"
+            className="rounded-md p-1 hover:opacity-70"
             style={{ color: 'var(--color-muted)' }}
             aria-label="Delete comment"
           >
@@ -477,11 +520,13 @@ function Composer({
   const suggestions = useMemo(() => {
     if (mentionQuery == null) return []
     const q = mentionQuery.toLowerCase()
-    return mentionable.filter((p) => {
-      const name = displayName(p).toLowerCase()
-      const email = p.email.toLowerCase()
-      return name.includes(q) || email.includes(q)
-    }).slice(0, 8)
+    return mentionable
+      .filter((p) => {
+        const name = displayName(p).toLowerCase()
+        const email = p.email.toLowerCase()
+        return name.includes(q) || email.includes(q)
+      })
+      .slice(0, 8)
   }, [mentionable, mentionQuery])
 
   useLayoutEffect(() => {
@@ -509,7 +554,7 @@ function Composer({
     const at = value.lastIndexOf('@')
     const insert = `@${displayName(person)} `
     setValue(value.slice(0, at) + insert)
-    setPicked((prev) => prev.some((p) => p.id === person.id) ? prev : [...prev, person])
+    setPicked((prev) => (prev.some((p) => p.id === person.id) ? prev : [...prev, person]))
     setMentionQuery(null)
     ref.current?.focus()
   }
@@ -531,43 +576,48 @@ function Composer({
 
   return (
     <div className="relative">
-      {showMenu && createPortal(
-        <div
-          className="rounded-xl overflow-hidden shadow-2xl"
-          style={{
-            position: 'fixed',
-            left: menuPos.left,
-            width: Math.max(menuPos.width, 220),
-            bottom: window.innerHeight - menuPos.top + 6,
-            zIndex: 80,
-            background: 'var(--color-card)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          {suggestions.length > 0 ? suggestions.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                pick(p)
-              }}
-              className="w-full text-left px-3 py-2 text-xs hover:opacity-80"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              <span className="font-medium">{displayName(p)}</span>
-              <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>{p.email}</span>
-            </button>
-          )) : (
-            <p className="px-3 py-2.5 text-xs" style={{ color: 'var(--color-muted)' }}>
-              {mentionable.length === 0
-                ? 'Nobody else can see this tab yet. Invite them with access first.'
-                : 'No matching names'}
-            </p>
-          )}
-        </div>,
-        document.body,
-      )}
+      {showMenu &&
+        createPortal(
+          <div
+            className="overflow-hidden rounded-xl shadow-2xl"
+            style={{
+              position: 'fixed',
+              left: menuPos.left,
+              width: Math.max(menuPos.width, 220),
+              bottom: window.innerHeight - menuPos.top + 6,
+              zIndex: 80,
+              background: 'var(--color-card)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            {suggestions.length > 0 ? (
+              suggestions.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    pick(p)
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs hover:opacity-80"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  <span className="font-medium">{displayName(p)}</span>
+                  <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>
+                    {p.email}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-2.5 text-xs" style={{ color: 'var(--color-muted)' }}>
+                {mentionable.length === 0
+                  ? 'Nobody else can see this tab yet. Invite them with access first.'
+                  : 'No matching names'}
+              </p>
+            )}
+          </div>,
+          document.body,
+        )}
       <div className="flex items-end gap-2">
         <textarea
           ref={ref}
@@ -587,7 +637,7 @@ function Composer({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 text-xs rounded-lg px-2.5 py-2 resize-none focus:outline-none"
+          className="flex-1 resize-none rounded-lg px-2.5 py-2 text-xs focus:outline-none"
           style={{
             background: 'var(--input-bg)',
             border: '1px solid var(--color-border)',
@@ -598,7 +648,7 @@ function Composer({
           type="button"
           disabled={pending || !value.trim()}
           onClick={submit}
-          className="p-2 rounded-lg disabled:opacity-40"
+          className="rounded-lg p-2 disabled:opacity-40"
           style={{ color: 'var(--color-brand-primary)' }}
           aria-label="Send"
         >

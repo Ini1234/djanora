@@ -1,10 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import {
-  isSessionCookieName,
-  jwtExpiryDate,
-  mintFromSessionJwt,
-} from '@/lib/clerk-token'
+import { isSessionCookieName, jwtExpiryDate, mintFromSessionJwt } from '@/lib/clerk-token'
 
 // '/' is public — the root page itself handles the landing vs signed-in home split
 const isPublicRoute = createRouteMatcher([

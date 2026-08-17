@@ -15,30 +15,30 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-background)]/90 backdrop-blur-md border-b border-[var(--color-border)]">
+    <header className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-md">
       <nav
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+        className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
         aria-label="Main navigation"
       >
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 font-display text-xl font-semibold text-brand-800 hover:text-brand-600 transition-colors"
+          className="font-display text-brand-800 hover:text-brand-600 flex items-center gap-2 text-xl font-semibold transition-colors"
           aria-label="Djanora — home"
         >
-          <span className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-white text-sm font-bold">
+          <span className="bg-brand-700 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white">
             D
           </span>
           <span>Djanora</span>
         </Link>
 
         {/* Desktop nav */}
-        <ul className="hidden md:flex items-center gap-8" role="list">
+        <ul className="hidden items-center gap-8 md:flex" role="list">
           {navLinks.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
+                className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
               >
                 {link.label}
               </Link>
@@ -47,16 +47,16 @@ export function Navbar() {
         </ul>
 
         {/* Auth actions */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden items-center gap-3 md:flex">
           <Link
             href="/sign-in"
-            className="text-sm font-medium text-brand-700 hover:text-brand-600 transition-colors"
+            className="text-brand-700 hover:text-brand-600 text-sm font-medium transition-colors"
           >
             Sign in
           </Link>
           <Link
             href="/sign-up"
-            className="text-sm font-medium bg-brand-700 hover:bg-brand-600 text-white px-4 py-2 rounded-full transition-colors"
+            className="bg-brand-700 hover:bg-brand-600 rounded-full px-4 py-2 text-sm font-medium text-white transition-colors"
           >
             Get started
           </Link>
@@ -64,7 +64,7 @@ export function Navbar() {
 
         {/* Mobile menu toggle */}
         <button
-          className="md:hidden p-2 rounded-md text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] transition-colors"
+          className="rounded-md p-2 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-foreground)] md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
@@ -78,34 +78,34 @@ export function Navbar() {
       <div
         id="mobile-menu"
         className={cn(
-          'md:hidden border-t border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden transition-all duration-200',
+          'overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-background)] transition-all duration-200 md:hidden',
           mobileOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
         )}
         aria-hidden={!mobileOpen}
       >
-        <ul className="px-4 py-4 flex flex-col gap-4" role="list">
+        <ul className="flex flex-col gap-4 px-4 py-4" role="list">
           {navLinks.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
+                className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
               </Link>
             </li>
           ))}
-          <li className="pt-2 border-t border-[var(--color-border)] flex flex-col gap-3">
+          <li className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-2">
             <Link
               href="/sign-in"
-              className="text-sm font-medium text-brand-700"
+              className="text-brand-700 text-sm font-medium"
               onClick={() => setMobileOpen(false)}
             >
               Sign in
             </Link>
             <Link
               href="/sign-up"
-              className="text-sm font-medium bg-brand-700 text-white px-4 py-2 rounded-full text-center transition-colors"
+              className="bg-brand-700 rounded-full px-4 py-2 text-center text-sm font-medium text-white transition-colors"
               onClick={() => setMobileOpen(false)}
             >
               Get started

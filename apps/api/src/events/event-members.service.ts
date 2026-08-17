@@ -93,9 +93,7 @@ export class EventMembersService {
         isHost: false,
         user: m.user,
         inviteUrl:
-          access.isHost && !m.acceptedAt
-            ? `${this.webUrl}/events/join/${m.token}`
-            : undefined,
+          access.isHost && !m.acceptedAt ? `${this.webUrl}/events/join/${m.token}` : undefined,
       })),
     }
   }
@@ -126,7 +124,7 @@ export class EventMembersService {
       firstName: string | null
       lastName: string | null
       email: string
-      role: 'HOST' | string
+      role: string
     }> = []
 
     if (host && host.id !== access.user.id) {
@@ -230,6 +228,7 @@ export class EventMembersService {
 
     await this.delivery.sendEmail({
       to: email,
+      kind: 'invitation',
       subject: `${hostName} invited you to plan ${member.event.title}`,
       html: this.buildPlannerInviteEmail({
         hostName,
