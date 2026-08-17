@@ -14,16 +14,19 @@ export class EmbeddingService {
   private readonly deployment: string | undefined
 
   constructor(private readonly config: ConfigService) {
-    this.endpoint   = config.get<string>('AZURE_OPENAI_ENDPOINT')
-    this.apiKey     = config.get<string>('AZURE_OPENAI_API_KEY')
-    this.deployment = config.get<string>('AZURE_OPENAI_EMBEDDING_DEPLOYMENT') ?? 'text-embedding-3-small'
+    this.endpoint = config.get<string>('AZURE_OPENAI_ENDPOINT')
+    this.apiKey = config.get<string>('AZURE_OPENAI_API_KEY')
+    this.deployment =
+      config.get<string>('AZURE_OPENAI_EMBEDDING_DEPLOYMENT') ?? 'text-embedding-3-small'
   }
 
   get isConfigured(): boolean {
     // Treat placeholder values as unconfigured
     return !!(
-      this.endpoint && !this.endpoint.includes('your-resource') &&
-      this.apiKey   && !this.apiKey.includes('your_api_key')
+      this.endpoint &&
+      !this.endpoint.includes('your-resource') &&
+      this.apiKey &&
+      !this.apiKey.includes('your_api_key')
     )
   }
 
@@ -55,10 +58,10 @@ export class EmbeddingService {
         return null
       }
 
-      const json = await res.json() as { data: { embedding: number[] }[] }
+      const json = (await res.json()) as { data: { embedding: number[] }[] }
       // Use a plain ArrayBuffer so Prisma Bytes accepts it without complaints
       const floats = new Float32Array(json.data[0].embedding)
-      const plain  = new ArrayBuffer(floats.byteLength)
+      const plain = new ArrayBuffer(floats.byteLength)
       new Uint8Array(plain).set(new Uint8Array(floats.buffer))
       return new Uint8Array(plain)
     } catch (err) {
@@ -78,9 +81,11 @@ export class EmbeddingService {
 
   /** Cosine similarity between two float arrays. */
   static cosineSimilarity(a: number[], b: number[]): number {
-    let dot = 0, magA = 0, magB = 0
+    let dot = 0,
+      magA = 0,
+      magB = 0
     for (let i = 0; i < a.length; i++) {
-      dot  += a[i] * b[i]
+      dot += a[i] * b[i]
       magA += a[i] * a[i]
       magB += b[i] * b[i]
     }

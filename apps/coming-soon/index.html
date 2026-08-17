@@ -175,6 +175,15 @@
         font-size: 0.8rem;
         border-top: 1px solid var(--border);
       }
+
+      footer a {
+        color: var(--gold-800);
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
@@ -202,7 +211,7 @@
       </div>
     </main>
     <footer>
-      <p>&copy; <span id="year"></span> Djanora</p>
+      <p>&copy; <span id="year"></span> Djanora · <a href="mailto:contact@djanora.com">contact@djanora.com</a></p>
     </footer>
     <script>
       document.getElementById("year").textContent = String(new Date().getFullYear())

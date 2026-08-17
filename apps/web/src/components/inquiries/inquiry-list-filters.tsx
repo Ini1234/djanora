@@ -7,7 +7,14 @@ export type StatusFilterKey = 'ALL' | 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'BOOKE
 export type WhenFilter = 'all' | 'soon' | 'upcoming' | 'past'
 export type InquirySortKey = 'recent' | 'event-asc' | 'event-desc'
 
-const STATUS_KEYS: StatusFilterKey[] = ['ALL', 'PENDING', 'QUOTED', 'ACCEPTED', 'BOOKED', 'DECLINED']
+const STATUS_KEYS: StatusFilterKey[] = [
+  'ALL',
+  'PENDING',
+  'QUOTED',
+  'ACCEPTED',
+  'BOOKED',
+  'DECLINED',
+]
 const WHEN_KEYS: WhenFilter[] = ['all', 'soon', 'upcoming', 'past']
 const SORT_KEYS: InquirySortKey[] = ['recent', 'event-asc', 'event-desc']
 const SOON_DAYS = 30
@@ -105,8 +112,13 @@ export function applyInquiryFilters<
   const filtered = items.filter((item) => {
     if (filters.status !== 'ALL' && item.status !== filters.status) return false
     if (filters.event === 'none' && item.event) return false
-    if (filters.event !== 'all' && filters.event !== 'none' && item.event?.id !== filters.event) return false
-    if (filters.category && filters.category !== 'all' && item.vendorProfile?.category !== filters.category) {
+    if (filters.event !== 'all' && filters.event !== 'none' && item.event?.id !== filters.event)
+      return false
+    if (
+      filters.category &&
+      filters.category !== 'all' &&
+      item.vendorProfile?.category !== filters.category
+    ) {
       return false
     }
     if (!matchesWhen(inquiryEventTime(item), when)) return false
@@ -150,7 +162,7 @@ export function StatusFilterTabs({
 }) {
   return (
     <div
-      className="flex items-center gap-0.5 p-0.5 rounded-lg border overflow-x-auto no-scrollbar"
+      className="no-scrollbar flex items-center gap-0.5 overflow-x-auto rounded-lg border p-0.5"
       style={{ background: 'var(--page-bg)', borderColor: 'var(--color-border)' }}
     >
       {tabs.map(({ key, label }) => (
@@ -158,16 +170,20 @@ export function StatusFilterTabs({
           key={key}
           type="button"
           onClick={() => onChange(key)}
-          className="px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap"
-          style={value === key ? {
-            background: 'var(--card-bg)',
-            color: 'var(--color-foreground)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          } : { color: 'var(--color-muted)' }}
+          className="rounded-md px-3 py-1 text-xs font-medium whitespace-nowrap transition-all"
+          style={
+            value === key
+              ? {
+                  background: 'var(--card-bg)',
+                  color: 'var(--color-foreground)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                }
+              : { color: 'var(--color-muted)' }
+          }
         >
           {label}
           {key === 'PENDING' && pendingCount != null && pendingCount > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] bg-gold-600 text-white">
+            <span className="bg-gold-600 ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] text-white">
               {pendingCount}
             </span>
           )}
@@ -215,14 +231,17 @@ export function InquiryInboxFilters({
   const showWhen = Boolean(onWhenFilterChange)
   const showSort = Boolean(onSortChange)
   const hasActive =
-    eventFilter !== 'all'
-    || Boolean(search.trim())
-    || Boolean(categoryFilter && categoryFilter !== 'all')
-    || Boolean(whenFilter && whenFilter !== 'all')
-    || Boolean(sort && sort !== 'recent')
+    eventFilter !== 'all' ||
+    Boolean(search.trim()) ||
+    Boolean(categoryFilter && categoryFilter !== 'all') ||
+    Boolean(whenFilter && whenFilter !== 'all') ||
+    Boolean(sort && sort !== 'recent')
 
   return (
-    <div className="shrink-0 border-b px-3 py-2.5 space-y-2" style={{ borderColor: 'var(--color-border)' }}>
+    <div
+      className="shrink-0 space-y-2 border-b px-3 py-2.5"
+      style={{ borderColor: 'var(--color-border)' }}
+    >
       <SearchField value={search} onChange={onSearchChange} placeholder={searchPlaceholder} />
       {(showEvent || showCategory) && (
         <div className={showEvent && showCategory ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'}>
@@ -237,7 +256,9 @@ export function InquiryInboxFilters({
               <option value="all">All events</option>
               {noneEventCount > 0 && <option value="none">No event</option>}
               {events.map((event) => (
-                <option key={event.id} value={event.id}>{event.title}</option>
+                <option key={event.id} value={event.id}>
+                  {event.title}
+                </option>
               ))}
             </select>
           )}
@@ -251,7 +272,9 @@ export function InquiryInboxFilters({
             >
               <option value="all">All categories</option>
               {categories!.map((cat) => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
               ))}
             </select>
           )}
@@ -292,7 +315,7 @@ export function InquiryInboxFilters({
         <button
           type="button"
           onClick={onClear}
-          className="text-[11px] font-medium hover:opacity-70 transition-opacity"
+          className="text-[11px] font-medium transition-opacity hover:opacity-70"
           style={{ color: 'var(--color-muted)' }}
         >
           Clear filters
@@ -315,7 +338,7 @@ function SearchField({
     <div className="relative">
       <Search
         size={13}
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+        className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2"
         style={{ color: 'var(--color-muted)' }}
       />
       <input
@@ -323,14 +346,18 @@ function SearchField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-8 pr-7 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-        style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+        className="focus:ring-gold-500/40 w-full rounded-lg border py-1.5 pr-7 pl-8 text-xs focus:ring-2 focus:outline-none"
+        style={{
+          background: 'var(--input-bg)',
+          borderColor: 'var(--color-border)',
+          color: 'var(--color-foreground)',
+        }}
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange('')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:opacity-70"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:opacity-70"
           style={{ color: 'var(--color-muted)' }}
           aria-label="Clear search"
         >

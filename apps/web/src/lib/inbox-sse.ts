@@ -14,12 +14,7 @@ export interface InboxRow {
   messages?: InboxPreview[]
 }
 
-const INBOX_EVENTS = new Set([
-  'new_message',
-  'message_updated',
-  'message_unsent',
-  'inquiry_status',
-])
+const INBOX_EVENTS = new Set(['new_message', 'message_updated', 'message_unsent', 'inquiry_status'])
 
 function moveToFront<T extends InboxRow>(list: T[], id: string): T[] {
   const index = list.findIndex((row) => row.id === id)
@@ -79,7 +74,14 @@ export function applyInboxSseEvent<T extends InboxRow>(list: T[], event: SseEven
     const next = [...list]
     next[index] = {
       ...current,
-      messages: [{ ...last, id: event.unsent.messageId, message: '', createdAt: last?.createdAt ?? event.unsent.unsentAt }],
+      messages: [
+        {
+          ...last,
+          id: event.unsent.messageId,
+          message: '',
+          createdAt: last?.createdAt ?? event.unsent.unsentAt,
+        },
+      ],
     }
     return next
   }

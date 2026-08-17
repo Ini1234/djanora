@@ -1,22 +1,8 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  UseGuards,
-} from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common'
 import { GuestsService } from './guests.service'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
-import {
-  CreateGuestDto,
-  UpdateGuestDto,
-  SendInviteDto,
-  BulkSendInviteDto,
-} from './dto/guests.dto'
+import { CreateGuestDto, UpdateGuestDto, SendInviteDto, BulkSendInviteDto } from './dto/guests.dto'
 
 interface ClerkPayload {
   sub: string

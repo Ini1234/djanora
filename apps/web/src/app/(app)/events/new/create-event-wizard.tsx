@@ -4,12 +4,21 @@ import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronRight, ChevronLeft, Check, Loader2,
-  Users, Calendar, MapPin, DollarSign, Sparkles, Search,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  Loader2,
+  Users,
+  Calendar,
+  MapPin,
+  DollarSign,
+  Sparkles,
+  Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
+import { getErrorMessage } from '@/lib/errors'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -17,16 +26,49 @@ import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 const TOTAL_STEPS = 6
 
 const EVENT_TYPES = [
-  { value: 'WEDDING',             label: 'Wedding',              description: 'The whole celebration — add traditional, court, reception as sub-events if you need them' },
-  { value: 'TRADITIONAL_WEDDING', label: 'Traditional Wedding', description: 'A cultural ceremony honouring family traditions' },
-  { value: 'WHITE_WEDDING',       label: 'White Wedding',        description: 'Church wedding in Western style' },
-  { value: 'COURT',               label: 'Court',                description: 'Legal ceremony at the registry' },
-  { value: 'BRIDE_PRICE',         label: 'Bride price',          description: 'Family negotiation and gifts' },
-  { value: 'RECEPTION',           label: 'Wedding Reception',    description: 'The grand celebration after the ceremony' },
-  { value: 'INTRODUCTION',        label: 'Introduction',         description: 'Families meet and gifts are presented' },
-  { value: 'ENGAGEMENT',          label: 'Engagement Party',     description: 'Celebrating the couple before the big day' },
-  { value: 'CUSTOM',              label: 'Custom ceremony',      description: 'A named cultural rite — you choose the title' },
-  { value: 'NAMING_CEREMONY',     label: 'Naming Ceremony',      description: 'Welcoming a new child into the family' },
+  {
+    value: 'WEDDING',
+    label: 'Wedding',
+    description:
+      'The whole celebration — add traditional, court, reception as sub-events if you need them',
+  },
+  {
+    value: 'TRADITIONAL_WEDDING',
+    label: 'Traditional Wedding',
+    description: 'A cultural ceremony honouring family traditions',
+  },
+  {
+    value: 'WHITE_WEDDING',
+    label: 'White Wedding',
+    description: 'Church wedding in Western style',
+  },
+  { value: 'COURT', label: 'Court', description: 'Legal ceremony at the registry' },
+  { value: 'BRIDE_PRICE', label: 'Bride price', description: 'Family negotiation and gifts' },
+  {
+    value: 'RECEPTION',
+    label: 'Wedding Reception',
+    description: 'The grand celebration after the ceremony',
+  },
+  {
+    value: 'INTRODUCTION',
+    label: 'Introduction',
+    description: 'Families meet and gifts are presented',
+  },
+  {
+    value: 'ENGAGEMENT',
+    label: 'Engagement Party',
+    description: 'Celebrating the couple before the big day',
+  },
+  {
+    value: 'CUSTOM',
+    label: 'Custom ceremony',
+    description: 'A named cultural rite — you choose the title',
+  },
+  {
+    value: 'NAMING_CEREMONY',
+    label: 'Naming Ceremony',
+    description: 'Welcoming a new child into the family',
+  },
 ] as const
 
 const TRIBES = [
@@ -161,10 +203,8 @@ const THEMES = [
   },
 ] as const
 
-const VENDOR_CATEGORY_LABELS: Record<string, string> = {}  // replaced by i18n — use getVendorCategoryLabel()
-
 const DEFAULT_BUDGET_SPLIT: Record<string, number> = {
-  CATERER: 0.30,
+  CATERER: 0.3,
   PHOTOGRAPHER: 0.12,
   VIDEOGRAPHER: 0.08,
   DECORATOR: 0.15,
@@ -194,10 +234,10 @@ function EventTypePill({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-all',
+        'flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-all',
         selected
-          ? 'bg-gold-500/15 border-gold-500 text-gold-300 ring-1 ring-gold-500/20'
-          : 'bg-white/5 border-white/10 text-brand-300 hover:bg-white/8 hover:border-white/20 hover:text-white',
+          ? 'bg-gold-500/15 border-gold-500 text-gold-300 ring-gold-500/20 ring-1'
+          : 'text-brand-300 border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 hover:text-white',
       )}
     >
       {selected && <Check size={12} strokeWidth={3} className="text-gold-400 shrink-0" />}
@@ -225,16 +265,16 @@ function TribeRow({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all',
+        'flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all',
         selected
-          ? 'bg-gold-500/10 border-gold-500/50 ring-1 ring-gold-500/20'
-          : 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15',
+          ? 'bg-gold-500/10 border-gold-500/50 ring-gold-500/20 ring-1'
+          : 'border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/6',
       )}
     >
       {/* Checkbox indicator */}
       <span
         className={cn(
-          'shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
+          'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors',
           selected ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
         )}
       >
@@ -242,14 +282,14 @@ function TribeRow({
       </span>
 
       {/* Text */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={cn('font-medium text-sm', selected ? 'text-gold-200' : 'text-white')}>
+          <span className={cn('text-sm font-medium', selected ? 'text-gold-200' : 'text-white')}>
             {label}
           </span>
-          <span className="text-[10px] text-brand-500 font-normal">{region}</span>
+          <span className="text-brand-500 text-[10px] font-normal">{region}</span>
         </div>
-        <p className="text-brand-400 text-xs mt-0.5 leading-relaxed">{description}</p>
+        <p className="text-brand-400 mt-0.5 text-xs leading-relaxed">{description}</p>
       </div>
     </button>
   )
@@ -291,7 +331,7 @@ const stepVariants = {
 
 function StepProgress({ step }: { step: number }) {
   return (
-    <div className="flex items-center gap-1.5 mb-8">
+    <div className="mb-8 flex items-center gap-1.5">
       {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
         <div
           key={i}
@@ -307,17 +347,23 @@ function StepProgress({ step }: { step: number }) {
 
 // ─── Wizard steps ─────────────────────────────────────────────────────────────
 
-function StepEventType({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+function StepEventType({
+  state,
+  set,
+}: {
+  state: WizardState
+  set: (k: keyof WizardState, v: string) => void
+}) {
   const selected = EVENT_TYPES.find((t) => t.value === state.eventType)
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold text-white mb-1">
+      <h2 className="font-display mb-1 text-2xl font-semibold text-white">
         What are we celebrating?
       </h2>
-      <p className="text-brand-300 text-sm mb-6">Choose the type of event you&apos;re planning.</p>
+      <p className="text-brand-300 mb-6 text-sm">Choose the type of event you&apos;re planning.</p>
 
       {/* Pill grid */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="mb-6 flex flex-wrap gap-2">
         {EVENT_TYPES.map(({ value, label }) => (
           <EventTypePill
             key={value}
@@ -337,10 +383,10 @@ function StepEventType({ state, set }: { state: WizardState; set: (k: keyof Wiza
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="rounded-xl bg-gold-500/8 border border-gold-500/20 px-4 py-3"
+            className="bg-gold-500/8 border-gold-500/20 rounded-xl border px-4 py-3"
           >
             <p className="text-gold-200 text-sm font-medium">{selected.label}</p>
-            <p className="text-brand-300 text-xs mt-0.5">{selected.description}</p>
+            <p className="text-brand-300 mt-0.5 text-xs">{selected.description}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -372,30 +418,28 @@ function StepTribe({
 
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold text-white mb-1">Which cultures?</h2>
-      <p className="text-brand-300 text-sm mb-1">
+      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Which cultures?</h2>
+      <p className="text-brand-300 mb-1 text-sm">
         Select all that apply — we&apos;ll merge the traditions into one checklist.
       </p>
       {state.tribes.length > 0 && (
-        <p className="text-gold-400 text-xs mb-3">
-          {state.tribes.length} selected
-        </p>
+        <p className="text-gold-400 mb-3 text-xs">{state.tribes.length} selected</p>
       )}
 
       {/* Search */}
       <div className="relative mb-3">
-        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+        <Search size={14} className="text-brand-500 absolute top-1/2 left-3.5 -translate-y-1/2" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cultures…"
-          className="w-full rounded-xl bg-white/5 border border-white/10 pl-9 pr-4 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 text-sm transition-colors"
+          className="placeholder:text-brand-500 focus:ring-gold-500/40 focus:border-gold-500/40 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-9 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
         />
       </div>
 
       {/* List */}
-      <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+      <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
         {filtered.map(({ value, label, region, description }) => (
           <TribeRow
             key={value}
@@ -407,7 +451,9 @@ function StepTribe({
           />
         ))}
         {filtered.length === 0 && (
-          <p className="text-brand-400 text-sm text-center py-6">No match — try &quot;Other / Mixed&quot;</p>
+          <p className="text-brand-400 py-6 text-center text-sm">
+            No match — try &quot;Other / Mixed&quot;
+          </p>
         )}
       </div>
     </div>
@@ -424,12 +470,12 @@ function StepTheme({
   const selected = THEMES.filter((t) => state.themes.includes(t.value))
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold text-white mb-1">Set the scene</h2>
-      <p className="text-brand-300 text-sm mb-6">
+      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Set the scene</h2>
+      <p className="text-brand-300 mb-6 text-sm">
         Pick one or more looks. They apply to this event and any sub-events you add later.
       </p>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="mb-6 flex flex-wrap gap-2">
         {THEMES.map(({ value, label }) => (
           <EventTypePill
             key={value}
@@ -445,15 +491,15 @@ function StepTheme({
           {selected.map((theme) => (
             <div
               key={theme.value}
-              className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3"
             >
-              <div className="flex gap-1 mb-2.5">
+              <div className="mb-2.5 flex gap-1">
                 {theme.palette.map((c) => (
                   <div key={c} className="h-3 flex-1 rounded-md" style={{ background: c }} />
                 ))}
               </div>
-              <p className="text-white text-sm font-medium">{theme.label}</p>
-              <p className="text-brand-300 text-xs mt-0.5">{theme.description}</p>
+              <p className="text-sm font-medium text-white">{theme.label}</p>
+              <p className="text-brand-300 mt-0.5 text-xs">{theme.description}</p>
             </div>
           ))}
         </div>
@@ -462,18 +508,26 @@ function StepTheme({
   )
 }
 
-function StepDetails({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+function StepDetails({
+  state,
+  set,
+}: {
+  state: WizardState
+  set: (k: keyof WizardState, v: string) => void
+}) {
   const selectedType = EVENT_TYPES.find((t) => t.value === state.eventType)
   const placeholder = selectedType ? `My ${selectedType.label}` : 'Event name'
 
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold text-white mb-1">Event details</h2>
-      <p className="text-brand-300 text-sm mb-6">Add the specifics — everything here is optional except the name.</p>
+      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Event details</h2>
+      <p className="text-brand-300 mb-6 text-sm">
+        Add the specifics — everything here is optional except the name.
+      </p>
       <div className="space-y-4">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-brand-200 mb-1.5">
+          <label className="text-brand-200 mb-1.5 block text-sm font-medium">
             Event name <span className="text-gold-500">*</span>
           </label>
           <input
@@ -481,14 +535,14 @@ function StepDetails({ state, set }: { state: WizardState; set: (k: keyof Wizard
             value={state.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+            className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-brand-200 mb-1.5">
-            <Calendar size={13} className="inline mr-1.5 text-brand-400" />
+          <label className="text-brand-200 mb-1.5 block text-sm font-medium">
+            <Calendar size={13} className="text-brand-400 mr-1.5 inline" />
             Estimated date <span className="text-brand-500">(optional)</span>
           </label>
           <input
@@ -496,15 +550,15 @@ function StepDetails({ state, set }: { state: WizardState; set: (k: keyof Wizard
             value={state.estimatedDate}
             onChange={(e) => set('estimatedDate', e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm [color-scheme:dark]"
+            className="focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white [color-scheme:dark] transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
 
         {/* Guest count + Location */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-brand-200 mb-1.5">
-              <Users size={13} className="inline mr-1.5 text-brand-400" />
+            <label className="text-brand-200 mb-1.5 block text-sm font-medium">
+              <Users size={13} className="text-brand-400 mr-1.5 inline" />
               Guests <span className="text-brand-500">(optional)</span>
             </label>
             <input
@@ -514,12 +568,12 @@ function StepDetails({ state, set }: { state: WizardState; set: (k: keyof Wizard
               placeholder="200"
               min={1}
               max={5000}
-              className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+              className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-200 mb-1.5">
-              <MapPin size={13} className="inline mr-1.5 text-brand-400" />
+            <label className="text-brand-200 mb-1.5 block text-sm font-medium">
+              <MapPin size={13} className="text-brand-400 mr-1.5 inline" />
               Location
             </label>
             <input
@@ -527,7 +581,7 @@ function StepDetails({ state, set }: { state: WizardState; set: (k: keyof Wizard
               value={state.location}
               onChange={(e) => set('location', e.target.value)}
               placeholder="Ottawa, Ontario, Canada"
-              className="w-full rounded-xl bg-white/6 border border-white/12 px-4 py-3 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-sm"
+              className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
             />
           </div>
         </div>
@@ -536,7 +590,13 @@ function StepDetails({ state, set }: { state: WizardState; set: (k: keyof Wizard
   )
 }
 
-function StepBudget({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: string) => void }) {
+function StepBudget({
+  state,
+  set,
+}: {
+  state: WizardState
+  set: (k: keyof WizardState, v: string) => void
+}) {
   const tCat = useTranslations('vendorCategories')
   const raw = parseInt(state.totalBudget, 10) || 0
   const formatted = raw > 0 ? raw.toLocaleString('en-CA') : ''
@@ -547,29 +607,32 @@ function StepBudget({ state, set }: { state: WizardState; set: (k: keyof WizardS
 
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold text-white mb-1">Your budget</h2>
-      <p className="text-brand-300 text-sm mb-6">
-        Set your total budget in CAD. We&apos;ll automatically split it across all vendor categories.
+      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Your budget</h2>
+      <p className="text-brand-300 mb-6 text-sm">
+        Set your total budget in CAD. We&apos;ll automatically split it across all vendor
+        categories.
       </p>
 
       {/* Budget input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-brand-200 mb-1.5">
-          <DollarSign size={13} className="inline mr-1 text-brand-400" />
+        <label className="text-brand-200 mb-1.5 block text-sm font-medium">
+          <DollarSign size={13} className="text-brand-400 mr-1 inline" />
           Total budget (CAD) <span className="text-gold-500">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400 font-medium text-sm">CA$</span>
+          <span className="text-brand-400 absolute top-1/2 left-4 -translate-y-1/2 text-sm font-medium">
+            CA$
+          </span>
           <input
             type="number"
             value={state.totalBudget}
             onChange={(e) => set('totalBudget', e.target.value)}
             placeholder="25000"
             min={1000}
-            className="w-full rounded-xl bg-white/6 border border-white/12 pl-12 pr-4 py-3.5 text-white placeholder:text-brand-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500/50 transition-colors text-lg font-semibold"
+            className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 py-3.5 pr-4 pl-12 text-lg font-semibold text-white transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
-        <p className="text-brand-500 text-xs mt-1.5">Minimum: CA$1,000</p>
+        <p className="text-brand-500 mt-1.5 text-xs">Minimum: CA$1,000</p>
       </div>
 
       {/* Budget preview */}
@@ -577,35 +640,39 @@ function StepBudget({ state, set }: { state: WizardState; set: (k: keyof WizardS
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-white/4 border border-white/10 p-4"
+          className="rounded-2xl border border-white/10 bg-white/4 p-4"
         >
-          <p className="text-xs font-medium text-brand-300 mb-3 uppercase tracking-wider">Budget split preview</p>
+          <p className="text-brand-300 mb-3 text-xs font-medium tracking-wider uppercase">
+            Budget split preview
+          </p>
           <div className="space-y-2">
             {topCategories.map(([category, ratio]) => {
               const amount = Math.round(raw * ratio)
               const width = Math.round(ratio * 100)
               return (
                 <div key={category}>
-                  <div className="flex justify-between text-xs mb-1">
+                  <div className="mb-1 flex justify-between text-xs">
                     <span className="text-brand-300">{getVendorCategoryLabel(category, tCat)}</span>
-                    <span className="text-white font-medium">CA${amount.toLocaleString('en-CA')}</span>
+                    <span className="font-medium text-white">
+                      CA${amount.toLocaleString('en-CA')}
+                    </span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${width}%` }}
                       transition={{ duration: 0.5, delay: 0.05 }}
-                      className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400"
+                      className="from-gold-500 to-gold-400 h-full rounded-full bg-gradient-to-r"
                     />
                   </div>
                 </div>
               )
             })}
-            <p className="text-brand-500 text-xs text-right pt-1">+ 6 more categories</p>
+            <p className="text-brand-500 pt-1 text-right text-xs">+ 6 more categories</p>
           </div>
-          <div className="flex justify-between mt-3 pt-3 border-t border-white/8">
-            <span className="text-sm text-brand-300">Total</span>
-            <span className="text-sm font-semibold text-gold-400">CA${formatted}</span>
+          <div className="mt-3 flex justify-between border-t border-white/8 pt-3">
+            <span className="text-brand-300 text-sm">Total</span>
+            <span className="text-gold-400 text-sm font-semibold">CA${formatted}</span>
           </div>
         </motion.div>
       )}
@@ -628,25 +695,39 @@ function StepReview({ state }: { state: WizardState }) {
     { label: 'Culture', value: tribeLabels },
     { label: 'Theme', value: themeLabel },
     { label: 'Name', value: state.title },
-    { label: 'Date', value: state.estimatedDate ? new Date(state.estimatedDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD' },
-    { label: 'Guests', value: state.guestCount ? `${parseInt(state.guestCount).toLocaleString()} guests` : 'TBD' },
+    {
+      label: 'Date',
+      value: state.estimatedDate
+        ? new Date(state.estimatedDate).toLocaleDateString('en-CA', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : 'TBD',
+    },
+    {
+      label: 'Guests',
+      value: state.guestCount ? `${parseInt(state.guestCount).toLocaleString()} guests` : 'TBD',
+    },
     { label: 'Location', value: state.location || 'Ottawa, Ontario, Canada' },
     { label: 'Budget', value: `CA$${budget.toLocaleString('en-CA')}` },
   ]
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 rounded-xl bg-gold-500/15">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="bg-gold-500/15 rounded-xl p-2.5">
           <Sparkles size={18} className="text-gold-400" />
         </div>
         <div>
           <h2 className="font-display text-2xl font-semibold text-white">Review & create</h2>
-          <p className="text-brand-300 text-sm">Everything look right? We&apos;ll generate your checklist automatically.</p>
+          <p className="text-brand-300 text-sm">
+            Everything look right? We&apos;ll generate your checklist automatically.
+          </p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/4">
         {rows.map(({ label, value }, i) => (
           <div
             key={label}
@@ -656,15 +737,16 @@ function StepReview({ state }: { state: WizardState }) {
             )}
           >
             <span className="text-brand-400 w-20 shrink-0">{label}</span>
-            <span className="text-white text-right">{value}</span>
+            <span className="text-right text-white">{value}</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl bg-emerald-500/8 border border-emerald-500/20 px-4 py-3 flex gap-3">
-        <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-        <p className="text-emerald-300 text-xs leading-relaxed">
-          We&apos;ll create a personalised checklist with cultural traditions, auto-split your budget across vendor categories, and make it easy to find vendors in Ottawa.
+      <div className="mt-4 flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3">
+        <Check size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+        <p className="text-xs leading-relaxed text-emerald-300">
+          We&apos;ll create a personalised checklist with cultural traditions, auto-split your
+          budget across vendor categories, and make it easy to find vendors in Ottawa.
         </p>
       </div>
     </div>
@@ -705,12 +787,18 @@ export function CreateEventWizard() {
 
   const canAdvance = (() => {
     switch (step) {
-      case 1: return !!state.eventType
-      case 2: return state.tribes.length > 0
-      case 3: return state.themes.length > 0
-      case 4: return state.title.trim().length >= 2
-      case 5: return parseInt(state.totalBudget, 10) >= 1000
-      default: return true
+      case 1:
+        return !!state.eventType
+      case 2:
+        return state.tribes.length > 0
+      case 3:
+        return state.themes.length > 0
+      case 4:
+        return state.title.trim().length >= 2
+      case 5:
+        return parseInt(state.totalBudget, 10) >= 1000
+      default:
+        return true
     }
   })()
 
@@ -734,8 +822,8 @@ export function CreateEventWizard() {
         location: state.location || undefined,
       })
       router.push(`/events/${event.id}`)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? 'Something went wrong')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Something went wrong'))
       setLoading(false)
     }
   }
@@ -743,19 +831,19 @@ export function CreateEventWizard() {
   const stepProps = { state, set, toggleTribe, toggleTheme }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-start justify-center px-4 py-8 md:py-12">
+    <div className="flex min-h-[calc(100vh-64px)] items-start justify-center px-4 py-8 md:py-12">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">
           <button
             type="button"
             onClick={() => router.push('/events')}
-            className="flex items-center gap-1.5 text-brand-400 hover:text-white text-sm transition-colors mb-6"
+            className="text-brand-400 mb-6 flex items-center gap-1.5 text-sm transition-colors hover:text-white"
           >
             <ChevronLeft size={16} /> Back to Events
           </button>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-brand-400 uppercase tracking-widest">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-brand-400 text-xs font-medium tracking-widest uppercase">
               Step {step} of {TOTAL_STEPS}
             </p>
           </div>
@@ -763,9 +851,9 @@ export function CreateEventWizard() {
         </div>
 
         {/* Step panel */}
-        <div className="rounded-2xl bg-white/4 border border-white/10 p-6 md:p-8 min-h-[420px] relative overflow-hidden">
+        <div className="relative min-h-[420px] overflow-hidden rounded-2xl border border-white/10 bg-white/4 p-6 md:p-8">
           {/* Adire pattern */}
-          <div className="absolute inset-0 pattern-adire opacity-[0.03] pointer-events-none" />
+          <div className="pattern-adire pointer-events-none absolute inset-0 opacity-[0.03]" />
 
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div
@@ -789,17 +877,15 @@ export function CreateEventWizard() {
         </div>
 
         {/* Error */}
-        {error && (
-          <p className="mt-3 text-red-400 text-sm text-center">{error}</p>
-        )}
+        {error && <p className="mt-3 text-center text-sm text-red-400">{error}</p>}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-5">
+        <div className="mt-5 flex items-center justify-between">
           <button
             type="button"
             onClick={() => go(-1)}
             disabled={step === 1}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-brand-300 hover:text-white hover:bg-white/8 disabled:opacity-0 disabled:pointer-events-none transition-all"
+            className="text-brand-300 flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:bg-white/8 hover:text-white disabled:pointer-events-none disabled:opacity-0"
           >
             <ChevronLeft size={16} /> Back
           </button>
@@ -809,7 +895,7 @@ export function CreateEventWizard() {
               type="button"
               onClick={() => go(1)}
               disabled={!canAdvance}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-40 disabled:cursor-not-allowed text-brand-900 font-semibold text-sm transition-all shadow-lg shadow-gold-900/20"
+              className="bg-gold-600 hover:bg-gold-500 text-brand-900 shadow-gold-900/20 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continue <ChevronRight size={16} />
             </button>
@@ -818,7 +904,7 @@ export function CreateEventWizard() {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 disabled:opacity-60 disabled:cursor-not-allowed text-brand-900 font-semibold text-sm transition-all shadow-lg shadow-gold-900/20"
+              className="bg-gold-600 hover:bg-gold-500 text-brand-900 shadow-gold-900/20 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>

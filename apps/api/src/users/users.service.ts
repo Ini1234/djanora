@@ -63,9 +63,15 @@ export class UsersService {
     })
   }
 
-  /** Create the local user if Clerk exists but the webhook has not fired yet. */
+  /**
+   * Return the local user, creating them from Clerk if the webhook missed
+   * (Nest/DB was down at sign-up). Same shape as findByClerkId.
+   */
   async ensureFromClerk(clerkId: string) {
-    const existing = await this.prisma.user.findUnique({ where: { clerkId } })
+    const existing = await this.prisma.user.findUnique({
+      where: { clerkId },
+      include: { vendorProfile: true },
+    })
     if (existing) return existing
 
     const clerk = createClerkClient({
@@ -77,13 +83,15 @@ export class UsersService {
         ?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress
 
     if (!email) {
-      throw new Error('Could not resolve email for new user from Clerk')
+      throw new BadRequestException('Could not resolve email for new user from Clerk')
     }
 
     this.logger.warn(`Webhook hadn't fired for ${clerkId} — creating user inline`)
 
-    return this.prisma.user.create({
-      data: {
+    // upsert: webhook can land in the same moment
+    await this.prisma.user.upsert({
+      where: { clerkId },
+      create: {
         clerkId,
         email,
         firstName: clerkUser.firstName,
@@ -91,6 +99,12 @@ export class UsersService {
         avatarUrl: clerkUser.imageUrl ?? null,
         role: UserRole.USER,
       },
+      update: {},
+    })
+
+    return this.prisma.user.findUniqueOrThrow({
+      where: { clerkId },
+      include: { vendorProfile: true },
     })
   }
 
@@ -157,33 +171,8 @@ export class UsersService {
       onboardingCompletedAt: new Date(),
     }
 
-    // Upsert: webhook may not have fired yet for brand-new sign-ups
-    // Fall back to Clerk API to get the email needed for a create
-    const existing = await this.prisma.user.findUnique({ where: { clerkId } })
-
-    if (existing) {
-      return this.prisma.user.update({ where: { clerkId }, data: profileData })
-    }
-
-    const clerk = createClerkClient({
-      secretKey: this.config.get<string>('CLERK_SECRET_KEY'),
-    })
-    const clerkUser = await clerk.users.getUser(clerkId)
-    const email =
-      clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
-        ?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress
-
-    if (!email) {
-      throw new Error('Could not resolve email for new user from Clerk')
-    }
-
-    this.logger.warn(
-      `Webhook hadn't fired for ${clerkId} — creating user inline during onboarding`,
-    )
-
-    return this.prisma.user.create({
-      data: { clerkId, email, ...profileData },
-    })
+    await this.ensureFromClerk(clerkId)
+    return this.prisma.user.update({ where: { clerkId }, data: profileData })
   }
 
   private async requireUser(clerkId: string) {
@@ -251,16 +240,19 @@ export class UsersService {
       orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     })
 
-    const visibleAssigned: Array<ReturnType<UsersService['projectChecklist']> & {
-      assigneeUserId: string
-      source: 'ASSIGNED'
-    }> = []
+    const visibleAssigned: Array<
+      ReturnType<UsersService['projectChecklist']> & {
+        assigneeUserId: string
+        source: 'ASSIGNED'
+      }
+    > = []
     for (const row of assigned) {
       let canSee = false
       try {
         const access = await this.access.load(clerkId, row.eventId)
-        canSee = this.access.canSee(access, EventSurface.CHECKLIST)
-          && this.access.canSeeChecklistRow(access, row.concealments)
+        canSee =
+          this.access.canSee(access, EventSurface.CHECKLIST) &&
+          this.access.canSeeChecklistRow(access, row.concealments)
       } catch {
         canSee = false
       }
@@ -295,7 +287,10 @@ export class UsersService {
     const user = await this.requireUser(clerkId)
     const eventId = dto.eventId?.trim() || null
     if (eventId) {
-      await this.access.require(clerkId, eventId, { surface: EventSurface.CHECKLIST, action: 'edit' })
+      await this.access.require(clerkId, eventId, {
+        surface: EventSurface.CHECKLIST,
+        action: 'edit',
+      })
     }
 
     const title = dto.title.trim()
@@ -338,7 +333,12 @@ export class UsersService {
   async updateChecklist(
     clerkId: string,
     checklistId: string,
-    dto: { title?: string; isCompleted?: boolean; dueDate?: string | null; eventId?: string | null },
+    dto: {
+      title?: string
+      isCompleted?: boolean
+      dueDate?: string | null
+      eventId?: string | null
+    },
   ) {
     const user = await this.requireUser(clerkId)
     const existing = await this.prisma.userChecklist.findFirst({
@@ -346,17 +346,17 @@ export class UsersService {
     })
     if (!existing) throw new NotFoundException('Checklist not found')
 
-    const nextEventId = dto.eventId === undefined
-      ? existing.eventId
-      : (dto.eventId?.trim() || null)
+    const nextEventId = dto.eventId === undefined ? existing.eventId : dto.eventId?.trim() || null
     if (nextEventId && nextEventId !== existing.eventId) {
-      await this.access.require(clerkId, nextEventId, { surface: EventSurface.CHECKLIST, action: 'edit' })
+      await this.access.require(clerkId, nextEventId, {
+        surface: EventSurface.CHECKLIST,
+        action: 'edit',
+      })
     }
 
     const title = dto.title !== undefined ? dto.title.trim() : existing.title
-    const dueDate = dto.dueDate !== undefined
-      ? (dto.dueDate ? new Date(dto.dueDate) : null)
-      : existing.dueDate
+    const dueDate =
+      dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : existing.dueDate
     const isCompleted = dto.isCompleted !== undefined ? dto.isCompleted : existing.isCompleted
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -389,7 +389,11 @@ export class UsersService {
           eventChecklistId = eventItem.id
         }
       } else if (eventChecklistId && existing.eventId) {
-        const canSync = await this.canSyncEventChecklist(clerkId, existing.eventId, eventChecklistId)
+        const canSync = await this.canSyncEventChecklist(
+          clerkId,
+          existing.eventId,
+          eventChecklistId,
+        )
         if (canSync) {
           await tx.eventChecklist.update({
             where: { id: eventChecklistId },

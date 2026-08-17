@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { EventActivityAction, EventCommentSubject, EventSurface, NotificationType } from '@prisma/client'
+import {
+  EventActivityAction,
+  EventCommentSubject,
+  EventSurface,
+  NotificationType,
+} from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { EventAccessService, type EventAccess } from './event-access.service'
@@ -56,13 +61,19 @@ export class EventCommentsService {
     return SUBJECT_SURFACE[subjectType]
   }
 
-  private async assertSubject(eventId: string, subjectType: EventCommentSubject, subjectId: string) {
+  private async assertSubject(
+    eventId: string,
+    subjectType: EventCommentSubject,
+    subjectId: string,
+  ) {
     if (subjectType === EventCommentSubject.EVENT) {
       if (subjectId !== eventId) throw new NotFoundException('Event not found')
       return
     }
     if (subjectType === EventCommentSubject.SCHEDULE_ITEM) {
-      const row = await this.prisma.eventScheduleItem.findFirst({ where: { id: subjectId, eventId } })
+      const row = await this.prisma.eventScheduleItem.findFirst({
+        where: { id: subjectId, eventId },
+      })
       if (!row) throw new NotFoundException('Event not found')
       return
     }
@@ -80,7 +91,11 @@ export class EventCommentsService {
     if (!row) throw new NotFoundException('Event not found')
   }
 
-  private requireSurface(access: EventAccess, subjectType: EventCommentSubject, action: 'view' | 'comment') {
+  private requireSurface(
+    access: EventAccess,
+    subjectType: EventCommentSubject,
+    action: 'view' | 'comment',
+  ) {
     const surface = this.surfaceFor(subjectType)
     if (!surface) {
       if (action === 'comment' && !access.isHost && access.role === 'VIEWER') {
@@ -88,9 +103,10 @@ export class EventCommentsService {
       }
       return
     }
-    const ok = action === 'comment'
-      ? this.access.canComment(access, surface)
-      : this.access.canSee(access, surface)
+    const ok =
+      action === 'comment'
+        ? this.access.canComment(access, surface)
+        : this.access.canSee(access, surface)
     if (!ok) throw new NotFoundException('Event not found')
   }
 
@@ -198,13 +214,14 @@ export class EventCommentsService {
       const title = mentioned.has(userId)
         ? `${authorName} mentioned you`
         : `${authorName} replied to your comment`
-      await this.notifications.create(
-        userId,
-        NotificationType.EVENT_COMMENT,
-        title,
-        preview,
-        { eventId, commentId: comment.id, subjectType: dto.subjectType, subjectId: dto.subjectId, surface, href },
-      )
+      await this.notifications.create(userId, NotificationType.EVENT_COMMENT, title, preview, {
+        eventId,
+        commentId: comment.id,
+        subjectType: dto.subjectType,
+        subjectId: dto.subjectId,
+        surface,
+        href,
+      })
     }
 
     void this.activity.log({

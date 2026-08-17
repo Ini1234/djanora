@@ -1,4 +1,14 @@
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUrl, MaxLength, MinLength, ValidateIf } from 'class-validator'
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  MinLength,
+  ValidateIf,
+} from 'class-validator'
 import { InspirationCategory, InspirationVisibility } from '@prisma/client'
 
 export class CreateVendorPostDto {

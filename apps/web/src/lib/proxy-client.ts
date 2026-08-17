@@ -28,9 +28,9 @@ export const proxyClient = {
     const hit = _inFlight.get(key) as Promise<AxiosResponse<T>> | undefined
     if (hit) return hit
 
-    const p = _base
-      .get<T>(url, config)
-      .finally(() => _inFlight.delete(key)) as Promise<AxiosResponse<T>>
+    const p = _base.get<T>(url, config).finally(() => _inFlight.delete(key)) as Promise<
+      AxiosResponse<T>
+    >
 
     _inFlight.set(key, p as Promise<AxiosResponse<unknown>>)
     return p
@@ -52,10 +52,7 @@ export const proxyClient = {
     return _base.patch<T>(url, data, config)
   },
 
-  delete<T = unknown>(
-    url: string,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<T>> {
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return _base.delete<T>(url, config)
   },
 }

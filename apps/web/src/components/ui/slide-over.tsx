@@ -36,7 +36,9 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
     } else {
       document.body.style.overflow = ''
     }
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [open])
 
   return (
@@ -62,7 +64,7 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`absolute right-0 top-0 h-full w-full ${width} flex flex-col shadow-2xl transition-transform duration-300 ease-out`}
+        className={`absolute top-0 right-0 h-full w-full ${width} flex flex-col shadow-2xl transition-transform duration-300 ease-out`}
         style={{
           background: 'var(--page-bg)',
           borderLeft: '1px solid var(--color-border)',
@@ -71,7 +73,7 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          className="flex shrink-0 items-center justify-between border-b px-5 py-4"
           style={{ borderColor: 'var(--color-border)' }}
         >
           <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
@@ -79,7 +81,7 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
           </h2>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
             style={{ color: 'var(--color-text-secondary)' }}
             aria-label="Close panel"
           >
@@ -88,9 +90,7 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   )

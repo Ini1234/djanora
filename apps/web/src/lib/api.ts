@@ -80,37 +80,49 @@ export function useApi() {
     return { Authorization: `Bearer ${token ?? ''}` }
   }, [getToken, userId])
 
-  const get = useCallback(async <T>(path: string): Promise<T> => {
-    const key = `${userId ?? 'anonymous'}:${path}`
-    const hit = inFlightGets.get(key) as Promise<AxiosResponse<T>> | undefined
-    if (hit) {
-      const { data } = await hit
+  const get = useCallback(
+    async <T>(path: string): Promise<T> => {
+      const key = `${userId ?? 'anonymous'}:${path}`
+      const hit = inFlightGets.get(key) as Promise<AxiosResponse<T>> | undefined
+      if (hit) {
+        const { data } = await hit
+        return data
+      }
+
+      const request = apiAxios
+        .get<T>(path, { headers: await authHeaders() })
+        .finally(() => inFlightGets.delete(key))
+
+      inFlightGets.set(key, request as Promise<AxiosResponse<unknown>>)
+      const { data } = await request
       return data
-    }
+    },
+    [authHeaders, userId],
+  )
 
-    const request = apiAxios
-      .get<T>(path, { headers: await authHeaders() })
-      .finally(() => inFlightGets.delete(key))
+  const post = useCallback(
+    async <T>(path: string, body: unknown): Promise<T> => {
+      const { data } = await apiAxios.post<T>(path, body, { headers: await authHeaders() })
+      return data
+    },
+    [authHeaders],
+  )
 
-    inFlightGets.set(key, request as Promise<AxiosResponse<unknown>>)
-    const { data } = await request
-    return data
-  }, [authHeaders, userId])
+  const patch = useCallback(
+    async <T>(path: string, body: unknown): Promise<T> => {
+      const { data } = await apiAxios.patch<T>(path, body, { headers: await authHeaders() })
+      return data
+    },
+    [authHeaders],
+  )
 
-  const post = useCallback(async <T>(path: string, body: unknown): Promise<T> => {
-    const { data } = await apiAxios.post<T>(path, body, { headers: await authHeaders() })
-    return data
-  }, [authHeaders])
-
-  const patch = useCallback(async <T>(path: string, body: unknown): Promise<T> => {
-    const { data } = await apiAxios.patch<T>(path, body, { headers: await authHeaders() })
-    return data
-  }, [authHeaders])
-
-  const del = useCallback(async <T>(path: string): Promise<T> => {
-    const { data } = await apiAxios.delete<T>(path, { headers: await authHeaders() })
-    return data
-  }, [authHeaders])
+  const del = useCallback(
+    async <T>(path: string): Promise<T> => {
+      const { data } = await apiAxios.delete<T>(path, { headers: await authHeaders() })
+      return data
+    },
+    [authHeaders],
+  )
 
   return useMemo(() => ({ get, post, patch, del }), [get, post, patch, del])
 }

@@ -19,7 +19,9 @@ function isTransientDbError(err: unknown): boolean {
   const kind = e.cause?.kind
   if (kind === 'SocketTimeout' || kind === 'Closed' || kind === 'ConnectionClosed') return true
   const msg = e.message ?? ''
-  return /socket timeout|connection terminated|Connection terminated|ECONNRESET|ETIMEDOUT/i.test(msg)
+  return /socket timeout|connection terminated|Connection terminated|ECONNRESET|ETIMEDOUT/i.test(
+    msg,
+  )
 }
 
 function withOneRetry(pool: Pool) {
@@ -56,7 +58,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       new Logger(PrismaService.name).debug(err.message)
     })
     withOneRetry(pool)
-    super({ adapter: new PrismaPg(pool) } as ConstructorParameters<typeof PrismaClient>[0])
+    super({ adapter: new PrismaPg(pool) })
     this.pool = pool
   }
 

@@ -148,7 +148,12 @@ export type EventSurface = 'SCHEDULE' | 'CHECKLIST' | 'BUDGET' | 'MOODBOARD' | '
 export type EventMemberRole = 'HOST' | 'EDITOR' | 'COMMENTER' | 'VIEWER'
 
 export const ALL_EVENT_SURFACES: EventSurface[] = [
-  'SCHEDULE', 'CHECKLIST', 'BUDGET', 'MOODBOARD', 'VENDORS', 'GUESTS',
+  'SCHEDULE',
+  'CHECKLIST',
+  'BUDGET',
+  'MOODBOARD',
+  'VENDORS',
+  'GUESTS',
 ]
 
 export interface EventViewer {
@@ -297,13 +302,7 @@ export interface MyVendorProfile {
 export type InspirationVisibility = 'DRAFT' | 'PROFILE' | 'INSPIRATION'
 export type InspirationMediaType = 'IMAGE' | 'VIDEO' | 'EXTERNAL'
 export type InspirationCategory =
-  | 'PERFORMANCE'
-  | 'VENUE'
-  | 'DECOR'
-  | 'MUSIC'
-  | 'FASHION'
-  | 'FOOD'
-  | 'OTHER'
+  'PERFORMANCE' | 'VENUE' | 'DECOR' | 'MUSIC' | 'FASHION' | 'FOOD' | 'OTHER'
 
 export interface VendorPostMedia {
   id: string

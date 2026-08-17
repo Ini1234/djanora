@@ -78,21 +78,25 @@ export class EventActivityService {
   }
 
   async touchEvent(eventId: string) {
-    await this.prisma.event.update({
-      where: { id: eventId },
-      data: { updatedAt: new Date() },
-    }).catch(() => {})
+    await this.prisma.event
+      .update({
+        where: { id: eventId },
+        data: { updatedAt: new Date() },
+      })
+      .catch(() => {})
   }
 
   async recordOpen(userId: string, eventId: string) {
     const now = new Date()
-    await this.prisma.eventSurfaceRead.upsert({
-      where: {
-        eventId_userId_surface: { eventId, userId, surface: OPENED_SURFACE },
-      },
-      create: { eventId, userId, surface: OPENED_SURFACE, seenAt: now },
-      update: { seenAt: now },
-    }).catch(() => {})
+    await this.prisma.eventSurfaceRead
+      .upsert({
+        where: {
+          eventId_userId_surface: { eventId, userId, surface: OPENED_SURFACE },
+        },
+        create: { eventId, userId, surface: OPENED_SURFACE, seenAt: now },
+        update: { seenAt: now },
+      })
+      .catch(() => {})
   }
 
   async list(clerkId: string, eventId: string, take = 40) {
@@ -102,10 +106,7 @@ export class EventActivityService {
     const rows = await this.prisma.eventActivity.findMany({
       where: {
         eventId,
-        OR: [
-          { surface: null },
-          { surface: { in: visible } },
-        ],
+        OR: [{ surface: null }, { surface: { in: visible } }],
       },
       include: { actor: { select: ACTOR_SELECT } },
       orderBy: { createdAt: 'desc' },
@@ -114,15 +115,18 @@ export class EventActivityService {
 
     const visibleChecklistIds = await this.access.filterVisibleChecklistIds(
       access,
-      rows.filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId).map((row) => row.subjectId!),
+      rows
+        .filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId)
+        .map((row) => row.subjectId!),
     )
 
     return rows
-      .filter((row) => (
-        row.subjectType !== 'CHECKLIST_ITEM'
-        || !row.subjectId
-        || visibleChecklistIds.has(row.subjectId)
-      ))
+      .filter(
+        (row) =>
+          row.subjectType !== 'CHECKLIST_ITEM' ||
+          !row.subjectId ||
+          visibleChecklistIds.has(row.subjectId),
+      )
       .map((row) => ({
         id: row.id,
         action: row.action,
@@ -152,24 +156,23 @@ export class EventActivityService {
       where: {
         eventId,
         actorId: { not: access.user.id },
-        OR: [
-          { surface: null },
-          { surface: { in: visible } },
-        ],
+        OR: [{ surface: null }, { surface: { in: visible } }],
       },
       select: { surface: true, createdAt: true, subjectType: true, subjectId: true },
     })
 
     const visibleChecklistIds = await this.access.filterVisibleChecklistIds(
       access,
-      activities.filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId).map((row) => row.subjectId!),
+      activities
+        .filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId)
+        .map((row) => row.subjectId!),
     )
 
     for (const row of activities) {
       if (
-        row.subjectType === 'CHECKLIST_ITEM'
-        && row.subjectId
-        && !visibleChecklistIds.has(row.subjectId)
+        row.subjectType === 'CHECKLIST_ITEM' &&
+        row.subjectId &&
+        !visibleChecklistIds.has(row.subjectId)
       ) {
         continue
       }
@@ -183,7 +186,10 @@ export class EventActivityService {
 
   async markSeen(clerkId: string, eventId: string, surface: string) {
     const access = await this.access.require(clerkId, eventId)
-    const allowed = surface === OVERVIEW_SURFACE || access.isHost || access.surfaces.includes(surface as EventSurface)
+    const allowed =
+      surface === OVERVIEW_SURFACE ||
+      access.isHost ||
+      access.surfaces.includes(surface as EventSurface)
     if (!allowed) throw new NotFoundException('Event not found')
 
     await this.prisma.eventSurfaceRead.upsert({

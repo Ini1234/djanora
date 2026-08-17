@@ -1,6 +1,10 @@
 import {
-  Controller, Headers, Query, UnauthorizedException,
-  MessageEvent, Sse,
+  Controller,
+  Headers,
+  Query,
+  UnauthorizedException,
+  MessageEvent,
+  Sse,
 } from '@nestjs/common'
 import { Observable, map } from 'rxjs'
 import { verifyToken } from '@clerk/backend'
@@ -37,7 +41,9 @@ export class SseController {
 
     const payload = await verifyToken(token, {
       secretKey: this.config.get<string>('CLERK_SECRET_KEY')!,
-    }).catch(() => { throw new UnauthorizedException('Invalid token') })
+    }).catch(() => {
+      throw new UnauthorizedException('Invalid token')
+    })
 
     const user = await this.prisma.user.findUnique({
       where: { clerkId: payload.sub },
@@ -45,8 +51,6 @@ export class SseController {
     })
     if (!user) throw new UnauthorizedException('User not found')
 
-    return this.sseService.subscribe(user.id).pipe(
-      map((data) => ({ data } as MessageEvent)),
-    )
+    return this.sseService.subscribe(user.id).pipe(map((data) => ({ data })))
   }
 }

@@ -5,84 +5,84 @@ import { clerkAppearance } from '@/lib/clerk-appearance'
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider appearance={clerkAppearance} afterSignOutUrl="/">
-      <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left — brand panel */}
-      <div className="hidden lg:flex flex-col justify-between bg-brand-900 p-12 relative overflow-hidden">
-        {/* Dot pattern */}
-        <div className="absolute inset-0 pattern-adire opacity-10" aria-hidden="true" />
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* Left — brand panel */}
+        <div className="bg-brand-900 relative hidden flex-col justify-between overflow-hidden p-12 lg:flex">
+          {/* Dot pattern */}
+          <div className="pattern-adire absolute inset-0 opacity-10" aria-hidden="true" />
 
-        {/* Gold gradient blob */}
-        <div
-          className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-gold-600/20 blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-brand-600/30 blur-3xl"
-          aria-hidden="true"
-        />
+          {/* Gold gradient blob */}
+          <div
+            className="bg-gold-600/20 absolute -top-32 -right-32 h-96 w-96 rounded-full blur-3xl"
+            aria-hidden="true"
+          />
+          <div
+            className="bg-brand-600/30 absolute -bottom-32 -left-32 h-96 w-96 rounded-full blur-3xl"
+            aria-hidden="true"
+          />
 
-        <div className="relative">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-xl font-semibold text-white"
-            aria-label="Djanora — go to homepage"
-          >
-            <span className="w-8 h-8 rounded-full bg-gold-600 flex items-center justify-center text-brand-900 text-sm font-bold">
-              D
-            </span>
-            <span>Djanora</span>
-          </Link>
-        </div>
+          <div className="relative">
+            <Link
+              href="/"
+              className="font-display flex items-center gap-2 text-xl font-semibold text-white"
+              aria-label="Djanora — go to homepage"
+            >
+              <span className="bg-gold-600 text-brand-900 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+                D
+              </span>
+              <span>Djanora</span>
+            </Link>
+          </div>
 
-        <div className="relative space-y-6">
-          <blockquote>
-            <p className="font-display text-3xl font-semibold text-white leading-snug">
-              &ldquo;Your event. Your plan. Your way.&rdquo;
-            </p>
-          </blockquote>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gold-600/30 flex items-center justify-center text-gold-300 text-lg">
-              🎊
+          <div className="relative space-y-6">
+            <blockquote>
+              <p className="font-display text-3xl leading-snug font-semibold text-white">
+                &ldquo;Your event. Your plan. Your way.&rdquo;
+              </p>
+            </blockquote>
+            <div className="flex items-center gap-3">
+              <div className="bg-gold-600/30 text-gold-300 flex h-10 w-10 items-center justify-center rounded-full text-lg">
+                🎊
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Djanora</p>
+                <p className="text-brand-300 text-xs">Ottawa, Ontario — event planning</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-white">Djanora</p>
-              <p className="text-xs text-brand-300">Ottawa, Ontario — event planning</p>
-            </div>
+          </div>
+
+          <div className="relative flex gap-8">
+            {[
+              { value: 'Budget', label: 'Stay on track' },
+              { value: 'Vendors', label: 'Book in one place' },
+              { value: 'Guests', label: 'Keep everyone in sync' },
+            ].map((item) => (
+              <div key={item.value}>
+                <p className="text-lg font-semibold text-white">{item.value}</p>
+                <p className="text-brand-400 text-xs">{item.label}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="relative flex gap-8">
-          {[
-            { value: 'Budget', label: 'Stay on track' },
-            { value: 'Vendors', label: 'Book in one place' },
-            { value: 'Guests', label: 'Keep everyone in sync' },
-          ].map((item) => (
-            <div key={item.value}>
-              <p className="text-lg font-semibold text-white">{item.value}</p>
-              <p className="text-xs text-brand-400">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+        {/* Right — auth form */}
+        <div className="flex flex-col items-center justify-center bg-[var(--color-background)] px-4 py-12">
+          {/* Mobile logo */}
+          <div className="mb-8 lg:hidden">
+            <Link
+              href="/"
+              className="font-display text-brand-800 flex items-center gap-2 text-xl font-semibold"
+              aria-label="Djanora — go to homepage"
+            >
+              <span className="bg-brand-700 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white">
+                D
+              </span>
+              <span>Djanora</span>
+            </Link>
+          </div>
 
-      {/* Right — auth form */}
-      <div className="flex flex-col items-center justify-center px-4 py-12 bg-[var(--color-background)]">
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-xl font-semibold text-brand-800"
-            aria-label="Djanora — go to homepage"
-          >
-            <span className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-white text-sm font-bold">
-              D
-            </span>
-            <span>Djanora</span>
-          </Link>
+          {children}
         </div>
-
-        {children}
-      </div>
       </div>
     </ClerkProvider>
   )

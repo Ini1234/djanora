@@ -18,7 +18,8 @@ export function PendingEventInvites() {
   const router = useRouter()
 
   useEffect(() => {
-    proxyClient.get<PendingInvite[]>('/events/invites')
+    proxyClient
+      .get<PendingInvite[]>('/events/invites')
       .then(({ data }) => setInvites(Array.isArray(data) ? data : []))
       .catch(() => setInvites([]))
   }, [])
@@ -31,7 +32,10 @@ export function PendingEventInvites() {
         <div
           key={invite.id}
           className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
-          style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-brand-primary) 25%, transparent)' }}
+          style={{
+            background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-brand-primary) 25%, transparent)',
+          }}
         >
           <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>
             {invite.invitedBy?.firstName ?? 'Someone'} invited you to plan{' '}
@@ -40,12 +44,16 @@ export function PendingEventInvites() {
           <button
             type="button"
             disabled={pending}
-            onClick={() => start(async () => {
-              const { data } = await proxyClient.post<{ eventId: string }>(`/events/invites/${invite.token}/accept`)
-              router.push(`/events/${data.eventId}`)
-              router.refresh()
-            })}
-            className="shrink-0 h-8 px-3 rounded-lg text-xs font-semibold"
+            onClick={() =>
+              start(async () => {
+                const { data } = await proxyClient.post<{ eventId: string }>(
+                  `/events/invites/${invite.token}/accept`,
+                )
+                router.push(`/events/${data.eventId}`)
+                router.refresh()
+              })
+            }
+            className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
             style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
           >
             Accept

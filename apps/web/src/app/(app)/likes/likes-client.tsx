@@ -8,7 +8,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { proxyClient } from '@/lib/proxy-client'
 import { queryKeys } from '@/lib/query-keys'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
-import { InspirationDetail, type InspirationDetailItem } from '@/app/(app)/inspiration/inspiration-detail'
+import {
+  InspirationDetail,
+  type InspirationDetailItem,
+} from '@/app/(app)/inspiration/inspiration-detail'
 
 interface LikedLook {
   id: string
@@ -99,31 +102,40 @@ export function LikesClient() {
     try {
       await proxyClient.delete(`/vendors/${vendor.slug}/favorite`)
     } catch {
-      queryClient.setQueryData<LikedVendor[]>(queryKeys.likedVendors, (prev) => [vendor, ...(prev ?? [])])
+      queryClient.setQueryData<LikedVendor[]>(queryKeys.likedVendors, (prev) => [
+        vendor,
+        ...(prev ?? []),
+      ])
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div>
-        <h1 className="font-display text-2xl font-semibold" style={{ color: 'var(--color-foreground)' }}>
+        <h1
+          className="font-display text-2xl font-semibold"
+          style={{ color: 'var(--color-foreground)' }}
+        >
           Liked
         </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
+        <p className="mt-1 text-sm" style={{ color: 'var(--color-muted)' }}>
           Looks you liked and vendors you shortlisted. Separate from your event mood boards.
         </p>
       </div>
 
       <div className="flex gap-2">
-        {([
+        {[
           { id: 'looks' as const, label: `Looks${looks.length ? ` · ${looks.length}` : ''}` },
-          { id: 'vendors' as const, label: `Vendors${vendors.length ? ` · ${vendors.length}` : ''}` },
-        ]).map((item) => (
+          {
+            id: 'vendors' as const,
+            label: `Vendors${vendors.length ? ` · ${vendors.length}` : ''}`,
+          },
+        ].map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className="h-9 px-3 rounded-xl text-sm font-medium"
+            className="h-9 rounded-xl px-3 text-sm font-medium"
             style={{
               background: tab === item.id ? 'var(--color-brand-primary)' : 'var(--card-bg)',
               color: tab === item.id ? '#fff' : 'var(--color-foreground)',
@@ -137,39 +149,59 @@ export function LikesClient() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 size={28} className="animate-spin" style={{ color: 'var(--color-brand-primary)' }} />
+          <Loader2
+            size={28}
+            className="animate-spin"
+            style={{ color: 'var(--color-brand-primary)' }}
+          />
         </div>
       ) : tab === 'looks' ? (
         looks.length === 0 ? (
-          <p className="text-sm py-12" style={{ color: 'var(--color-muted)' }}>
+          <p className="py-12 text-sm" style={{ color: 'var(--color-muted)' }}>
             No liked looks yet. Heart a look on Inspiration or a vendor profile.
           </p>
         ) : (
-          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {looks.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => setOpenLook(item)}
-                  className="w-full text-left rounded-xl overflow-hidden"
-                  style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+                  className="w-full overflow-hidden rounded-xl text-left"
+                  style={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 >
                   <div className="aspect-square" style={{ background: 'var(--card-bg)' }}>
                     {item.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--color-muted)' }}>
+                      <div
+                        className="flex h-full w-full items-center justify-center text-xs"
+                        style={{ color: 'var(--color-muted)' }}
+                      >
                         Look
                       </div>
                     )}
                   </div>
                   <div className="px-2.5 py-2">
-                    <p className="text-xs font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+                    <p
+                      className="truncate text-xs font-medium"
+                      style={{ color: 'var(--color-foreground)' }}
+                    >
                       {item.title}
                     </p>
                     {(item.likeCount ?? 0) > 0 && (
-                      <p className="text-[10px] mt-0.5 inline-flex items-center gap-1" style={{ color: 'var(--color-muted)' }}>
+                      <p
+                        className="mt-0.5 inline-flex items-center gap-1 text-[10px]"
+                        style={{ color: 'var(--color-muted)' }}
+                      >
                         <Heart size={10} /> {item.likeCount}
                       </p>
                     )}
@@ -180,45 +212,69 @@ export function LikesClient() {
           </ul>
         )
       ) : vendors.length === 0 ? (
-        <p className="text-sm py-12" style={{ color: 'var(--color-muted)' }}>
+        <p className="py-12 text-sm" style={{ color: 'var(--color-muted)' }}>
           No liked vendors yet. Heart a vendor on their profile to shortlist them.
         </p>
       ) : (
-        <ul className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
+        <ul
+          className="overflow-hidden rounded-xl border"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           {vendors.map((v) => {
-            const initials = v.businessName.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+            const initials = v.businessName
+              .split(' ')
+              .map((w) => w[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 2)
             return (
               <li
                 key={v.id}
-                className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0"
+                className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
                 style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}
               >
-                <Link href={`/vendors/${v.slug}`} className="flex items-center gap-3 min-w-0 flex-1">
+                <Link
+                  href={`/vendors/${v.slug}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
                   <div
-                    className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full"
                     style={{ background: 'var(--card-bg)' }}
                   >
                     {v.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={v.avatarUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-xs font-bold" style={{ color: 'var(--color-foreground)' }}>{initials}</span>
+                      <span
+                        className="text-xs font-bold"
+                        style={{ color: 'var(--color-foreground)' }}
+                      >
+                        {initials}
+                      </span>
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
+                    <p
+                      className="truncate text-sm font-medium"
+                      style={{ color: 'var(--color-foreground)' }}
+                    >
                       {v.businessName}
-                      {v.isVerified && <BadgeCheck size={13} className="inline ml-1 text-gold-700 dark:text-gold-400" />}
+                      {v.isVerified && (
+                        <BadgeCheck
+                          size={13}
+                          className="text-gold-700 dark:text-gold-400 ml-1 inline"
+                        />
+                      )}
                     </p>
-                    <p className="text-xs truncate" style={{ color: 'var(--color-muted)' }}>
+                    <p className="truncate text-xs" style={{ color: 'var(--color-muted)' }}>
                       {getVendorCategoryLabel(v.category, tCat)}
                       {v.city && (
-                        <span className="inline-flex items-center gap-0.5 ml-2">
+                        <span className="ml-2 inline-flex items-center gap-0.5">
                           <MapPin size={10} /> {v.city}
                         </span>
                       )}
                       {v.totalReviews > 0 && v.averageRating != null && (
-                        <span className="inline-flex items-center gap-0.5 ml-2">
+                        <span className="ml-2 inline-flex items-center gap-0.5">
                           <Star size={10} /> {v.averageRating.toFixed(1)}
                         </span>
                       )}
@@ -228,7 +284,7 @@ export function LikesClient() {
                 <button
                   type="button"
                   onClick={() => void unfavoriteVendor(v)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
                   style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
                   aria-label={`Unlike ${v.businessName}`}
                 >
@@ -249,7 +305,8 @@ export function LikesClient() {
           onClose={() => setOpenLook(null)}
           onSaveClick={() => {
             setSaveLook(openLook)
-            proxyClient.get<{ id: string; title: string }[]>('/events')
+            proxyClient
+              .get<{ id: string; title: string }[]>('/events')
               .then(({ data }) => {
                 const list = Array.isArray(data) ? data : []
                 setEvents(list)
@@ -263,31 +320,41 @@ export function LikesClient() {
       )}
 
       {saveLook && (
-        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSaveLook(null)} />
           <div
-            className="relative w-full max-w-sm rounded-2xl p-5 space-y-3"
+            className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
             style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Save to mood board</h3>
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                Save to mood board
+              </h3>
               <button type="button" onClick={() => setSaveLook(null)} aria-label="Close">
                 <X size={16} style={{ color: 'var(--color-muted)' }} />
               </button>
             </div>
             {events.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Create an event first, then save looks to it.</p>
+              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+                Create an event first, then save looks to it.
+              </p>
             ) : (
               <>
                 <select
                   value={eventId}
                   onChange={(e) => setEventId(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl text-sm"
-                  style={{ background: 'var(--input-bg)', border: '1px solid var(--color-border)', color: 'var(--color-foreground)' }}
+                  className="h-9 w-full rounded-xl px-3 text-sm"
+                  style={{
+                    background: 'var(--input-bg)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
                 >
                   <option value="">Choose an event</option>
                   {events.map((e) => (
-                    <option key={e.id} value={e.id}>{e.title}</option>
+                    <option key={e.id} value={e.id}>
+                      {e.title}
+                    </option>
                   ))}
                 </select>
                 <button
@@ -295,12 +362,13 @@ export function LikesClient() {
                   disabled={saving || !eventId}
                   onClick={() => {
                     setSaving(true)
-                    proxyClient.post(`/inspiration/${saveLook.id}/save`, { eventId })
+                    proxyClient
+                      .post(`/inspiration/${saveLook.id}/save`, { eventId })
                       .then(() => setSaveLook(null))
                       .catch(() => {})
                       .finally(() => setSaving(false))
                   }}
-                  className="w-full h-9 rounded-xl text-sm font-semibold disabled:opacity-40"
+                  className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
                   style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
                 >
                   {saving ? 'Saving…' : 'Save'}

@@ -205,8 +205,13 @@ export class EventsController {
     const storedName = makeUploadName(file.originalname)
     await this.storage.upload('receipts', storedName, file.buffer, file.mimetype)
     return this.eventsService.addReceipt(
-      user.sub, eventId, itemId,
-      file.originalname, `private/${storedName}`, file.mimetype, file.size,
+      user.sub,
+      eventId,
+      itemId,
+      file.originalname,
+      `private/${storedName}`,
+      file.mimetype,
+      file.size,
     )
   }
 
@@ -347,7 +352,8 @@ export class EventsController {
     @Query('subjectType') subjectType: EventCommentSubject,
     @Query('subjectId') subjectId: string,
   ) {
-    if (!subjectType || !subjectId) throw new BadRequestException('subjectType and subjectId are required')
+    if (!subjectType || !subjectId)
+      throw new BadRequestException('subjectType and subjectId are required')
     return this.commentsService.list(user.sub, eventId, subjectType, subjectId)
   }
 

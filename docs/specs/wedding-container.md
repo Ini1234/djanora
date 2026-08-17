@@ -1,13 +1,13 @@
 # Wedding container, ceremony visibility, and checklist delegation
 
-| Field | Value |
-|---|---|
-| Author | Product + engineering (locked grill, 2026-08-15) |
-| Date | 2026-08-15 |
-| Status | **Superseded** — Event is the parent. Optional sub-events live on `Event.parentId`. No Weddings nav. See implementation 2026-08-15. |
-| Reviewers | Host-product owner |
-| Apps | `apps/api` (Nest + Prisma), `apps/web` (Next.js App Router) |
-| HTTP | Browser calls `proxyClient` → `/api/proxy/*` → Nest. No `fetch()` in `apps/web`. No new dedicated proxy route files. |
+| Field     | Value                                                                                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Author    | Product + engineering (locked grill, 2026-08-15)                                                                                    |
+| Date      | 2026-08-15                                                                                                                          |
+| Status    | **Superseded** — Event is the parent. Optional sub-events live on `Event.parentId`. No Weddings nav. See implementation 2026-08-15. |
+| Reviewers | Host-product owner                                                                                                                  |
+| Apps      | `apps/api` (Nest + Prisma), `apps/web` (Next.js App Router)                                                                         |
+| HTTP      | Browser calls `proxyClient` → `/api/proxy/*` → Nest. No `fetch()` in `apps/web`. No new dedicated proxy route files.                |
 
 ---
 
@@ -171,7 +171,7 @@ interface WeddingJourneyStop {
   sortOrder: number
   isCompleted: boolean
   allocatedBudget: number // omitted / 0-safe: only if viewer can see Budget on this stop
-  spentAmount?: number    // only if viewer can see Budget
+  spentAmount?: number // only if viewer can see Budget
 }
 
 interface WeddingBudgetRollup {
@@ -221,39 +221,38 @@ interface AssignedChecklist {
 
 ```ts
 type HomeChecklist =
-  | (UserChecklist & { source: 'MINE' })
-  | (AssignedChecklist & { source: 'ASSIGNED' })
+  (UserChecklist & { source: 'MINE' }) | (AssignedChecklist & { source: 'ASSIGNED' })
 ```
 
 Existing `UserChecklist` fields MUST remain for `source: 'MINE'`.
 
 ### 6.2 Endpoints
 
-| Method | Path | Auth | Success | Errors |
-|---|---|---|---|---|
-| POST | `/weddings` | host user | `201 Wedding` | `400` validation |
-| GET | `/weddings` | user | `200 Wedding[]` (host or member; visibility applied) | |
-| GET | `/weddings/:id` | host or member | `200 Wedding` | `404` |
-| PATCH | `/weddings/:id` | host | `200 Wedding` | `400` pot vs envelopes (FR-11), `404` |
-| DELETE | `/weddings/:id` | host | `200 { ok: true }` | `404` |
-| POST | `/weddings/:id/ceremonies` | host | `201 Event` (existing event shape + `weddingId`) | `400` envelope (FR-10) |
-| POST | `/weddings/:id/ceremonies/attach` | host | `200 Event` | `400` not owner / already attached / other wedding |
-| POST | `/weddings/:id/ceremonies/reorder` | host | `200 Wedding` | `400` id set mismatch |
-| POST | `/weddings/:id/ceremonies/:eventId/detach` | host | `200 Event` | `404` |
-| GET | `/weddings/:id/members` | host | `200 { host, members }` | `403` non-host, `404` |
-| POST | `/weddings/:id/members` | host | `201 WeddingMember` | `400` EC-2, EC-3, empty grants |
-| PATCH | `/weddings/:id/members/:memberId` | host | `200 WeddingMember` | `400` FR-22, `404` |
-| DELETE | `/weddings/:id/members/:memberId` | host | `200 { ok: true }` | `404` |
-| GET | `/weddings/join/:token` | public | invite preview (title, host name, grant labels) | `404` |
-| POST | `/weddings/invites/:token/accept` | signed-in | `{ weddingId }` | `400` EC-1, `404` |
+| Method | Path                                       | Auth           | Success                                              | Errors                                             |
+| ------ | ------------------------------------------ | -------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| POST   | `/weddings`                                | host user      | `201 Wedding`                                        | `400` validation                                   |
+| GET    | `/weddings`                                | user           | `200 Wedding[]` (host or member; visibility applied) |                                                    |
+| GET    | `/weddings/:id`                            | host or member | `200 Wedding`                                        | `404`                                              |
+| PATCH  | `/weddings/:id`                            | host           | `200 Wedding`                                        | `400` pot vs envelopes (FR-11), `404`              |
+| DELETE | `/weddings/:id`                            | host           | `200 { ok: true }`                                   | `404`                                              |
+| POST   | `/weddings/:id/ceremonies`                 | host           | `201 Event` (existing event shape + `weddingId`)     | `400` envelope (FR-10)                             |
+| POST   | `/weddings/:id/ceremonies/attach`          | host           | `200 Event`                                          | `400` not owner / already attached / other wedding |
+| POST   | `/weddings/:id/ceremonies/reorder`         | host           | `200 Wedding`                                        | `400` id set mismatch                              |
+| POST   | `/weddings/:id/ceremonies/:eventId/detach` | host           | `200 Event`                                          | `404`                                              |
+| GET    | `/weddings/:id/members`                    | host           | `200 { host, members }`                              | `403` non-host, `404`                              |
+| POST   | `/weddings/:id/members`                    | host           | `201 WeddingMember`                                  | `400` EC-2, EC-3, empty grants                     |
+| PATCH  | `/weddings/:id/members/:memberId`          | host           | `200 WeddingMember`                                  | `400` FR-22, `404`                                 |
+| DELETE | `/weddings/:id/members/:memberId`          | host           | `200 { ok: true }`                                   | `404`                                              |
+| GET    | `/weddings/join/:token`                    | public         | invite preview (title, host name, grant labels)      | `404`                                              |
+| POST   | `/weddings/invites/:token/accept`          | signed-in      | `{ weddingId }`                                      | `400` EC-1, `404`                                  |
 
 Ceremony planning APIs stay on `/events/:id/...`. Access service MUST use Wedding grants when `event.weddingId` is set.
 
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/events/:id/checklist?assignedTo=me` | FR-29 |
-| PATCH | `/events/:id/checklist/:itemId` | body MAY include `assigneeUserId: string \| null` and `hiddenFromMemberIds: string[]` |
-| POST | `/events/:id/members` | `400` if `weddingId` set (FR-23) |
+| Method | Path                                  | Notes                                                                                 |
+| ------ | ------------------------------------- | ------------------------------------------------------------------------------------- |
+| GET    | `/events/:id/checklist?assignedTo=me` | FR-29                                                                                 |
+| PATCH  | `/events/:id/checklist/:itemId`       | body MAY include `assigneeUserId: string \| null` and `hiddenFromMemberIds: string[]` |
+| POST   | `/events/:id/members`                 | `400` if `weddingId` set (FR-23)                                                      |
 
 ### 6.3 Request bodies
 
@@ -301,52 +300,52 @@ Ceremony planning APIs stay on `/events/:id/...`. Access service MUST use Weddin
 
 ### 7.1 New: `Wedding`
 
-| Field | Type | Constraints |
-|---|---|---|
-| id | String (cuid) | PK |
-| userId | String | FK User, host, onDelete Cascade |
-| title | String | required |
-| totalBudget | Int | pot, `>= 0` |
-| currency | String | default `CAD` |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
-| deletedAt | DateTime? | soft delete |
+| Field       | Type          | Constraints                     |
+| ----------- | ------------- | ------------------------------- |
+| id          | String (cuid) | PK                              |
+| userId      | String        | FK User, host, onDelete Cascade |
+| title       | String        | required                        |
+| totalBudget | Int           | pot, `>= 0`                     |
+| currency    | String        | default `CAD`                   |
+| createdAt   | DateTime      |                                 |
+| updatedAt   | DateTime      |                                 |
+| deletedAt   | DateTime?     | soft delete                     |
 
 Indexes: `[userId]`, `[deletedAt]`. Map: `weddings`.
 
 ### 7.2 New: `WeddingMember`
 
-| Field | Type | Constraints |
-|---|---|---|
-| id | String (cuid) | PK |
-| weddingId | String | FK Wedding Cascade |
-| userId | String? | FK User SetNull |
-| email | String | |
-| role | EventMemberRole | one role for all grants |
-| token | String | unique |
-| invitedById | String | FK User Restrict |
-| acceptedAt | DateTime? | |
-| createdAt / updatedAt | DateTime | |
+| Field                 | Type            | Constraints             |
+| --------------------- | --------------- | ----------------------- |
+| id                    | String (cuid)   | PK                      |
+| weddingId             | String          | FK Wedding Cascade      |
+| userId                | String?         | FK User SetNull         |
+| email                 | String          |                         |
+| role                  | EventMemberRole | one role for all grants |
+| token                 | String          | unique                  |
+| invitedById           | String          | FK User Restrict        |
+| acceptedAt            | DateTime?       |                         |
+| createdAt / updatedAt | DateTime        |                         |
 
 Unique: `[weddingId, email]`. Indexes: `[weddingId]`, `[userId]`. Map: `wedding_members`.
 
 ### 7.3 New: `WeddingCeremonyGrant`
 
-| Field | Type | Constraints |
-|---|---|---|
-| id | String (cuid) | PK |
-| weddingMemberId | String | FK WeddingMember Cascade |
-| eventId | String | FK Event Cascade |
-| surfaces | EventSurface[] | min 1 in application |
+| Field           | Type           | Constraints              |
+| --------------- | -------------- | ------------------------ |
+| id              | String (cuid)  | PK                       |
+| weddingMemberId | String         | FK WeddingMember Cascade |
+| eventId         | String         | FK Event Cascade         |
+| surfaces        | EventSurface[] | min 1 in application     |
 
 Unique: `[weddingMemberId, eventId]`. Map: `wedding_ceremony_grants`.
 
 ### 7.4 Change: `Event`
 
-| Field | Type | Constraints |
-|---|---|---|
+| Field     | Type    | Constraints        |
+| --------- | ------- | ------------------ |
 | weddingId | String? | FK Wedding SetNull |
-| sortOrder | Int | default 0 |
+| sortOrder | Int     | default 0          |
 
 `totalBudget` = envelope when `weddingId` is set. `currency` MUST match Wedding when attached. `title` remains the display name.
 
@@ -356,19 +355,19 @@ Add: `BRIDE_PRICE`, `COURT`, `CUSTOM`. Do not remove existing values.
 
 ### 7.6 Change: `EventChecklist`
 
-| Field | Type | Constraints |
-|---|---|---|
+| Field          | Type    | Constraints     |
+| -------------- | ------- | --------------- |
 | assigneeUserId | String? | FK User SetNull |
 
 Index: `[assigneeUserId, isCompleted]`.
 
 ### 7.7 New: `EventChecklistConcealment`
 
-| Field | Type | Constraints |
-|---|---|---|
-| id | String (cuid) | PK |
-| checklistId | String | FK EventChecklist Cascade |
-| weddingMemberId | String | FK WeddingMember Cascade |
+| Field           | Type          | Constraints               |
+| --------------- | ------------- | ------------------------- |
+| id              | String (cuid) | PK                        |
+| checklistId     | String        | FK EventChecklist Cascade |
+| weddingMemberId | String        | FK WeddingMember Cascade  |
 
 Unique: `[checklistId, weddingMemberId]`. Map: `event_checklist_concealments`.
 
@@ -398,20 +397,20 @@ erDiagram
 
 ## 8. Out of Scope
 
-| ID | Exclusion | Reason |
-|---|---|---|
-| OS-1 | Vendor accounts, vendor onboarding, vendor seeing planner checklists | Host-first; vendor later |
-| OS-2 | Jira statuses, sprints, epics, kanban columns | Assignment + “Assigned to me” only; done = checkbox |
-| OS-3 | Nested tasks under a checklist | Explicitly rejected earlier |
-| OS-4 | Hiding a single budget line, schedule item, or guest | Row hide is checklist-only this pass |
-| OS-5 | Guest/RSVP visibility (surprise party for attendees) | Planner ACL only |
-| OS-6 | Wedding-level guest list or shared contacts | Guests stay per ceremony |
-| OS-7 | Multiple hosts or role `HOST` on members | Single `Wedding.userId` |
-| OS-8 | Auto-seed default ceremonies or default checklists | Host creates what they need |
-| OS-9 | Backfilling a Wedding for every existing Event | Opt-in attach (FR-7) |
-| OS-10 | New Next.js proxy route files | Catch-all `/api/proxy/[...path]` only |
-| OS-11 | Per-ceremony role (editor on Traditional, viewer on White) | One role on `WeddingMember`; tabs differ per grant |
-| OS-12 | Naming-ceremony as a second container type | Can be standalone or `CUSTOM` / existing type under a Wedding if the host wants |
+| ID    | Exclusion                                                            | Reason                                                                          |
+| ----- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| OS-1  | Vendor accounts, vendor onboarding, vendor seeing planner checklists | Host-first; vendor later                                                        |
+| OS-2  | Jira statuses, sprints, epics, kanban columns                        | Assignment + “Assigned to me” only; done = checkbox                             |
+| OS-3  | Nested tasks under a checklist                                       | Explicitly rejected earlier                                                     |
+| OS-4  | Hiding a single budget line, schedule item, or guest                 | Row hide is checklist-only this pass                                            |
+| OS-5  | Guest/RSVP visibility (surprise party for attendees)                 | Planner ACL only                                                                |
+| OS-6  | Wedding-level guest list or shared contacts                          | Guests stay per ceremony                                                        |
+| OS-7  | Multiple hosts or role `HOST` on members                             | Single `Wedding.userId`                                                         |
+| OS-8  | Auto-seed default ceremonies or default checklists                   | Host creates what they need                                                     |
+| OS-9  | Backfilling a Wedding for every existing Event                       | Opt-in attach (FR-7)                                                            |
+| OS-10 | New Next.js proxy route files                                        | Catch-all `/api/proxy/[...path]` only                                           |
+| OS-11 | Per-ceremony role (editor on Traditional, viewer on White)           | One role on `WeddingMember`; tabs differ per grant                              |
+| OS-12 | Naming-ceremony as a second container type                           | Can be standalone or `CUSTOM` / existing type under a Wedding if the host wants |
 
 ---
 

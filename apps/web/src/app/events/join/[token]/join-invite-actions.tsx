@@ -7,13 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import type { UserMe } from '@/lib/api.types'
 
-export function JoinInviteActions({
-  token,
-  signedIn,
-}: {
-  token: string
-  signedIn: boolean
-}) {
+export function JoinInviteActions({ token, signedIn }: { token: string; signedIn: boolean }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const returnTo = `/events/join/${token}`
@@ -49,7 +43,11 @@ export function JoinInviteActions({
       .catch((err: unknown) => {
         if (cancelled) return
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        setError(typeof msg === 'string' ? msg : 'This invite is invalid or was sent to a different email.')
+        setError(
+          typeof msg === 'string'
+            ? msg
+            : 'This invite is invalid or was sent to a different email.',
+        )
       })
 
     return () => {
@@ -66,7 +64,7 @@ export function JoinInviteActions({
         {signedIn && (
           <Link
             href="/events"
-            className="inline-flex h-10 items-center px-4 rounded-xl text-sm font-semibold"
+            className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold"
             style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
           >
             Back to events
@@ -79,8 +77,14 @@ export function JoinInviteActions({
   if (signedIn) {
     return (
       <div className="flex items-center justify-center gap-2 py-2">
-        <Loader2 className="animate-spin" size={18} style={{ color: 'var(--color-brand-primary)' }} />
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Joining event…</p>
+        <Loader2
+          className="animate-spin"
+          size={18}
+          style={{ color: 'var(--color-brand-primary)' }}
+        />
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Joining event…
+        </p>
       </div>
     )
   }
@@ -92,14 +96,14 @@ export function JoinInviteActions({
       </p>
       <Link
         href={`/sign-in?${authQuery}`}
-        className="flex items-center justify-center h-11 rounded-xl text-sm font-semibold"
+        className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold"
         style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
       >
         Sign in
       </Link>
       <Link
         href={`/sign-up?${authQuery}`}
-        className="flex items-center justify-center h-11 rounded-xl text-sm font-semibold"
+        className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold"
         style={{
           background: 'transparent',
           color: 'var(--color-text-primary)',

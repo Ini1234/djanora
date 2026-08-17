@@ -79,7 +79,9 @@ export class VendorPostsService {
       throw new BadRequestException('Add a title before publishing to Inspiration')
     }
     if (post._count.media < 1) {
-      throw new BadRequestException('Add at least one photo or link before publishing to Inspiration')
+      throw new BadRequestException(
+        'Add at least one photo or link before publishing to Inspiration',
+      )
     }
   }
 
@@ -230,8 +232,14 @@ export class VendorPostsService {
         orderBy: { sortOrder: 'asc' },
       })
       if (next) {
-        await this.prisma.inspirationMedia.update({ where: { id: next.id }, data: { isCover: true } })
-        await this.prisma.inspirationItem.update({ where: { id: postId }, data: { imageUrl: next.url } })
+        await this.prisma.inspirationMedia.update({
+          where: { id: next.id },
+          data: { isCover: true },
+        })
+        await this.prisma.inspirationItem.update({
+          where: { id: postId },
+          data: { imageUrl: next.url },
+        })
       } else {
         await this.prisma.inspirationItem.update({
           where: { id: postId },

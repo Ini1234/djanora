@@ -57,12 +57,16 @@ export function InquiryModal({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    proxyClient.get('/events')
+    proxyClient
+      .get('/events')
       .then(({ data }) => {
         const raw = Array.isArray(data) ? data : []
         const list = raw
-          .filter((e: { id?: string; viewer?: { isHost?: boolean; role?: string; surfaces?: string[] } }) =>
-            typeof e?.id === 'string' && canInquireOnEvent(e),
+          .filter(
+            (e: {
+              id?: string
+              viewer?: { isHost?: boolean; role?: string; surfaces?: string[] }
+            }) => typeof e?.id === 'string' && canInquireOnEvent(e),
           )
           .map((e: { id: string; title: string }) => ({ id: e.id, title: e.title }))
         setEvents(list)
@@ -92,16 +96,20 @@ export function InquiryModal({
                 kind: 'INSPIRATION',
                 inspirationItemId: post.id,
               })
-            } catch { /* still open the thread */ }
+            } catch {
+              /* still open the thread */
+            }
           }
           router.push(`/messages?inquiry=${inquiryId}`)
           return
         }
         const msg = nestMessage(err)
         if (msg.toLowerCase().includes('already')) {
-          setError(selectedEventId
-            ? 'You already contacted this vendor for that event.'
-            : 'You already contacted this vendor.')
+          setError(
+            selectedEventId
+              ? 'You already contacted this vendor for that event.'
+              : 'You already contacted this vendor.',
+          )
         } else if (msg === 'Event not found' || msg.includes('edit access')) {
           setError('You need to be an editor on that event to contact vendors.')
         } else if (msg === 'Vendor not found') {
@@ -114,55 +122,71 @@ export function InquiryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="flex items-center justify-between border-b px-5 py-4"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <div>
             <h2 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>
               {post ? `Ask about “${post.title}”` : `Contact ${vendor.businessName}`}
             </h2>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+            <p className="mt-0.5 text-xs" style={{ color: 'var(--color-muted)' }}>
               {post
                 ? `This message goes to ${vendor.businessName} about this look.`
                 : "Send an inquiry — they'll reply directly to you"}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70" style={{ color: 'var(--color-muted)' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 hover:opacity-70"
+            style={{ color: 'var(--color-muted)' }}
+          >
             <X size={16} />
           </button>
         </div>
 
         {sent ? (
           <div className="px-5 py-10 text-center">
-            <div className="w-12 h-12 rounded-full bg-gold-600/15 flex items-center justify-center mx-auto mb-3">
+            <div className="bg-gold-600/15 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
               <MessageSquare size={22} className="text-gold-700 dark:text-gold-400" />
             </div>
-            <p className="font-semibold text-sm mb-1" style={{ color: 'var(--color-foreground)' }}>Inquiry sent!</p>
+            <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+              Inquiry sent!
+            </p>
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
               {vendor.businessName} will be notified. Track replies in Messages.
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-5 px-5 py-2 rounded-xl text-sm font-medium bg-gold-600 text-white hover:bg-gold-700"
+              className="bg-gold-600 hover:bg-gold-700 mt-5 rounded-xl px-5 py-2 text-sm font-medium text-white"
             >
               Done
             </button>
           </div>
         ) : (
-          <div className="px-5 py-5 space-y-4">
+          <div className="space-y-4 px-5 py-5">
             <div className="space-y-1.5">
               <label className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
                 Event <span className="font-normal">(optional)</span>
               </label>
               {loadingEvents ? (
-                <div className="h-9 rounded-xl animate-pulse" style={{ background: 'var(--card-bg)' }} />
+                <div
+                  className="h-9 animate-pulse rounded-xl"
+                  style={{ background: 'var(--card-bg)' }}
+                />
               ) : events.length === 0 ? (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed text-xs" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
+                <div
+                  className="flex items-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-xs"
+                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
+                >
                   <CalendarDays size={13} />
                   No event yet — you can still send this and attach one later.
                 </div>
@@ -170,34 +194,49 @@ export function InquiryModal({
                 <select
                   value={selectedEventId}
                   onChange={(e) => setSelectedEventId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                  style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                  className="focus:ring-gold-500/40 w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  style={{
+                    background: 'var(--input-bg)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)',
+                  }}
                 >
                   <option value="">No event yet</option>
                   {events.map((e) => (
-                    <option key={e.id} value={e.id}>{e.title}</option>
+                    <option key={e.id} value={e.id}>
+                      {e.title}
+                    </option>
                   ))}
                 </select>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Your message</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
+                Your message
+              </label>
               <textarea
                 rows={4}
                 placeholder={`Hi ${vendor.businessName}, I'm planning an event and would love to learn more…`}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/40"
-                style={{ background: 'var(--input-bg)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                className="focus:ring-gold-500/40 w-full resize-none rounded-xl border px-3 py-2.5 text-sm focus:ring-2 focus:outline-none"
+                style={{
+                  background: 'var(--input-bg)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-foreground)',
+                }}
               />
-              <p className="text-xs text-right" style={{ color: message.length < 10 ? 'var(--color-muted)' : '#a87b10' }}>
+              <p
+                className="text-right text-xs"
+                style={{ color: message.length < 10 ? 'var(--color-muted)' : '#a87b10' }}
+              >
                 {message.length}/2000
               </p>
             </div>
 
             {error && (
-              <p className="text-xs px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400">
+              <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
                 {error}
               </p>
             )}
@@ -206,9 +245,15 @@ export function InquiryModal({
               type="button"
               onClick={submit}
               disabled={isPending || message.trim().length < 10}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gold-600 text-white hover:bg-gold-700 disabled:opacity-40"
+              className="bg-gold-600 hover:bg-gold-700 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40"
             >
-              {isPending ? 'Sending…' : <><Send size={14} /> Send inquiry</>}
+              {isPending ? (
+                'Sending…'
+              ) : (
+                <>
+                  <Send size={14} /> Send inquiry
+                </>
+              )}
             </button>
           </div>
         )}

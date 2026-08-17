@@ -1,7 +1,12 @@
 'use client'
 
 import {
-  createContext, useContext, useEffect, useRef, useState, useCallback,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
   type ReactNode,
 } from 'react'
 import { usePathname } from 'next/navigation'
@@ -41,7 +46,15 @@ export interface SseNotification {
 }
 
 export interface SseEvent {
-  type: 'new_message' | 'message_updated' | 'message_unsent' | 'messages_read' | 'inquiry_status' | 'notification' | 'event_comment' | 'event_activity'
+  type:
+    | 'new_message'
+    | 'message_updated'
+    | 'message_unsent'
+    | 'messages_read'
+    | 'inquiry_status'
+    | 'notification'
+    | 'event_comment'
+    | 'event_activity'
   inquiryId?: string
   eventId?: string
   message?: SseMessage
@@ -135,13 +148,7 @@ export function useSse() {
 const CHAT_PATHS = ['/messages', '/inquiries']
 
 /* ─── Provider ────────────────────────────────────────────── */
-export function SseProvider({
-  children,
-  enabled,
-}: {
-  children: ReactNode
-  enabled: boolean
-}) {
+export function SseProvider({ children, enabled }: { children: ReactNode; enabled: boolean }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<InAppNotification[]>([])
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0)
@@ -152,10 +159,14 @@ export function SseProvider({
   const pathname = usePathname()
   const pathnameRef = useRef(pathname)
 
-  useEffect(() => { notificationsRef.current = notifications }, [notifications])
+  useEffect(() => {
+    notificationsRef.current = notifications
+  }, [notifications])
 
   // Keep pathname ref in sync without re-creating `connect`
-  useEffect(() => { pathnameRef.current = pathname }, [pathname])
+  useEffect(() => {
+    pathnameRef.current = pathname
+  }, [pathname])
 
   const hydrateNotifications = useCallback(async () => {
     try {
@@ -204,7 +215,9 @@ export function SseProvider({
         const senderName =
           event.message.sender.vendorProfile?.businessName ||
           [event.message.sender.firstName, event.message.sender.lastName]
-            .filter(Boolean).join(' ') || 'Someone'
+            .filter(Boolean)
+            .join(' ') ||
+          'Someone'
 
         setUnreadCount((n) => n + 1)
 
@@ -270,17 +283,20 @@ export function SseProvider({
 
   const clearUnread = useCallback(() => setUnreadCount(0), [])
 
-  const markNotificationRead = useCallback(async (id: string) => {
-    const wasUnread = notificationsRef.current.some((n) => n.id === id && !n.isRead)
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
-    if (wasUnread) setNotificationUnreadCount((count) => Math.max(0, count - 1))
+  const markNotificationRead = useCallback(
+    async (id: string) => {
+      const wasUnread = notificationsRef.current.some((n) => n.id === id && !n.isRead)
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
+      if (wasUnread) setNotificationUnreadCount((count) => Math.max(0, count - 1))
 
-    try {
-      await proxyClient.patch(`/notifications/${id}/read`, {})
-    } catch {
-      await hydrateNotifications()
-    }
-  }, [hydrateNotifications])
+      try {
+        await proxyClient.patch(`/notifications/${id}/read`, {})
+      } catch {
+        await hydrateNotifications()
+      }
+    },
+    [hydrateNotifications],
+  )
 
   const markAllNotificationsRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))

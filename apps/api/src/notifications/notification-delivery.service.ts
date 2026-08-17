@@ -3,6 +3,15 @@ import { ConfigService } from '@nestjs/config'
 import { Resend } from 'resend'
 import Twilio from 'twilio'
 
+export type TransactionalEmailKind = 'invitation' | 'notification'
+
+const DEFAULT_FROM = {
+  invitation: 'Djanora Invitations <invitations@contact.djanora.com>',
+  notification: 'Djanora Notifications <notifications@contact.djanora.com>',
+} as const
+
+const DEFAULT_CONTACT_EMAIL = 'contact@djanora.com'
+
 @Injectable()
 export class NotificationDeliveryService {
   private readonly logger = new Logger(NotificationDeliveryService.name)
@@ -31,14 +40,50 @@ export class NotificationDeliveryService {
     to: string
     subject: string
     html: string
+    kind: TransactionalEmailKind
   }): Promise<void> {
-    const from = this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev'
+    const from = this.fromAddress(opts.kind)
     try {
-      await this.resend.emails.send({ from, to: opts.to, subject: opts.subject, html: opts.html })
+      await this.resend.emails.send({
+        from,
+        to: opts.to,
+        subject: opts.subject,
+        html: this.appendDoNotReplyFooter(opts.html),
+        headers: {
+          'Auto-Submitted': 'auto-generated',
+          'X-Auto-Response-Suppress': 'All',
+        },
+      })
       this.logger.log(`Email sent to ${opts.to}: ${opts.subject}`)
     } catch (err) {
       this.logger.error(`Failed to send email to ${opts.to}`, err)
     }
+  }
+
+  private fromAddress(kind: TransactionalEmailKind): string {
+    const specific =
+      kind === 'invitation'
+        ? this.config.get<string>('RESEND_FROM_INVITATIONS')
+        : this.config.get<string>('RESEND_FROM_NOTIFICATIONS')
+    return specific || this.config.get<string>('RESEND_FROM_EMAIL') || DEFAULT_FROM[kind]
+  }
+
+  private contactEmail(): string {
+    return this.config.get<string>('DJANORA_CONTACT_EMAIL') ?? DEFAULT_CONTACT_EMAIL
+  }
+
+  private appendDoNotReplyFooter(html: string): string {
+    const contact = this.contactEmail()
+    return `${html}
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:8px 32px 28px;text-align:center">
+        <p style="margin:0 0 6px;color:#6b7280;font-size:11px;line-height:1.5">
+          This is an automated message. Please do not reply — this inbox is not monitored.
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:11px;line-height:1.5">
+          Need help? Email
+          <a href="mailto:${contact}" style="color:#3d7a52">${contact}</a>
+        </p>
+      </div>`
   }
 
   async sendSms(opts: { to: string; body: string }): Promise<void> {

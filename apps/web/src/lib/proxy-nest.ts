@@ -48,11 +48,12 @@ export async function proxyNest(req: NextRequest, nestPath: string): Promise<Nex
       transformResponse: [(body) => body],
     })
 
-    const body = isReceiptFile
-      ? Buffer.from(res.data as ArrayBuffer)
-      : (res.data ?? '')
+    const body = isReceiptFile ? Buffer.from(res.data as ArrayBuffer) : (res.data ?? '')
     const headersOut: Record<string, string> = {
-      'Content-Type': String(res.headers['content-type'] ?? (isReceiptFile ? 'application/octet-stream' : 'application/json')),
+      'Content-Type': String(
+        res.headers['content-type'] ??
+          (isReceiptFile ? 'application/octet-stream' : 'application/json'),
+      ),
     }
     if (res.headers['content-disposition']) {
       headersOut['Content-Disposition'] = String(res.headers['content-disposition'])
@@ -64,9 +65,10 @@ export async function proxyNest(req: NextRequest, nestPath: string): Promise<Nex
     })
   } catch (err) {
     if (isAxiosError(err) && err.response) {
-      const body = typeof err.response.data === 'string'
-        ? err.response.data
-        : JSON.stringify(err.response.data ?? { error: 'Upstream error' })
+      const body =
+        typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data ?? { error: 'Upstream error' })
       return new NextResponse(body, {
         status: err.response.status,
         headers: { 'Content-Type': 'application/json' },

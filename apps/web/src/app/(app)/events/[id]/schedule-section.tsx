@@ -3,14 +3,33 @@
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import {
-  Plus, Pencil, Trash2, X, Check, Clock, MapPin, Calendar,
-  DollarSign, ListTodo, Loader2, Sparkles, ChevronDown, ChevronRight,
-  CheckCircle2, Circle, FileText,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Clock,
+  MapPin,
+  Calendar,
+  DollarSign,
+  ListTodo,
+  Loader2,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  FileText,
 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { useTranslations } from 'next-intl'
-import type { EventBudgetItem, EventChecklistItem, EventJourneyStop, EventScheduleItem } from '@/lib/api.types'
+import type {
+  EventBudgetItem,
+  EventChecklistItem,
+  EventJourneyStop,
+  EventScheduleItem,
+} from '@/lib/api.types'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 import { composeItinerary } from '@/lib/event-itinerary'
 import { formatEventDate } from '@/lib/event-timing'
@@ -76,7 +95,9 @@ export function ScheduleSection({
   useEffect(() => {
     if (!focusItemId) return
     const timer = window.setTimeout(() => {
-      document.getElementById(`schedule-item-${focusItemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document
+        .getElementById(`schedule-item-${focusItemId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
     return () => window.clearTimeout(timer)
   }, [focusItemId])
@@ -98,9 +119,7 @@ export function ScheduleSection({
     return a.sortOrder - b.sortOrder
   })
 
-  const empty = itinerary
-    ? days.length === 0
-    : sorted.length === 0
+  const empty = itinerary ? days.length === 0 : sorted.length === 0
 
   function renderBlock(item: EventScheduleItem, isLast: boolean) {
     return (
@@ -132,11 +151,11 @@ export function ScheduleSection({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      className="overflow-hidden rounded-2xl"
       style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
     >
       <div
-        className="flex items-center justify-between px-5 py-4 border-b"
+        className="flex items-center justify-between border-b px-5 py-4"
         style={{ borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center gap-2">
@@ -154,7 +173,7 @@ export function ScheduleSection({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-opacity hover:opacity-80"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
             style={{
               background: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
               color: 'var(--color-brand-primary)',
@@ -166,7 +185,7 @@ export function ScheduleSection({
         )}
       </div>
 
-      <div className="p-5 space-y-3">
+      <div className="space-y-3 p-5">
         {adding && (
           <ScheduleForm
             requireDate={itinerary}
@@ -190,7 +209,7 @@ export function ScheduleSection({
             <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
               No schedule yet
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+            <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
               {itinerary
                 ? 'Add dates and times for this event. Sub-events show up here on their own day.'
                 : 'Build the day timeline and link each block to budget lines, checklist tasks, or saved inspiration.'}
@@ -203,7 +222,7 @@ export function ScheduleSection({
             {days.map((day) => (
               <section key={day.date ?? 'undated'}>
                 <h3
-                  className="text-xs font-semibold uppercase tracking-wide mb-2"
+                  className="mb-2 text-xs font-semibold tracking-wide uppercase"
                   style={{ color: day.date ? 'var(--color-text-primary)' : 'var(--color-muted)' }}
                 >
                   {day.label}
@@ -240,12 +259,12 @@ function ChildBeat({ child, isLast }: { child: EventJourneyStop; isLast: boolean
     <li className="relative flex gap-4 pb-5 last:pb-0">
       {!isLast && (
         <span
-          className="absolute left-[15px] top-8 bottom-0 w-px"
+          className="absolute top-8 bottom-0 left-[15px] w-px"
           style={{ background: 'var(--color-border)' }}
         />
       )}
       <div
-        className="relative z-10 w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
+        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
         style={{
           background: 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)',
           color: 'var(--color-brand-primary)',
@@ -257,16 +276,21 @@ function ChildBeat({ child, isLast }: { child: EventJourneyStop; isLast: boolean
       <Link
         href={`/events/${child.id}`}
         aria-label={`Open ${child.title}`}
-        className="flex-1 min-w-0 py-1.5 hover:opacity-80 transition-opacity"
+        className="min-w-0 flex-1 py-1.5 transition-opacity hover:opacity-80"
       >
-        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--color-brand-primary)' }}>
+        <p
+          className="text-[11px] font-semibold tracking-wide uppercase"
+          style={{ color: 'var(--color-brand-primary)' }}
+        >
           Event
         </p>
         <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
           {child.title}
         </p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-          {[formatEventDate(child.estimatedDate), typeLabel, child.location].filter(Boolean).join(' · ')}
+        <p className="mt-0.5 text-xs" style={{ color: 'var(--color-muted)' }}>
+          {[formatEventDate(child.estimatedDate), typeLabel, child.location]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </Link>
     </li>
@@ -276,7 +300,10 @@ function ChildBeat({ child, isLast }: { child: EventJourneyStop; isLast: boolean
 const LINK_TONES = {
   budget: { color: '#2563eb', bg: 'color-mix(in srgb, #3b82f6 12%, transparent)' },
   checklist: { color: '#16a34a', bg: 'color-mix(in srgb, #22c55e 12%, transparent)' },
-  inspiration: { color: 'var(--color-brand-primary)', bg: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)' },
+  inspiration: {
+    color: 'var(--color-brand-primary)',
+    bg: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
+  },
 } as const
 
 function ScheduleRow({
@@ -321,7 +348,9 @@ function ScheduleRow({
   }, [focused])
 
   function isDone(task: { id: string; isCompleted?: boolean }) {
-    return checklistItems.find((row) => row.id === task.id)?.isCompleted ?? task.isCompleted ?? false
+    return (
+      checklistItems.find((row) => row.id === task.id)?.isCompleted ?? task.isCompleted ?? false
+    )
   }
 
   const checklistDone = tasks.filter(isDone).length
@@ -356,12 +385,12 @@ function ScheduleRow({
     <li id={`schedule-item-${item.id}`} className="relative flex gap-4 pb-5 last:pb-0">
       {!isLast && (
         <span
-          className="absolute left-[15px] top-8 bottom-0 w-px"
+          className="absolute top-8 bottom-0 left-[15px] w-px"
           style={{ background: 'var(--color-border)' }}
         />
       )}
       <div
-        className="relative z-10 w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold"
+        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
         style={{
           background: 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)',
           color: 'var(--color-brand-primary)',
@@ -370,9 +399,11 @@ function ScheduleRow({
         <Clock size={12} />
       </div>
       <div
-        className="flex-1 min-w-0 rounded-xl transition-colors"
+        className="min-w-0 flex-1 rounded-xl transition-colors"
         style={{
-          background: expanded ? 'color-mix(in srgb, var(--color-text-primary) 3%, transparent)' : undefined,
+          background: expanded
+            ? 'color-mix(in srgb, var(--color-text-primary) 3%, transparent)'
+            : undefined,
           outline: focused ? '1px solid var(--color-brand-primary)' : undefined,
         }}
       >
@@ -381,7 +412,7 @@ function ScheduleRow({
             type="button"
             onClick={() => setExpanded((open) => !open)}
             aria-expanded={expanded}
-            className="flex-1 min-w-0 text-left px-2 py-1.5 rounded-xl hover:opacity-90"
+            className="min-w-0 flex-1 rounded-xl px-2 py-1.5 text-left hover:opacity-90"
           >
             <div className="flex items-start gap-2">
               <ChevronDown
@@ -394,7 +425,10 @@ function ScheduleRow({
               />
               <div className="min-w-0 flex-1">
                 {(start || end) && (
-                  <p className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--color-brand-primary)' }}>
+                  <p
+                    className="text-[11px] font-medium tabular-nums"
+                    style={{ color: 'var(--color-brand-primary)' }}
+                  >
                     {start ?? '—'}
                     {end ? ` – ${end}` : ''}
                   </p>
@@ -403,65 +437,84 @@ function ScheduleRow({
                   {item.title}
                 </p>
                 {item.location && (
-                  <p className="flex items-center gap-1 text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                  <p
+                    className="mt-0.5 flex items-center gap-1 text-xs"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
                     <MapPin size={10} />
                     {item.location}
                   </p>
                 )}
                 {!expanded && hasLinks && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-1.5">
                     {budgets.length > 0 && (
-                      <TypeCount tone="budget" icon={<DollarSign size={9} />} label="Budget" count={budgets.length} />
+                      <TypeCount
+                        tone="budget"
+                        icon={<DollarSign size={9} />}
+                        label="Budget"
+                        count={budgets.length}
+                      />
                     )}
                     {tasks.length > 0 && (
                       <TypeCount
                         tone="checklist"
-                        icon={checklistDone === tasks.length ? <CheckCircle2 size={9} /> : <ListTodo size={9} />}
+                        icon={
+                          checklistDone === tasks.length ? (
+                            <CheckCircle2 size={9} />
+                          ) : (
+                            <ListTodo size={9} />
+                          )
+                        }
                         label={`${checklistDone}/${tasks.length} Checklist`}
                       />
                     )}
                     {linkedInspirations.length > 0 && (
-                      <TypeCount tone="inspiration" icon={<Sparkles size={9} />} label="Inspiration" count={linkedInspirations.length} />
+                      <TypeCount
+                        tone="inspiration"
+                        icon={<Sparkles size={9} />}
+                        label="Inspiration"
+                        count={linkedInspirations.length}
+                      />
                     )}
                   </div>
                 )}
               </div>
             </div>
           </button>
-          <div className="flex items-center gap-1 shrink-0 pt-1 pr-1">
+          <div className="flex shrink-0 items-center gap-1 pt-1 pr-1">
             {canEdit('SCHEDULE') && (
-            <>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="p-1.5 rounded-lg hover:opacity-70"
-              style={{ color: 'var(--color-muted)' }}
-              aria-label="Edit block"
-            >
-              <Pencil size={12} />
-            </button>
-            <button
-              type="button"
-              disabled={deleting}
-              onClick={() => {
-                startDelete(async () => {
-                  await proxyClient.delete(`/events/${eventId}/schedule/${item.id}`)
-                  onDeleted()
-                })
-              }}
-              className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-40"
-              style={{ color: 'var(--color-muted)' }}
-              aria-label="Delete block"
-            >
-              {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-            </button>
-            </>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="rounded-lg p-1.5 hover:opacity-70"
+                  style={{ color: 'var(--color-muted)' }}
+                  aria-label="Edit block"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => {
+                    startDelete(async () => {
+                      await proxyClient.delete(`/events/${eventId}/schedule/${item.id}`)
+                      onDeleted()
+                    })
+                  }}
+                  className="rounded-lg p-1.5 hover:opacity-70 disabled:opacity-40"
+                  style={{ color: 'var(--color-muted)' }}
+                  aria-label="Delete block"
+                >
+                  {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                </button>
+              </>
             )}
           </div>
         </div>
 
         {expanded && (
-          <div className="pl-8 pr-2 pb-3 space-y-3">
+          <div className="space-y-3 pr-2 pb-3 pl-8">
             {item.notes && (
               <CollapsibleGroup
                 label="Notes"
@@ -490,16 +543,22 @@ function ScheduleRow({
                     <button
                       type="button"
                       onClick={() => onOpenLinkedItem?.('budget', budget.id)}
-                      className="w-full flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 rounded-lg text-left transition-opacity hover:opacity-80"
-                      style={{ background: LINK_TONES.budget.bg, color: 'var(--color-text-primary)' }}
+                      className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-opacity hover:opacity-80"
+                      style={{
+                        background: LINK_TONES.budget.bg,
+                        color: 'var(--color-text-primary)',
+                      }}
                     >
                       <span className="min-w-0 truncate">
-                        {budget.label
-                          || budget.vendorName
-                          || getVendorCategoryLabel(budget.category, tCat)}
+                        {budget.label ||
+                          budget.vendorName ||
+                          getVendorCategoryLabel(budget.category, tCat)}
                       </span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <span className="tabular-nums font-medium" style={{ color: LINK_TONES.budget.color }}>
+                      <span className="flex shrink-0 items-center gap-1">
+                        <span
+                          className="font-medium tabular-nums"
+                          style={{ color: LINK_TONES.budget.color }}
+                        >
                           CA${budget.allocatedAmount.toLocaleString('en-CA')}
                         </span>
                         <ChevronRight size={12} style={{ color: LINK_TONES.budget.color }} />
@@ -526,25 +585,31 @@ function ScheduleRow({
                       >
                         <button
                           type="button"
-                          onClick={() => canEdit('CHECKLIST') && onChecklistToggle?.(task.id, !done)}
-                          className="p-1.5 shrink-0 rounded-lg hover:opacity-80"
+                          onClick={() =>
+                            canEdit('CHECKLIST') && onChecklistToggle?.(task.id, !done)
+                          }
+                          className="shrink-0 rounded-lg p-1.5 hover:opacity-80"
                           style={{ color: LINK_TONES.checklist.color }}
                           aria-label={done ? 'Mark incomplete' : 'Mark complete'}
                         >
-                          {done
-                            ? <CheckCircle2 size={14} />
-                            : <Circle size={14} />}
+                          {done ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                         </button>
                         <button
                           type="button"
                           onClick={() => onOpenLinkedItem?.('checklist', task.id)}
-                          className="flex-1 min-w-0 flex items-center justify-between gap-2 text-xs py-1.5 pr-2.5 text-left transition-opacity hover:opacity-80"
+                          className="flex min-w-0 flex-1 items-center justify-between gap-2 py-1.5 pr-2.5 text-left text-xs transition-opacity hover:opacity-80"
                           style={{ color: 'var(--color-text-primary)' }}
                         >
-                          <span className={`min-w-0 truncate ${done ? 'line-through opacity-55' : ''}`}>
+                          <span
+                            className={`min-w-0 truncate ${done ? 'line-through opacity-55' : ''}`}
+                          >
                             {task.title}
                           </span>
-                          <ChevronRight size={12} className="shrink-0" style={{ color: LINK_TONES.checklist.color }} />
+                          <ChevronRight
+                            size={12}
+                            className="shrink-0"
+                            style={{ color: LINK_TONES.checklist.color }}
+                          />
                         </button>
                       </div>
                     </li>
@@ -564,25 +629,35 @@ function ScheduleRow({
                     <button
                       type="button"
                       onClick={() => onOpenLinkedItem?.('moodboard', entry.id)}
-                      className="w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg text-left transition-opacity hover:opacity-80"
-                      style={{ background: LINK_TONES.inspiration.bg, color: 'var(--color-text-primary)' }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-opacity hover:opacity-80"
+                      style={{
+                        background: LINK_TONES.inspiration.bg,
+                        color: 'var(--color-text-primary)',
+                      }}
                     >
                       {entry.inspirationItem.imageUrl ? (
                         <img
                           src={entry.inspirationItem.imageUrl}
                           alt=""
-                          className="w-8 h-8 rounded-md object-cover shrink-0"
+                          className="h-8 w-8 shrink-0 rounded-md object-cover"
                         />
                       ) : (
                         <span
-                          className="w-8 h-8 rounded-md shrink-0 flex items-center justify-center"
-                          style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)' }}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                          style={{
+                            background:
+                              'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)',
+                          }}
                         >
                           <Sparkles size={12} style={{ color: LINK_TONES.inspiration.color }} />
                         </span>
                       )}
-                      <span className="min-w-0 truncate flex-1">{entry.inspirationItem.title}</span>
-                      <ChevronRight size={12} className="shrink-0" style={{ color: LINK_TONES.inspiration.color }} />
+                      <span className="min-w-0 flex-1 truncate">{entry.inspirationItem.title}</span>
+                      <ChevronRight
+                        size={12}
+                        className="shrink-0"
+                        style={{ color: LINK_TONES.inspiration.color }}
+                      />
                     </button>
                   </li>
                 ))}
@@ -610,7 +685,7 @@ function TypeCount({
   const { color, bg } = LINK_TONES[tone]
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
       style={{ background: bg, color }}
     >
       {icon}
@@ -639,18 +714,17 @@ function CollapsibleGroup({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 w-full text-left mb-1.5 rounded-md hover:opacity-80"
+        className="mb-1.5 flex w-full items-center gap-1.5 rounded-md text-left hover:opacity-80"
       >
         <ChevronDown
           size={12}
           className="shrink-0 transition-transform duration-150"
           style={{ color, transform: open ? undefined : 'rotate(-90deg)' }}
         />
-        <span className="shrink-0" style={{ color }}>{icon}</span>
-        <span
-          className="text-[10px] font-semibold uppercase tracking-wider"
-          style={{ color }}
-        >
+        <span className="shrink-0" style={{ color }}>
+          {icon}
+        </span>
+        <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color }}>
           {label}
           {count != null ? ` · ${count}` : ''}
         </span>
@@ -772,7 +846,7 @@ function ScheduleForm({
 
   return (
     <div
-      className="rounded-xl p-4 space-y-3"
+      className="space-y-3 rounded-xl p-4"
       style={{ border: '1px solid var(--color-border)', background: 'var(--color-card)' }}
     >
       <input
@@ -780,7 +854,7 @@ function ScheduleForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="e.g. Ceremony, Getting ready, Reception"
-        className="w-full text-sm px-3 py-2 rounded-lg focus:outline-none"
+        className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
         style={fieldStyle}
       />
       {requireDate && (
@@ -791,7 +865,7 @@ function ScheduleForm({
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full text-sm px-3 py-2 rounded-lg focus:outline-none"
+            className="mt-1 w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
             style={fieldStyle}
           />
         </label>
@@ -803,7 +877,7 @@ function ScheduleForm({
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="mt-1 w-full text-sm px-3 py-2 rounded-lg focus:outline-none"
+            className="mt-1 w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
             style={fieldStyle}
           />
         </label>
@@ -813,7 +887,7 @@ function ScheduleForm({
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className="mt-1 w-full text-sm px-3 py-2 rounded-lg focus:outline-none"
+            className="mt-1 w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
             style={fieldStyle}
           />
         </label>
@@ -822,7 +896,7 @@ function ScheduleForm({
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         placeholder="Location (optional)"
-        className="w-full text-sm px-3 py-2 rounded-lg focus:outline-none"
+        className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
         style={fieldStyle}
       />
       <textarea
@@ -830,10 +904,10 @@ function ScheduleForm({
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
         placeholder="Notes (optional)"
-        className="w-full text-sm px-3 py-2 rounded-lg resize-none focus:outline-none"
+        className="w-full resize-none rounded-lg px-3 py-2 text-sm focus:outline-none"
         style={fieldStyle}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <LinkPicker
           label="Budget lines"
           empty="No budget lines yet"
@@ -861,24 +935,28 @@ function ScheduleForm({
       </div>
       <LinkPicker
         label="Saved inspiration"
-        empty={moodBoardLoading ? 'Loading saved inspiration…' : 'Save ideas from Inspiration first'}
+        empty={
+          moodBoardLoading ? 'Loading saved inspiration…' : 'Save ideas from Inspiration first'
+        }
         selectedCount={inspirationItemIds.length}
-        items={moodBoardLoading ? [] : entries.map((entry) => ({
-          id: entry.inspirationItem.id,
-          label: entry.inspirationItem.title,
-        }))}
+        items={
+          moodBoardLoading
+            ? []
+            : entries.map((entry) => ({
+                id: entry.inspirationItem.id,
+                label: entry.inspirationItem.title,
+              }))
+        }
         selectedIds={inspirationItemIds}
         onToggle={(id) => setInspirationItemIds((prev) => toggleId(prev, id))}
         icon={<Sparkles size={10} />}
       />
-      {error && (
-        <p className="text-xs text-red-600">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs"
+          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
           style={{ color: 'var(--color-muted)' }}
         >
           <X size={12} /> Cancel
@@ -887,7 +965,7 @@ function ScheduleForm({
           type="button"
           onClick={submit}
           disabled={isPending || (Boolean(initial) && !inspirationsReady)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gold-600 text-brand-900 hover:bg-gold-500 disabled:opacity-40"
+          className="bg-gold-600 text-brand-900 hover:bg-gold-500 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40"
         >
           {isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
           Save
@@ -916,17 +994,17 @@ function LinkPicker({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--color-muted)' }}>
+      <p className="mb-1.5 text-[11px] font-medium" style={{ color: 'var(--color-muted)' }}>
         {label}
-        {selectedCount > 0 && (
-          <span className="ml-1 font-normal">({selectedCount})</span>
-        )}
+        {selectedCount > 0 && <span className="ml-1 font-normal">({selectedCount})</span>}
       </p>
       {items.length === 0 ? (
-        <p className="text-xs" style={{ color: 'var(--color-muted)' }}>{empty}</p>
+        <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+          {empty}
+        </p>
       ) : (
         <div
-          className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 rounded-lg"
+          className="flex max-h-36 flex-wrap gap-1.5 overflow-y-auto rounded-lg p-1.5"
           style={{ border: '1px solid var(--color-border)' }}
         >
           {items.map((item) => {
@@ -937,11 +1015,12 @@ function LinkPicker({
                 type="button"
                 onClick={() => onToggle(item.id)}
                 aria-pressed={selected}
-                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
                 style={
                   selected
                     ? {
-                        background: 'color-mix(in srgb, var(--color-brand-primary) 16%, transparent)',
+                        background:
+                          'color-mix(in srgb, var(--color-brand-primary) 16%, transparent)',
                         color: 'var(--color-brand-primary)',
                         border: '1px solid var(--color-brand-primary)',
                       }

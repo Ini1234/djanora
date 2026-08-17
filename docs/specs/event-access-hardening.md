@@ -1,13 +1,13 @@
 # Event access hardening (RBAC, concealment, public tokens)
 
-| Field | Value |
-|---|---|
-| Author | Backend / database security (white-box audit, 2026-08-15) |
-| Date | 2026-08-15 |
-| Status | **Implemented** |
-| Reviewers | Host-product owner |
-| Apps | `apps/api` (Nest + Prisma). Small type/DTO follow-ups in `apps/web`. |
-| HTTP | Existing Nest paths via `proxyClient` / `backend` / `publicGet`. No new `app/api/proxy/.../route.ts`. |
+| Field     | Value                                                                                                 |
+| --------- | ----------------------------------------------------------------------------------------------------- |
+| Author    | Backend / database security (white-box audit, 2026-08-15)                                             |
+| Date      | 2026-08-15                                                                                            |
+| Status    | **Implemented**                                                                                       |
+| Reviewers | Host-product owner                                                                                    |
+| Apps      | `apps/api` (Nest + Prisma). Small type/DTO follow-ups in `apps/web`.                                  |
+| HTTP      | Existing Nest paths via `proxyClient` / `backend` / `publicGet`. No new `app/api/proxy/.../route.ts`. |
 
 ---
 
@@ -131,7 +131,13 @@ type PublicRsvp = {
 
 // GET /event-invites/:token  (public)
 type InvitePreview =
-  | { accepted: false; event: { title: string; eventType: string; estimatedDate: string | null }; invitedBy: { firstName: string | null; lastName: string | null }; role: string; surfaces: string[] }
+  | {
+      accepted: false
+      event: { title: string; eventType: string; estimatedDate: string | null }
+      invitedBy: { firstName: string | null; lastName: string | null }
+      role: string
+      surfaces: string[]
+    }
   | { accepted: true; event: { title: string } }
 
 // GET /events/:id/budget/:itemId/receipts/:receiptId/file  (auth, BUDGET view)
@@ -152,15 +158,15 @@ No new tables. `GuestInvite.token` stays `String @unique`; default generation mo
 
 ## 8. Out of Scope
 
-| ID | Exclusion | Why |
-|---|---|---|
-| OS-1 | Chat LLM / prompt-injection filters | No generative model in app |
-| OS-2 | Cloud IAM, Clerk tenant MFA, TLS/headers audit | Infra, not this code pass |
-| OS-3 | Migrating existing guest tokens | Old links must keep working |
-| OS-4 | Moving vendor images off `/uploads` | Marketplace is public by design |
-| OS-5 | Changing surface/role matrix (EDITOR vs VIEWER) | Already correct |
-| OS-6 | New itinerary / proxy routes | Unrelated |
-| OS-7 | Dependency CVE sweep | Separate pass |
+| ID   | Exclusion                                       | Why                             |
+| ---- | ----------------------------------------------- | ------------------------------- |
+| OS-1 | Chat LLM / prompt-injection filters             | No generative model in app      |
+| OS-2 | Cloud IAM, Clerk tenant MFA, TLS/headers audit  | Infra, not this code pass       |
+| OS-3 | Migrating existing guest tokens                 | Old links must keep working     |
+| OS-4 | Moving vendor images off `/uploads`             | Marketplace is public by design |
+| OS-5 | Changing surface/role matrix (EDITOR vs VIEWER) | Already correct                 |
+| OS-6 | New itinerary / proxy routes                    | Unrelated                       |
+| OS-7 | Dependency CVE sweep                            | Separate pass                   |
 
 ---
 

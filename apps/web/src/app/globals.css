@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme inline {
   /* Brand palette — warm stone neutral + gold */
@@ -11,7 +11,7 @@
   --color-brand-300: #d6d3d1;
   --color-brand-200: #e7e5e4;
   --color-brand-100: #f5f4f4;
-  --color-brand-50:  #fafaf9;
+  --color-brand-50: #fafaf9;
 
   --color-gold-900: #6b4a00;
   --color-gold-800: #8b6200;
@@ -22,7 +22,7 @@
   --color-gold-300: #ecd08f;
   --color-gold-200: #f4e3bb;
   --color-gold-100: #faf2de;
-  --color-gold-50:  #fdf9f0;
+  --color-gold-50: #fdf9f0;
 
   --color-terracotta-600: #b85c2a;
   --color-terracotta-500: #c4622a;
@@ -30,53 +30,53 @@
   --color-terracotta-100: #fce9df;
 
   /* Fonts */
-  --font-sans:    var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans);
   --font-display: var(--font-playfair);
 }
 
 /* ─── Semantic design tokens ────────────────────────────────────────── */
 /* Light mode (default) */
 :root {
-  --nav-bg:       #ffffff;
-  --nav-border:   #e7e5e4;
-  --page-bg:      #f5f4f4;
-  --card-bg:      rgba(0, 0, 0, 0.035);
+  --nav-bg: #ffffff;
+  --nav-border: #e7e5e4;
+  --page-bg: #f5f4f4;
+  --card-bg: rgba(0, 0, 0, 0.035);
   --card-bg-hover: rgba(0, 0, 0, 0.065);
-  --card-border:  rgba(0, 0, 0, 0.11);
-  --input-bg:     rgba(0, 0, 0, 0.045);
-  --overlay-bg:   rgba(255, 255, 255, 0.8);
-  --scrollbar:    rgba(0, 0, 0, 0.20) transparent;
+  --card-border: rgba(0, 0, 0, 0.11);
+  --input-bg: rgba(0, 0, 0, 0.045);
+  --overlay-bg: rgba(255, 255, 255, 0.8);
+  --scrollbar: rgba(0, 0, 0, 0.2) transparent;
 
   --color-background: #fafaf9;
   --color-foreground: #1c1917;
-  --color-muted:      #57534e;   /* was #79716c — bumped for 6.8:1 contrast */
-  --color-border:     #d6d3d1;   /* was #e7e5e4 — slightly darker to be visible */
-  --color-card:       #ffffff;
-  --color-text-primary:   #1c1917;
+  --color-muted: #57534e; /* was #79716c — bumped for 6.8:1 contrast */
+  --color-border: #d6d3d1; /* was #e7e5e4 — slightly darker to be visible */
+  --color-card: #ffffff;
+  --color-text-primary: #1c1917;
   --color-text-secondary: #57534e;
-  --color-brand-primary:  #8b6200; /* gold-800 — 5.2:1 on white */
+  --color-brand-primary: #8b6200; /* gold-800 — 5.2:1 on white */
 }
 
 /* Dark mode */
 .dark {
-  --nav-bg:       #1c1917;
-  --nav-border:   rgba(255, 255, 255, 0.08);
-  --page-bg:      rgba(41, 37, 36, 0.5);
-  --card-bg:      rgba(255, 255, 255, 0.04);
+  --nav-bg: #1c1917;
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --page-bg: rgba(41, 37, 36, 0.5);
+  --card-bg: rgba(255, 255, 255, 0.04);
   --card-bg-hover: rgba(255, 255, 255, 0.06);
-  --card-border:  rgba(255, 255, 255, 0.10);
-  --input-bg:     rgba(255, 255, 255, 0.06);
-  --overlay-bg:   rgba(0, 0, 0, 0.6);
-  --scrollbar:    rgba(255, 255, 255, 0.15) transparent;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --scrollbar: rgba(255, 255, 255, 0.15) transparent;
 
   --color-background: #1c1917;
   --color-foreground: #e7e5e4;
-  --color-muted:      #a8a29e;
-  --color-border:     #3c3733;
-  --color-card:       #292524;
-  --color-text-primary:   #e7e5e4;
+  --color-muted: #a8a29e;
+  --color-border: #3c3733;
+  --color-card: #292524;
+  --color-text-primary: #e7e5e4;
   --color-text-secondary: #a8a29e;
-  --color-brand-primary:  #c9973a;
+  --color-brand-primary: #c9973a;
 }
 
 /* ─── Global overrides for light mode ───────────────────────────────── */
@@ -85,66 +85,146 @@
 
 /* Text — invert the scale so low numbers = dark (readable) on light bg  */
 /* brand-100 in dark = near-white; in light mode it must stay very dark  */
-:root:not(.dark) [class~="text-white"]    { color: var(--color-foreground) !important; }
+:root:not(.dark) [class~='text-white'] {
+  color: var(--color-foreground) !important;
+}
 /* These values satisfy WCAG 2.2 AA (4.5:1) on #fafaf9 background:       */
-:root:not(.dark) [class~="text-brand-100"] { color: #1c1917 !important; }  /* 17.4:1 */
-:root:not(.dark) [class~="text-brand-200"] { color: #292524 !important; }  /* 14.6:1 */
-:root:not(.dark) [class~="text-brand-300"] { color: #3c3733 !important; }  /* 10.1:1 */
-:root:not(.dark) [class~="text-brand-400"] { color: #57534e !important; }  /*  6.8:1 */
-:root:not(.dark) [class~="text-brand-500"] { color: #6b6560 !important; }  /*  5.2:1 — passes AA */
-:root:not(.dark) [class~="text-brand-600"] { color: #57534e !important; }  /*  6.8:1 — was #d6d3d1 (1.2:1!) */
+:root:not(.dark) [class~='text-brand-100'] {
+  color: #1c1917 !important;
+} /* 17.4:1 */
+:root:not(.dark) [class~='text-brand-200'] {
+  color: #292524 !important;
+} /* 14.6:1 */
+:root:not(.dark) [class~='text-brand-300'] {
+  color: #3c3733 !important;
+} /* 10.1:1 */
+:root:not(.dark) [class~='text-brand-400'] {
+  color: #57534e !important;
+} /*  6.8:1 */
+:root:not(.dark) [class~='text-brand-500'] {
+  color: #6b6560 !important;
+} /*  5.2:1 — passes AA */
+:root:not(.dark) [class~='text-brand-600'] {
+  color: #57534e !important;
+} /*  6.8:1 — was #d6d3d1 (1.2:1!) */
 
 /* Card/surface backgrounds — stronger so they're visible in light mode */
-:root:not(.dark) [class~="bg-white\/3"]  { background-color: rgba(0,0,0,0.03)  !important; }
-:root:not(.dark) [class~="bg-white\/4"]  { background-color: rgba(0,0,0,0.04)  !important; }
-:root:not(.dark) [class~="bg-white\/6"]  { background-color: rgba(0,0,0,0.055) !important; }
-:root:not(.dark) [class~="bg-white\/8"]  { background-color: rgba(0,0,0,0.07)  !important; }
-:root:not(.dark) [class~="bg-white\/10"] { background-color: rgba(0,0,0,0.09)  !important; }
+:root:not(.dark) [class~='bg-white\/3'] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+:root:not(.dark) [class~='bg-white\/4'] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+:root:not(.dark) [class~='bg-white\/6'] {
+  background-color: rgba(0, 0, 0, 0.055) !important;
+}
+:root:not(.dark) [class~='bg-white\/8'] {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+:root:not(.dark) [class~='bg-white\/10'] {
+  background-color: rgba(0, 0, 0, 0.09) !important;
+}
 
 /* Hover variants */
-:root:not(.dark) [class~="hover:bg-white\/4"]:hover  { background-color: rgba(0,0,0,0.05) !important; }
-:root:not(.dark) [class~="hover:bg-white\/6"]:hover  { background-color: rgba(0,0,0,0.07) !important; }
-:root:not(.dark) [class~="hover:bg-white\/8"]:hover  { background-color: rgba(0,0,0,0.09) !important; }
+:root:not(.dark) [class~='hover:bg-white\/4']:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+:root:not(.dark) [class~='hover:bg-white\/6']:hover {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+:root:not(.dark) [class~='hover:bg-white\/8']:hover {
+  background-color: rgba(0, 0, 0, 0.09) !important;
+}
 
 /* Borders — bumped opacity so dividers are visible in light mode */
-:root:not(.dark) [class~="border-white\/6"]  { border-color: rgba(0,0,0,0.09) !important; }
-:root:not(.dark) [class~="border-white\/8"]  { border-color: rgba(0,0,0,0.10) !important; }
-:root:not(.dark) [class~="border-white\/10"] { border-color: rgba(0,0,0,0.12) !important; }
-:root:not(.dark) [class~="border-white\/12"] { border-color: rgba(0,0,0,0.13) !important; }
-:root:not(.dark) [class~="border-white\/15"] { border-color: rgba(0,0,0,0.14) !important; }
-:root:not(.dark) [class~="border-white\/16"] { border-color: rgba(0,0,0,0.14) !important; }
-:root:not(.dark) [class~="border-white\/20"] { border-color: rgba(0,0,0,0.16) !important; }
+:root:not(.dark) [class~='border-white\/6'] {
+  border-color: rgba(0, 0, 0, 0.09) !important;
+}
+:root:not(.dark) [class~='border-white\/8'] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+:root:not(.dark) [class~='border-white\/10'] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+:root:not(.dark) [class~='border-white\/12'] {
+  border-color: rgba(0, 0, 0, 0.13) !important;
+}
+:root:not(.dark) [class~='border-white\/15'] {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+:root:not(.dark) [class~='border-white\/16'] {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+:root:not(.dark) [class~='border-white\/20'] {
+  border-color: rgba(0, 0, 0, 0.16) !important;
+}
 
 /* Dividers */
-:root:not(.dark) [class~="border-b"][class~="border-white\/6"]  { border-color: rgba(0,0,0,0.10) !important; }
+:root:not(.dark) [class~='border-b'][class~='border-white\/6'] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
 
 /* Translucent brand backgrounds */
-:root:not(.dark) [class~="bg-brand-700\/30"] { background-color: rgba(0,0,0,0.07) !important; }
-:root:not(.dark) [class~="bg-brand-700\/40"] { background-color: rgba(0,0,0,0.09) !important; }
-:root:not(.dark) [class~="bg-brand-700\/50"] { background-color: rgba(0,0,0,0.10) !important; }
-:root:not(.dark) [class~="bg-brand-700\/60"] { background-color: rgba(0,0,0,0.12) !important; }
+:root:not(.dark) [class~='bg-brand-700\/30'] {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+:root:not(.dark) [class~='bg-brand-700\/40'] {
+  background-color: rgba(0, 0, 0, 0.09) !important;
+}
+:root:not(.dark) [class~='bg-brand-700\/50'] {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+:root:not(.dark) [class~='bg-brand-700\/60'] {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
 
-:root:not(.dark) [class~="border-brand-500\/30"] { border-color: rgba(0,0,0,0.12) !important; }
-:root:not(.dark) [class~="border-brand-500\/40"] { border-color: rgba(0,0,0,0.14) !important; }
-:root:not(.dark) [class~="border-brand-500\/50"] { border-color: rgba(0,0,0,0.16) !important; }
+:root:not(.dark) [class~='border-brand-500\/30'] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+:root:not(.dark) [class~='border-brand-500\/40'] {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+:root:not(.dark) [class~='border-brand-500\/50'] {
+  border-color: rgba(0, 0, 0, 0.16) !important;
+}
 
 /* White/50 and White/60 opacity text — ensure readable in light mode */
-:root:not(.dark) [class~="text-white\/50"]  { color: rgba(28,25,23,0.55) !important; }
-:root:not(.dark) [class~="text-white\/60"]  { color: rgba(28,25,23,0.65) !important; }
-:root:not(.dark) [class~="text-white\/70"]  { color: rgba(28,25,23,0.75) !important; }
-:root:not(.dark) [class~="text-white\/80"]  { color: rgba(28,25,23,0.85) !important; }
+:root:not(.dark) [class~='text-white\/50'] {
+  color: rgba(28, 25, 23, 0.55) !important;
+}
+:root:not(.dark) [class~='text-white\/60'] {
+  color: rgba(28, 25, 23, 0.65) !important;
+}
+:root:not(.dark) [class~='text-white\/70'] {
+  color: rgba(28, 25, 23, 0.75) !important;
+}
+:root:not(.dark) [class~='text-white\/80'] {
+  color: rgba(28, 25, 23, 0.85) !important;
+}
 
 /* Gold text — remap to dark-gold in light mode                          */
 /* gold-600 (#c9973a) on #fafaf9 is only 2.5:1 — fails WCAG AA          */
 /* gold-800 (#8b6200) → 5.2:1  gold-900 (#6b4a00) → 7.7:1              */
-:root:not(.dark) [class~="text-gold-300"] { color: #6b4a00 !important; }  /* 7.7:1 ✓ */
-:root:not(.dark) [class~="text-gold-400"] { color: #6b4a00 !important; }  /* 7.7:1 ✓ */
-:root:not(.dark) [class~="text-gold-500"] { color: #8b6200 !important; }  /* 5.2:1 ✓ */
-:root:not(.dark) [class~="text-gold-600"] { color: #8b6200 !important; }  /* 5.2:1 ✓ */
-:root:not(.dark) [class~="text-gold-700"] { color: #6b4a00 !important; }  /* 7.7:1 ✓ */
+:root:not(.dark) [class~='text-gold-300'] {
+  color: #6b4a00 !important;
+} /* 7.7:1 ✓ */
+:root:not(.dark) [class~='text-gold-400'] {
+  color: #6b4a00 !important;
+} /* 7.7:1 ✓ */
+:root:not(.dark) [class~='text-gold-500'] {
+  color: #8b6200 !important;
+} /* 5.2:1 ✓ */
+:root:not(.dark) [class~='text-gold-600'] {
+  color: #8b6200 !important;
+} /* 5.2:1 ✓ */
+:root:not(.dark) [class~='text-gold-700'] {
+  color: #6b4a00 !important;
+} /* 7.7:1 ✓ */
 
 /* bg-black/4 class used in hover states */
-:root:not(.dark) [class~="hover:bg-black\/4"]:hover { background-color: rgba(0,0,0,0.06) !important; }
+:root:not(.dark) [class~='hover:bg-black\/4']:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
 
 /* ─── Base ─────────────────────────────────────────────────────────── */
 html {
@@ -175,5 +255,5 @@ body {
 
 /* Darken focus ring in light mode so it's visible against white surfaces */
 :root:not(.dark) :focus-visible {
-  outline-color: #8b6200;  /* gold-800, 5.2:1 on white ✓ */
+  outline-color: #8b6200; /* gold-800, 5.2:1 on white ✓ */
 }

@@ -52,8 +52,7 @@ const features = [
   {
     icon: Sparkles,
     title: 'AI-powered planning',
-    description:
-      'Get a personalised event timeline and checklist so you know what to do next.',
+    description: 'Get a personalised event timeline and checklist so you know what to do next.',
   },
   {
     icon: Wallet,
@@ -64,8 +63,7 @@ const features = [
   {
     icon: Users,
     title: 'Vetted local vendors',
-    description:
-      'Every vendor on Djanora is reviewed by the community and ready to book.',
+    description: 'Every vendor on Djanora is reviewed by the community and ready to book.',
   },
   {
     icon: CalendarDays,
@@ -83,30 +81,27 @@ export function LandingPage() {
       <main id="main-content">
         {/* ── HERO ────────────────────────────────────────────── */}
         <section
-          className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden"
+          className="relative overflow-hidden px-4 pt-32 pb-20 sm:px-6 lg:px-8"
           aria-labelledby="hero-heading"
         >
           {/* Subtle dot pattern background */}
-          <div
-            className="absolute inset-0 pattern-adire opacity-40"
-            aria-hidden="true"
-          />
+          <div className="pattern-adire absolute inset-0 opacity-40" aria-hidden="true" />
           {/* Gradient overlay */}
           <div
             className="absolute inset-0 bg-gradient-to-b from-[var(--color-background)] via-transparent to-[var(--color-background)]"
             aria-hidden="true"
           />
 
-          <div className="relative max-w-5xl mx-auto text-center">
+          <div className="relative mx-auto max-w-5xl text-center">
             {/* Location badge */}
-            <div className="inline-flex items-center gap-1.5 bg-brand-100 text-brand-700 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
+            <div className="bg-brand-100 text-brand-700 mb-6 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium">
               <MapPin size={12} aria-hidden="true" />
               <span>Ottawa, Ontario — event planning</span>
             </div>
 
             <h1
               id="hero-heading"
-              className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold text-brand-900 leading-tight mb-6"
+              className="font-display text-brand-900 mb-6 text-5xl leading-tight font-semibold sm:text-6xl lg:text-7xl"
             >
               Your event.
               <br />
@@ -115,22 +110,22 @@ export function LandingPage() {
               Your way.
             </h1>
 
-            <p className="text-lg sm:text-xl text-[var(--color-muted)] max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)] sm:text-xl">
               Djanora helps you plan your event — budget, vendors, guests, and the day-of schedule —
               all in one place.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/sign-up"
-                className="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-600 text-white font-medium text-base px-8 py-4 rounded-full transition-colors shadow-lg shadow-brand-900/20"
+                className="bg-brand-700 hover:bg-brand-600 shadow-brand-900/20 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium text-white shadow-lg transition-colors"
               >
                 Start planning for free
                 <ChevronRight size={18} aria-hidden="true" />
               </Link>
               <Link
                 href="/vendors"
-                className="inline-flex items-center gap-2 text-brand-700 hover:text-brand-600 font-medium text-base px-6 py-4 rounded-full border border-brand-200 hover:border-brand-300 transition-colors"
+                className="text-brand-700 hover:text-brand-600 border-brand-200 hover:border-brand-300 inline-flex items-center gap-2 rounded-full border px-6 py-4 text-base font-medium transition-colors"
               >
                 Browse vendors
               </Link>
@@ -151,11 +146,11 @@ export function LandingPage() {
                 </div>
                 <span>Loved by Ottawa families</span>
               </div>
-              <span aria-hidden="true" className="hidden sm:block text-[var(--color-border)]">
+              <span aria-hidden="true" className="hidden text-[var(--color-border)] sm:block">
                 •
               </span>
               <span>Budget, vendors, and guests in one place</span>
-              <span aria-hidden="true" className="hidden sm:block text-[var(--color-border)]">
+              <span aria-hidden="true" className="hidden text-[var(--color-border)] sm:block">
                 •
               </span>
               <span>100% free to start</span>
@@ -165,22 +160,22 @@ export function LandingPage() {
 
         {/* ── VENDOR CATEGORIES ───────────────────────────────── */}
         <section
-          className="py-16 px-4 sm:px-6 lg:px-8 bg-brand-50"
+          className="bg-brand-50 px-4 py-16 sm:px-6 lg:px-8"
           aria-labelledby="categories-heading"
         >
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto max-w-7xl">
             <h2
               id="categories-heading"
-              className="text-center font-display text-2xl font-semibold text-brand-800 mb-2"
+              className="font-display text-brand-800 mb-2 text-center text-2xl font-semibold"
             >
               Everything you need, in one place
             </h2>
-            <p className="text-center text-[var(--color-muted)] mb-10">
+            <p className="mb-10 text-center text-[var(--color-muted)]">
               Vendors for every part of the day
             </p>
 
             <ul
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
               role="list"
               aria-label="Vendor categories"
             >
@@ -188,13 +183,13 @@ export function LandingPage() {
                 <li key={label}>
                   <Link
                     href={`/vendors?category=${label.toLowerCase().replace(/ /g, '-')}`}
-                    className="flex flex-col items-center text-center p-4 bg-white rounded-2xl border border-[var(--color-border)] hover:border-brand-300 hover:shadow-md transition-all group"
+                    className="hover:border-brand-300 group flex flex-col items-center rounded-2xl border border-[var(--color-border)] bg-white p-4 text-center transition-all hover:shadow-md"
                   >
-                    <span className="w-12 h-12 rounded-xl bg-brand-100 group-hover:bg-brand-200 flex items-center justify-center mb-3 transition-colors">
+                    <span className="bg-brand-100 group-hover:bg-brand-200 mb-3 flex h-12 w-12 items-center justify-center rounded-xl transition-colors">
                       <Icon size={22} className="text-brand-700" aria-hidden="true" />
                     </span>
-                    <span className="text-sm font-semibold text-brand-800 mb-1">{label}</span>
-                    <span className="text-xs text-[var(--color-muted)] leading-relaxed">
+                    <span className="text-brand-800 mb-1 text-sm font-semibold">{label}</span>
+                    <span className="text-xs leading-relaxed text-[var(--color-muted)]">
                       {description}
                     </span>
                   </Link>
@@ -207,48 +202,48 @@ export function LandingPage() {
         {/* ── HOW IT WORKS ────────────────────────────────────── */}
         <section
           id="how-it-works"
-          className="py-24 px-4 sm:px-6 lg:px-8"
+          className="px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="how-it-works-heading"
         >
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-16 text-center">
               <h2
                 id="how-it-works-heading"
-                className="font-display text-4xl font-semibold text-brand-900 mb-4"
+                className="font-display text-brand-900 mb-4 text-4xl font-semibold"
               >
                 Plan your event in 3 steps
               </h2>
-              <p className="text-[var(--color-muted)] text-lg max-w-xl mx-auto">
+              <p className="mx-auto max-w-xl text-lg text-[var(--color-muted)]">
                 No more Googling vendors, guessing at traditions, or spreadsheet budgets.
               </p>
             </div>
 
-            <ol className="grid md:grid-cols-3 gap-8" role="list">
+            <ol className="grid gap-8 md:grid-cols-3" role="list">
               {steps.map((step) => (
                 <li
                   key={step.number}
-                  className="relative flex flex-col p-8 bg-white rounded-3xl border border-[var(--color-border)] shadow-sm"
+                  className="relative flex flex-col rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm"
                 >
                   <span
-                    className="font-display text-5xl font-bold text-brand-100 mb-6 leading-none"
+                    className="font-display text-brand-100 mb-6 text-5xl leading-none font-bold"
                     aria-hidden="true"
                   >
                     {step.number}
                   </span>
-                  <h3 className="font-display text-xl font-semibold text-brand-800 mb-3">
+                  <h3 className="font-display text-brand-800 mb-3 text-xl font-semibold">
                     {step.title}
                   </h3>
-                  <p className="text-[var(--color-muted)] text-sm leading-relaxed">
+                  <p className="text-sm leading-relaxed text-[var(--color-muted)]">
                     {step.description}
                   </p>
                 </li>
               ))}
             </ol>
 
-            <div className="text-center mt-12">
+            <div className="mt-12 text-center">
               <Link
                 href="/sign-up"
-                className="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-600 text-white font-medium px-8 py-4 rounded-full transition-colors"
+                className="bg-brand-700 hover:bg-brand-600 inline-flex items-center gap-2 rounded-full px-8 py-4 font-medium text-white transition-colors"
               >
                 Start for free
                 <ChevronRight size={18} aria-hidden="true" />
@@ -259,33 +254,33 @@ export function LandingPage() {
 
         {/* ── FEATURES ────────────────────────────────────────── */}
         <section
-          className="py-24 px-4 sm:px-6 lg:px-8 bg-brand-900"
+          className="bg-brand-900 px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="features-heading"
         >
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-16 text-center">
               <h2
                 id="features-heading"
-                className="font-display text-4xl font-semibold text-white mb-4"
+                className="font-display mb-4 text-4xl font-semibold text-white"
               >
                 Built for planners and vendors
               </h2>
-              <p className="text-brand-300 text-lg max-w-xl mx-auto">
+              <p className="text-brand-300 mx-auto max-w-xl text-lg">
                 Keep the plan, the people, and the budget together so nothing slips through.
               </p>
             </div>
 
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" role="list">
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" role="list">
               {features.map(({ icon: Icon, title, description }) => (
                 <li
                   key={title}
-                  className="flex flex-col p-6 bg-brand-800 rounded-2xl border border-brand-700"
+                  className="bg-brand-800 border-brand-700 flex flex-col rounded-2xl border p-6"
                 >
-                  <span className="w-10 h-10 rounded-xl bg-gold-600/20 flex items-center justify-center mb-4">
+                  <span className="bg-gold-600/20 mb-4 flex h-10 w-10 items-center justify-center rounded-xl">
                     <Icon size={20} className="text-gold-400" aria-hidden="true" />
                   </span>
-                  <h3 className="font-semibold text-white mb-2">{title}</h3>
-                  <p className="text-sm text-brand-300 leading-relaxed">{description}</p>
+                  <h3 className="mb-2 font-semibold text-white">{title}</h3>
+                  <p className="text-brand-300 text-sm leading-relaxed">{description}</p>
                 </li>
               ))}
             </ul>
@@ -295,35 +290,39 @@ export function LandingPage() {
         {/* ── FOR VENDORS ─────────────────────────────────────── */}
         <section
           id="for-vendors"
-          className="py-24 px-4 sm:px-6 lg:px-8"
+          className="px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="vendors-cta-heading"
         >
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="mx-auto max-w-5xl">
+            <div className="grid items-center gap-12 md:grid-cols-2">
               <div>
-                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-gold-600 mb-4">
+                <span className="text-gold-600 mb-4 inline-block text-xs font-semibold tracking-widest uppercase">
                   For vendors
                 </span>
                 <h2
                   id="vendors-cta-heading"
-                  className="font-display text-4xl font-semibold text-brand-900 mb-6 leading-tight"
+                  className="font-display text-brand-900 mb-6 text-4xl leading-tight font-semibold"
                 >
                   Reach planners who are ready to book
                 </h2>
-                <p className="text-[var(--color-muted)] text-lg leading-relaxed mb-8">
+                <p className="mb-8 text-lg leading-relaxed text-[var(--color-muted)]">
                   Create a portfolio, showcase your work, and get discovered by people planning
                   events. No commission on bookings — you keep what you earn.
                 </p>
 
-                <ul className="flex flex-col gap-3 mb-8" role="list">
+                <ul className="mb-8 flex flex-col gap-3" role="list">
                   {[
                     'Free to create a profile',
                     'Reach planners who are ready to book',
                     'Manage inquiries in one dashboard',
                     'No booking commissions',
                   ].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-sm text-brand-800">
-                      <CheckCircle2 size={18} className="text-brand-500 shrink-0" aria-hidden="true" />
+                    <li key={item} className="text-brand-800 flex items-center gap-3 text-sm">
+                      <CheckCircle2
+                        size={18}
+                        className="text-brand-500 shrink-0"
+                        aria-hidden="true"
+                      />
                       {item}
                     </li>
                   ))}
@@ -331,7 +330,7 @@ export function LandingPage() {
 
                 <Link
                   href="/vendor/sign-up"
-                  className="inline-flex items-center gap-2 bg-gold-600 hover:bg-gold-500 text-white font-medium px-8 py-4 rounded-full transition-colors"
+                  className="bg-gold-600 hover:bg-gold-500 inline-flex items-center gap-2 rounded-full px-8 py-4 font-medium text-white transition-colors"
                 >
                   Join as a vendor
                   <ChevronRight size={18} aria-hidden="true" />
@@ -340,13 +339,13 @@ export function LandingPage() {
 
               {/* Visual card */}
               <div
-                className="relative bg-brand-800 rounded-3xl p-8 text-white overflow-hidden"
+                className="bg-brand-800 relative overflow-hidden rounded-3xl p-8 text-white"
                 aria-hidden="true"
               >
-                <div className="absolute inset-0 pattern-adire opacity-10" />
+                <div className="pattern-adire absolute inset-0 opacity-10" />
                 <div className="relative">
-                  <div className="text-4xl mb-4">🎊</div>
-                  <p className="font-display text-2xl font-semibold mb-2">
+                  <div className="mb-4 text-4xl">🎊</div>
+                  <p className="font-display mb-2 text-2xl font-semibold">
                     &ldquo;Finally, a platform that keeps the whole event in one place.&rdquo;
                   </p>
                   <p className="text-brand-300 text-sm">— Ottawa vendor community</p>
@@ -358,23 +357,23 @@ export function LandingPage() {
 
         {/* ── FINAL CTA ───────────────────────────────────────── */}
         <section
-          className="py-24 px-4 sm:px-6 lg:px-8 bg-gold-50 border-y border-gold-100"
+          className="bg-gold-50 border-gold-100 border-y px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="final-cta-heading"
         >
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="mx-auto max-w-3xl text-center">
             <h2
               id="final-cta-heading"
-              className="font-display text-4xl sm:text-5xl font-semibold text-brand-900 mb-6"
+              className="font-display text-brand-900 mb-6 text-4xl font-semibold sm:text-5xl"
             >
               Your event starts here
             </h2>
-            <p className="text-[var(--color-muted)] text-lg mb-10">
+            <p className="mb-10 text-lg text-[var(--color-muted)]">
               Free to start. No credit card required. Plan your event with vendors, budget, and
               guests in one place.
             </p>
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-600 text-white font-medium text-lg px-10 py-5 rounded-full transition-colors shadow-xl shadow-brand-900/20"
+              className="bg-brand-700 hover:bg-brand-600 shadow-brand-900/20 inline-flex items-center gap-2 rounded-full px-10 py-5 text-lg font-medium text-white shadow-xl transition-colors"
             >
               Start planning your event
               <ChevronRight size={20} aria-hidden="true" />

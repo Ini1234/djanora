@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { CheckCircle2, XCircle, HelpCircle, Send, ChevronDown } from 'lucide-react'
 import { backend } from '@/lib/backend'
+import { getErrorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
 interface RsvpPageData {
@@ -24,16 +25,6 @@ interface RsvpPageData {
     estimatedDate: string | null
     location: string | null
   }
-}
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  WEDDING: 'Wedding',
-  INTRODUCTION: 'Introduction Ceremony',
-  TRADITIONAL_WEDDING: 'Traditional Wedding',
-  WHITE_WEDDING: 'White Wedding',
-  RECEPTION: 'Wedding Reception',
-  ENGAGEMENT: 'Engagement Party',
-  NAMING_CEREMONY: 'Naming Ceremony',
 }
 
 type RsvpChoice = 'ATTENDING' | 'DECLINED' | 'MAYBE'
@@ -71,54 +62,53 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         guestMessage: guestMessage.trim() || undefined,
       })
       setSubmitted(true)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? 'Failed to submit RSVP')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to submit RSVP'))
     }
   }
 
   if (submitted && choice) {
     return (
-      <div className="text-center py-8 px-6">
+      <div className="px-6 py-8 text-center">
         {choice === 'ATTENDING' && (
           <>
-            <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15">
               <CheckCircle2 size={28} className="text-emerald-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">You're confirmed! 🎉</h2>
+            <h2 className="mb-2 text-xl font-semibold text-white">You&apos;re confirmed! 🎉</h2>
             <p className="text-brand-300 text-sm">
-              We've recorded your RSVP. We can't wait to celebrate with you{eventDate ? ` on ${eventDate}` : ''}.
+              We&apos;ve recorded your RSVP. We can&apos;t wait to celebrate with you
+              {eventDate ? ` on ${eventDate}` : ''}.
             </p>
-            {plusOneName && (
-              <p className="text-brand-400 text-xs mt-2">Plus one: {plusOneName}</p>
-            )}
+            {plusOneName && <p className="text-brand-400 mt-2 text-xs">Plus one: {plusOneName}</p>}
           </>
         )}
         {choice === 'DECLINED' && (
           <>
-            <div className="w-16 h-16 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/30 bg-red-500/15">
               <XCircle size={28} className="text-red-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">RSVP received</h2>
+            <h2 className="mb-2 text-xl font-semibold text-white">RSVP received</h2>
             <p className="text-brand-300 text-sm">
-              We're sorry you can't make it. Thank you for letting us know.
+              We&apos;re sorry you can&apos;t make it. Thank you for letting us know.
             </p>
           </>
         )}
         {choice === 'MAYBE' && (
           <>
-            <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/15">
               <HelpCircle size={28} className="text-amber-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Got it!</h2>
+            <h2 className="mb-2 text-xl font-semibold text-white">Got it!</h2>
             <p className="text-brand-300 text-sm">
-              We've noted you might be able to join us. We hope to see you there!
+              We&apos;ve noted you might be able to join us. We hope to see you there!
             </p>
           </>
         )}
 
         <button
           onClick={() => setSubmitted(false)}
-          className="mt-6 text-xs text-brand-500 hover:text-brand-300 underline"
+          className="text-brand-500 hover:text-brand-300 mt-6 text-xs underline"
         >
           Change my response
         </button>
@@ -137,10 +127,10 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         <button
           onClick={() => setChoice('ATTENDING')}
           className={cn(
-            'flex flex-col items-center gap-2 py-4 rounded-xl border transition-all',
+            'flex flex-col items-center gap-2 rounded-xl border py-4 transition-all',
             choice === 'ATTENDING'
-              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-              : 'bg-white/4 border-white/10 text-brand-400 hover:border-white/20 hover:text-brand-200',
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+              : 'text-brand-400 hover:text-brand-200 border-white/10 bg-white/4 hover:border-white/20',
           )}
         >
           <CheckCircle2 size={20} />
@@ -149,10 +139,10 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         <button
           onClick={() => setChoice('MAYBE')}
           className={cn(
-            'flex flex-col items-center gap-2 py-4 rounded-xl border transition-all',
+            'flex flex-col items-center gap-2 rounded-xl border py-4 transition-all',
             choice === 'MAYBE'
-              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-              : 'bg-white/4 border-white/10 text-brand-400 hover:border-white/20 hover:text-brand-200',
+              ? 'border-amber-500/40 bg-amber-500/15 text-amber-300'
+              : 'text-brand-400 hover:text-brand-200 border-white/10 bg-white/4 hover:border-white/20',
           )}
         >
           <HelpCircle size={20} />
@@ -161,10 +151,10 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         <button
           onClick={() => setChoice('DECLINED')}
           className={cn(
-            'flex flex-col items-center gap-2 py-4 rounded-xl border transition-all',
+            'flex flex-col items-center gap-2 rounded-xl border py-4 transition-all',
             choice === 'DECLINED'
-              ? 'bg-red-500/15 border-red-500/40 text-red-300'
-              : 'bg-white/4 border-white/10 text-brand-400 hover:border-white/20 hover:text-brand-200',
+              ? 'border-red-500/40 bg-red-500/15 text-red-300'
+              : 'text-brand-400 hover:text-brand-200 border-white/10 bg-white/4 hover:border-white/20',
           )}
         >
           <XCircle size={20} />
@@ -177,7 +167,7 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         <div className="space-y-3">
           <button
             onClick={() => setShowExtras((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-200 transition-colors"
+            className="text-brand-400 hover:text-brand-200 flex items-center gap-1.5 text-xs transition-colors"
           >
             <ChevronDown
               size={13}
@@ -190,28 +180,26 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
             <div className="space-y-3">
               {data.guest.plusOneAllowed && (
                 <div>
-                  <label className="block text-xs text-brand-400 mb-1.5">Plus one name</label>
+                  <label className="text-brand-400 mb-1.5 block text-xs">Plus one name</label>
                   <input
                     value={plusOneName}
                     onChange={(e) => setPlusOneName(e.target.value)}
                     placeholder="Guest's name"
-                    className="w-full text-sm bg-white/6 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:border-gold-500/50 transition-colors"
+                    className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white transition-colors focus:outline-none"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-xs text-brand-400 mb-1.5">
-                  Dietary requirements
-                </label>
+                <label className="text-brand-400 mb-1.5 block text-xs">Dietary requirements</label>
                 <input
                   value={dietaryNote}
                   onChange={(e) => setDietaryNote(e.target.value)}
                   placeholder="Vegetarian, halal, nut allergy…"
-                  className="w-full text-sm bg-white/6 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:border-gold-500/50 transition-colors"
+                  className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white transition-colors focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs text-brand-400 mb-1.5">
+                <label className="text-brand-400 mb-1.5 block text-xs">
                   Message to the planner
                 </label>
                 <textarea
@@ -219,7 +207,7 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
                   onChange={(e) => setGuestMessage(e.target.value)}
                   placeholder="Looking forward to celebrating with you…"
                   rows={3}
-                  className="w-full text-sm bg-white/6 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-brand-500 focus:outline-none focus:border-gold-500/50 transition-colors resize-none"
+                  className="placeholder:text-brand-500 focus:border-gold-500/50 w-full resize-none rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-white transition-colors focus:outline-none"
                 />
               </div>
             </div>
@@ -227,12 +215,12 @@ export function RsvpForm({ token, data }: { token: string; data: RsvpPageData })
         </div>
       )}
 
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
 
       <button
         onClick={() => startTransition(submit)}
         disabled={!choice || isPending}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gold-600/15 hover:bg-gold-600/25 border border-gold-500/30 text-gold-300 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="bg-gold-600/15 hover:bg-gold-600/25 border-gold-500/30 text-gold-300 flex w-full items-center justify-center gap-2 rounded-xl border py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Send size={14} />
         {isPending ? 'Submitting…' : 'Submit RSVP'}

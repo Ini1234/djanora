@@ -58,13 +58,7 @@ interface MoodBoardContextValue {
 
 const MoodBoardContext = createContext<MoodBoardContextValue | null>(null)
 
-export function MoodBoardProvider({
-  eventId,
-  children,
-}: {
-  eventId: string
-  children: ReactNode
-}) {
+export function MoodBoardProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const [entries, setEntries] = useState<MoodBoardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const loadedRef = useRef(false)
@@ -86,12 +80,15 @@ export function MoodBoardProvider({
     reload()
   }, [reload])
 
-  const removeEntry = useCallback(async (inspirationItemId: string) => {
-    await proxyClient.delete(`/inspiration/${inspirationItemId}/save`, {
-      params: { eventId },
-    })
-    setEntries((prev) => prev.filter((entry) => entry.inspirationItem.id !== inspirationItemId))
-  }, [eventId])
+  const removeEntry = useCallback(
+    async (inspirationItemId: string) => {
+      await proxyClient.delete(`/inspiration/${inspirationItemId}/save`, {
+        params: { eventId },
+      })
+      setEntries((prev) => prev.filter((entry) => entry.inspirationItem.id !== inspirationItemId))
+    },
+    [eventId],
+  )
 
   const { entriesByChecklistId, entriesByBudgetId, entriesByScheduleId } = useMemo(() => {
     const byChecklist = new Map<string, MoodBoardEntry[]>()
@@ -116,18 +113,33 @@ export function MoodBoardProvider({
       }
     }
 
-    return { entriesByChecklistId: byChecklist, entriesByBudgetId: byBudget, entriesByScheduleId: bySchedule }
+    return {
+      entriesByChecklistId: byChecklist,
+      entriesByBudgetId: byBudget,
+      entriesByScheduleId: bySchedule,
+    }
   }, [entries])
 
-  const value = useMemo(() => ({
-    entries,
-    loading,
-    entriesByChecklistId,
-    entriesByBudgetId,
-    entriesByScheduleId,
-    reload,
-    removeEntry,
-  }), [entries, loading, entriesByChecklistId, entriesByBudgetId, entriesByScheduleId, reload, removeEntry])
+  const value = useMemo(
+    () => ({
+      entries,
+      loading,
+      entriesByChecklistId,
+      entriesByBudgetId,
+      entriesByScheduleId,
+      reload,
+      removeEntry,
+    }),
+    [
+      entries,
+      loading,
+      entriesByChecklistId,
+      entriesByBudgetId,
+      entriesByScheduleId,
+      reload,
+      removeEntry,
+    ],
+  )
 
   return <MoodBoardContext.Provider value={value}>{children}</MoodBoardContext.Provider>
 }

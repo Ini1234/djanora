@@ -3,11 +3,30 @@
 import { useState, useTransition, useRef, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import {
-  CheckCircle2, Circle, Trash2, CalendarDays, X,
-  Mail, MessageSquare, Pencil, Check, Plus,
-  SlidersHorizontal, ChevronDown, Store, ChevronUp,
-  Search, Star, BadgeCheck, BookUser, Loader2,
-  Phone, Globe, ExternalLink, FileText, AlarmClock,
+  CheckCircle2,
+  Circle,
+  Trash2,
+  CalendarDays,
+  X,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Check,
+  Plus,
+  SlidersHorizontal,
+  ChevronDown,
+  Store,
+  ChevronUp,
+  Search,
+  Star,
+  BadgeCheck,
+  BookUser,
+  Loader2,
+  Phone,
+  Globe,
+  ExternalLink,
+  FileText,
+  AlarmClock,
   Sparkles,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -28,7 +47,8 @@ interface Props {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SortKey   = 'default' | 'due-asc' | 'due-desc' | 'todo-first' | 'done-first' | 'overdue-first' | 'alpha'
+type SortKey =
+  'default' | 'due-asc' | 'due-desc' | 'todo-first' | 'done-first' | 'overdue-first' | 'alpha'
 type FilterKey = 'all' | 'todo' | 'done' | 'overdue' | 'has-date' | 'mine'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,32 +65,49 @@ function isOverdue(dateStr: string | null, done: boolean) {
 
 function isDueSoon(dateStr: string | null, done: boolean) {
   if (!dateStr || done) return false
-  const diff = (new Date(dateStr).getTime() - new Date(new Date().toDateString()).getTime()) / 86400000
+  const diff =
+    (new Date(dateStr).getTime() - new Date(new Date().toDateString()).getTime()) / 86400000
   return diff >= 0 && diff <= 7
 }
 
-function applySortFilter(items: EventChecklistItem[], sort: SortKey, filter: FilterKey, myUserId?: string | null) {
+function applySortFilter(
+  items: EventChecklistItem[],
+  sort: SortKey,
+  filter: FilterKey,
+  myUserId?: string | null,
+) {
   let r = [...items]
-  if (filter === 'todo')     r = r.filter((i) => !i.isCompleted)
-  if (filter === 'done')     r = r.filter((i) => i.isCompleted)
-  if (filter === 'overdue')  r = r.filter((i) => isOverdue(i.dueDate, i.isCompleted))
+  if (filter === 'todo') r = r.filter((i) => !i.isCompleted)
+  if (filter === 'done') r = r.filter((i) => i.isCompleted)
+  if (filter === 'overdue') r = r.filter((i) => isOverdue(i.dueDate, i.isCompleted))
   if (filter === 'has-date') r = r.filter((i) => !!i.dueDate)
-  if (filter === 'mine')     r = r.filter((i) => i.assigneeUserId && i.assigneeUserId === myUserId)
+  if (filter === 'mine') r = r.filter((i) => i.assigneeUserId && i.assigneeUserId === myUserId)
 
   if (sort === 'due-asc')
-    r.sort((a, b) => (!a.dueDate ? 1 : !b.dueDate ? -1 : new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()))
+    r.sort((a, b) =>
+      !a.dueDate
+        ? 1
+        : !b.dueDate
+          ? -1
+          : new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+    )
   else if (sort === 'due-desc')
-    r.sort((a, b) => (!a.dueDate ? 1 : !b.dueDate ? -1 : new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()))
+    r.sort((a, b) =>
+      !a.dueDate
+        ? 1
+        : !b.dueDate
+          ? -1
+          : new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+    )
   else if (sort === 'overdue-first')
-    r.sort((a, b) => Number(isOverdue(b.dueDate, b.isCompleted)) - Number(isOverdue(a.dueDate, a.isCompleted)))
-  else if (sort === 'todo-first')
-    r.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted))
-  else if (sort === 'done-first')
-    r.sort((a, b) => Number(b.isCompleted) - Number(a.isCompleted))
-  else if (sort === 'alpha')
-    r.sort((a, b) => a.title.localeCompare(b.title))
-  else
-    r.sort((a, b) => a.sortOrder - b.sortOrder)
+    r.sort(
+      (a, b) =>
+        Number(isOverdue(b.dueDate, b.isCompleted)) - Number(isOverdue(a.dueDate, a.isCompleted)),
+    )
+  else if (sort === 'todo-first') r.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted))
+  else if (sort === 'done-first') r.sort((a, b) => Number(b.isCompleted) - Number(a.isCompleted))
+  else if (sort === 'alpha') r.sort((a, b) => a.title.localeCompare(b.title))
+  else r.sort((a, b) => a.sortOrder - b.sortOrder)
 
   return r
 }
@@ -86,28 +123,34 @@ function LinkedInspirations({ checklistItemId }: { checklistItemId: string }) {
 
   return (
     <section className="space-y-2">
-      <p className="text-[10px] font-semibold text-brand-600 uppercase tracking-wider flex items-center gap-1.5">
+      <p className="text-brand-600 flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase">
         <Sparkles size={10} /> Saved Inspiration ({items.length})
       </p>
       <div className="space-y-1.5">
         {items.map(({ id, inspirationItem: insp }) => (
           <div
             key={id}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
           >
             <div
-              className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center overflow-hidden"
+              className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg"
               style={{ background: 'rgba(255,255,255,0.06)' }}
             >
-              {insp.imageUrl
-                ? <img src={insp.imageUrl} alt={insp.title} className="w-full h-full object-cover" />
-                : <Sparkles size={12} className="text-brand-600" />
-              }
+              {insp.imageUrl ? (
+                <img src={insp.imageUrl} alt={insp.title} className="h-full w-full object-cover" />
+              ) : (
+                <Sparkles size={12} className="text-brand-600" />
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-brand-200 truncate">{insp.title}</p>
-              <p className="text-[10px] text-brand-600">{insp.category.charAt(0) + insp.category.slice(1).toLowerCase()}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-brand-200 truncate text-xs font-medium">{insp.title}</p>
+              <p className="text-brand-600 text-[10px]">
+                {insp.category.charAt(0) + insp.category.slice(1).toLowerCase()}
+              </p>
             </div>
             <Link
               href="/inspiration"
@@ -145,7 +188,9 @@ function ItemDrawer({
 
   // ── Edit state ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState(item.title)
-  const [dueDate, setDueDate] = useState(item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '')
+  const [dueDate, setDueDate] = useState(
+    item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
+  )
   const [notifyEmail, setNotifyEmail] = useState(item.notifyByEmail)
   const [notifySms, setNotifySms] = useState(item.notifyBySms)
   const [needsVendor, setNeedsVendor] = useState(item.needsVendor ?? false)
@@ -153,8 +198,12 @@ function ItemDrawer({
   const [vendorName, setVendorName] = useState(
     item.vendorProfile?.businessName ?? item.userVendorContact?.name ?? '',
   )
-  const [vendorProfileId, setVendorProfileId] = useState<string | null>(item.vendorProfileId ?? null)
-  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(item.userVendorContactId ?? null)
+  const [vendorProfileId, setVendorProfileId] = useState<string | null>(
+    item.vendorProfileId ?? null,
+  )
+  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(
+    item.userVendorContactId ?? null,
+  )
 
   // ── Derived view values ──────────────────────────────────────────────────
   const [liveItem, setLiveItem] = useState(item)
@@ -180,16 +229,19 @@ function ItemDrawer({
     if (!canEdit('CHECKLIST')) return
     const t = title.trim()
     if (!t) return
-    const { data: updated } = await proxyClient.patch<EventChecklistItem>(`/events/${eventId}/checklist/${liveItem.id}`, {
-      title: t,
-      dueDate: dueDate || null,
-      notifyByEmail: notifyEmail,
-      notifyBySms: notifySms,
-      needsVendor,
-      vendorCategory: needsVendor ? (vendorCategory || null) : null,
-      vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-      userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
-    })
+    const { data: updated } = await proxyClient.patch<EventChecklistItem>(
+      `/events/${eventId}/checklist/${liveItem.id}`,
+      {
+        title: t,
+        dueDate: dueDate || null,
+        notifyByEmail: notifyEmail,
+        notifyBySms: notifySms,
+        needsVendor,
+        vendorCategory: needsVendor ? vendorCategory || null : null,
+        vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
+        userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
+      },
+    )
     setLiveItem(updated)
     onSaved(updated)
     setIsEditing(false)
@@ -212,68 +264,86 @@ function ItemDrawer({
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
-        onClick={() => { if (isEditing) setIsEditing(false); else onClose() }}
+        onClick={() => {
+          if (isEditing) setIsEditing(false)
+          else onClose()
+        }}
       />
 
       {/* Drawer panel */}
-      <div className="fixed bottom-0 inset-x-0 z-50 md:inset-auto md:right-0 md:top-0 md:bottom-0 md:w-[380px] flex flex-col bg-[#0f0f0f] border-t md:border-t-0 md:border-l border-white/10 shadow-2xl shadow-black/60 animate-in slide-in-from-bottom md:slide-in-from-right duration-200">
-
+      <div className="animate-in slide-in-from-bottom md:slide-in-from-right fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-white/10 bg-[#0f0f0f] shadow-2xl shadow-black/60 duration-200 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-[380px] md:border-t-0 md:border-l">
         {/* ── Header ───────────────────────────────────────────────────────── */}
-        <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-white/8">
-          {!isEditing && (
-            canEdit('CHECKLIST') ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggle(); setLiveItem((prev) => ({ ...prev, isCompleted: !prev.isCompleted })) }}
-              className="mt-0.5 shrink-0 transition-colors text-brand-600 hover:text-gold-400"
-              aria-label={liveItem.isCompleted ? 'Mark incomplete' : 'Mark complete'}
-            >
-              {liveItem.isCompleted
-                ? <CheckCircle2 size={18} className="text-gold-400" />
-                : <Circle size={18} />}
-            </button>
+        <div className="flex items-start gap-3 border-b border-white/8 px-5 pt-5 pb-4">
+          {!isEditing &&
+            (canEdit('CHECKLIST') ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggle()
+                  setLiveItem((prev) => ({ ...prev, isCompleted: !prev.isCompleted }))
+                }}
+                className="text-brand-600 hover:text-gold-400 mt-0.5 shrink-0 transition-colors"
+                aria-label={liveItem.isCompleted ? 'Mark incomplete' : 'Mark complete'}
+              >
+                {liveItem.isCompleted ? (
+                  <CheckCircle2 size={18} className="text-gold-400" />
+                ) : (
+                  <Circle size={18} />
+                )}
+              </button>
             ) : (
-              <span className="mt-0.5 shrink-0 text-brand-600" aria-hidden>
-                {liveItem.isCompleted
-                  ? <CheckCircle2 size={18} className="text-gold-400" />
-                  : <Circle size={18} />}
+              <span className="text-brand-600 mt-0.5 shrink-0" aria-hidden>
+                {liveItem.isCompleted ? (
+                  <CheckCircle2 size={18} className="text-gold-400" />
+                ) : (
+                  <Circle size={18} />
+                )}
               </span>
-            )
-          )}
-          <div className="flex-1 min-w-0">
+            ))}
+          <div className="min-w-0 flex-1">
             {isEditing ? (
               <input
                 autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startTransition(save) } }}
-                className="w-full text-sm font-medium bg-transparent text-white placeholder:text-brand-600 focus:outline-none border-b border-gold-500/30 pb-1 focus:border-gold-500/60 transition-colors"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    startTransition(save)
+                  }
+                }}
+                className="placeholder:text-brand-600 border-gold-500/30 focus:border-gold-500/60 w-full border-b bg-transparent pb-1 text-sm font-medium text-white transition-colors focus:outline-none"
                 placeholder="Task title"
               />
             ) : (
               <>
-                <p className={cn('text-sm font-medium leading-snug',
-                  liveItem.isCompleted ? 'line-through text-brand-500' : 'text-white')}>
+                <p
+                  className={cn(
+                    'text-sm leading-snug font-medium',
+                    liveItem.isCompleted ? 'text-brand-500 line-through' : 'text-white',
+                  )}
+                >
                   {liveItem.title}
                 </p>
                 {liveItem.isCompleted && (
-                  <p className="text-[10px] text-brand-700 mt-0.5">Completed</p>
+                  <p className="text-brand-700 mt-0.5 text-[10px]">Completed</p>
                 )}
               </>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             {isEditing ? (
               <>
                 <button
                   onClick={() => startTransition(save)}
                   disabled={!title.trim() || isPending}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold-600/15 border border-gold-500/25 text-gold-300 text-xs transition-colors hover:bg-gold-600/25 disabled:opacity-40"
+                  className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:opacity-40"
                 >
                   <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="p-1.5 rounded-lg text-brand-600 hover:text-brand-200 hover:bg-white/6 transition-colors"
+                  className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
                   aria-label="Cancel edit"
                 >
                   <X size={13} />
@@ -282,17 +352,17 @@ function ItemDrawer({
             ) : (
               <>
                 {canEdit('CHECKLIST') && (
-                <button
-                  onClick={enterEdit}
-                  className="p-1.5 rounded-lg text-brand-600 hover:text-brand-200 hover:bg-white/6 transition-colors"
-                  aria-label="Edit task"
-                >
-                  <Pencil size={13} />
-                </button>
+                  <button
+                    onClick={enterEdit}
+                    className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
+                    aria-label="Edit task"
+                  >
+                    <Pencil size={13} />
+                  </button>
                 )}
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-lg text-brand-600 hover:text-brand-200 hover:bg-white/6 transition-colors"
+                  className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
                   aria-label="Close"
                 >
                   <X size={13} />
@@ -303,14 +373,15 @@ function ItemDrawer({
         </div>
 
         {/* ── Body ─────────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
           {isEditing ? (
             /* ── Edit form ──────────────────────────────────────────────── */
             <div className="space-y-4">
               {/* Due date */}
               <div className="space-y-1">
-                <p className="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Due date</p>
+                <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                  Due date
+                </p>
                 <div className="flex items-center gap-2">
                   <CalendarDays size={13} className="text-brand-600 shrink-0" />
                   <input
@@ -318,11 +389,18 @@ function ItemDrawer({
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="flex-1 text-sm bg-transparent text-brand-200 focus:outline-none [color-scheme:dark] border-b border-white/10 pb-0.5 focus:border-gold-500/30 transition-colors"
+                    className="text-brand-200 focus:border-gold-500/30 flex-1 border-b border-white/10 bg-transparent pb-0.5 text-sm [color-scheme:dark] transition-colors focus:outline-none"
                   />
                   {dueDate && (
-                    <button type="button" onClick={() => { setDueDate(''); setNotifyEmail(false); setNotifySms(false) }}
-                      className="text-brand-600 hover:text-red-400 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDueDate('')
+                        setNotifyEmail(false)
+                        setNotifySms(false)
+                      }}
+                      className="text-brand-600 transition-colors hover:text-red-400"
+                    >
                       <X size={11} />
                     </button>
                   )}
@@ -332,16 +410,32 @@ function ItemDrawer({
               {/* Reminders */}
               {dueDate && (
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Remind via</p>
+                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                    Remind via
+                  </p>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setNotifyEmail((v) => !v)}
-                      className={cn('flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all',
-                        notifyEmail ? 'bg-brand-700/50 border-brand-500/50 text-brand-200' : 'border-white/8 text-brand-500 hover:border-white/15 hover:text-brand-300')}>
+                    <button
+                      type="button"
+                      onClick={() => setNotifyEmail((v) => !v)}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all',
+                        notifyEmail
+                          ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
+                          : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+                      )}
+                    >
                       <Mail size={11} /> Email
                     </button>
-                    <button type="button" onClick={() => setNotifySms((v) => !v)}
-                      className={cn('flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all',
-                        notifySms ? 'bg-brand-700/50 border-brand-500/50 text-brand-200' : 'border-white/8 text-brand-500 hover:border-white/15 hover:text-brand-300')}>
+                    <button
+                      type="button"
+                      onClick={() => setNotifySms((v) => !v)}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all',
+                        notifySms
+                          ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
+                          : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+                      )}
+                    >
                       <MessageSquare size={11} /> SMS
                     </button>
                   </div>
@@ -358,13 +452,24 @@ function ItemDrawer({
                 onToggle={() => {
                   const next = !needsVendor
                   setNeedsVendor(next)
-                  if (!next) { setVendorCategory(''); setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }
+                  if (!next) {
+                    setVendorCategory('')
+                    setVendorName('')
+                    setVendorProfileId(null)
+                    setUserVendorContactId(null)
+                  }
                 }}
                 onCategoryChange={setVendorCategory}
                 onVendorSelect={(name, profileId, contactId) => {
-                  setVendorName(name); setVendorProfileId(profileId); setUserVendorContactId(contactId)
+                  setVendorName(name)
+                  setVendorProfileId(profileId)
+                  setUserVendorContactId(contactId)
                 }}
-                onVendorClear={() => { setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }}
+                onVendorClear={() => {
+                  setVendorName('')
+                  setVendorProfileId(null)
+                  setUserVendorContactId(null)
+                }}
               />
             </div>
           ) : (
@@ -373,19 +478,41 @@ function ItemDrawer({
               {/* Due date & reminders */}
               {(liveItem.dueDate || liveItem.notifyByEmail || liveItem.notifyBySms) && (
                 <section className="space-y-2">
-                  <p className="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Schedule</p>
+                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                    Schedule
+                  </p>
                   {liveItem.dueDate && (
                     <div className="flex items-center gap-2.5">
-                      <CalendarDays size={13} className={cn('shrink-0',
-                        isOverdue(liveItem.dueDate, liveItem.isCompleted) ? 'text-red-400'
-                        : isDueSoon(liveItem.dueDate, liveItem.isCompleted) ? 'text-amber-400'
-                        : 'text-brand-500')} />
-                      <span className={cn('text-sm',
-                        isOverdue(liveItem.dueDate, liveItem.isCompleted) ? 'text-red-300'
-                        : isDueSoon(liveItem.dueDate, liveItem.isCompleted) ? 'text-amber-300'
-                        : 'text-brand-200')}>
-                        {isOverdue(liveItem.dueDate, liveItem.isCompleted) && <span className="font-medium">Overdue · </span>}
-                        {new Date(liveItem.dueDate).toLocaleDateString('en-CA', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                      <CalendarDays
+                        size={13}
+                        className={cn(
+                          'shrink-0',
+                          isOverdue(liveItem.dueDate, liveItem.isCompleted)
+                            ? 'text-red-400'
+                            : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
+                              ? 'text-amber-400'
+                              : 'text-brand-500',
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          'text-sm',
+                          isOverdue(liveItem.dueDate, liveItem.isCompleted)
+                            ? 'text-red-300'
+                            : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
+                              ? 'text-amber-300'
+                              : 'text-brand-200',
+                        )}
+                      >
+                        {isOverdue(liveItem.dueDate, liveItem.isCompleted) && (
+                          <span className="font-medium">Overdue · </span>
+                        )}
+                        {new Date(liveItem.dueDate).toLocaleDateString('en-CA', {
+                          weekday: 'short',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </span>
                     </div>
                   )}
@@ -394,13 +521,15 @@ function ItemDrawer({
                       <AlarmClock size={13} className="text-brand-600 shrink-0" />
                       <div className="flex items-center gap-1.5">
                         {liveItem.notifyByEmail && (
-                          <span className="inline-flex items-center gap-1 text-xs text-brand-400">
+                          <span className="text-brand-400 inline-flex items-center gap-1 text-xs">
                             <Mail size={10} /> Email reminder
                           </span>
                         )}
-                        {liveItem.notifyByEmail && liveItem.notifyBySms && <span className="text-brand-700 text-xs">·</span>}
+                        {liveItem.notifyByEmail && liveItem.notifyBySms && (
+                          <span className="text-brand-700 text-xs">·</span>
+                        )}
                         {liveItem.notifyBySms && (
-                          <span className="inline-flex items-center gap-1 text-xs text-brand-400">
+                          <span className="text-brand-400 inline-flex items-center gap-1 text-xs">
                             <MessageSquare size={10} /> SMS reminder
                           </span>
                         )}
@@ -413,31 +542,39 @@ function ItemDrawer({
               {/* Vendor / service info */}
               {liveItem.needsVendor && (
                 <section className="space-y-3">
-                  <p className="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Vendor / Service</p>
+                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                    Vendor / Service
+                  </p>
 
                   {liveItem.vendorCategory && (
                     <div className="flex items-center gap-2">
                       <Store size={12} className="text-brand-600 shrink-0" />
-                      <span className="text-xs text-brand-300">
+                      <span className="text-brand-300 text-xs">
                         {getVendorCategoryLabel(liveItem.vendorCategory, tCat)}
                       </span>
                     </div>
                   )}
 
                   {vendorDisplayName && (
-                    <div className="rounded-xl border border-gold-500/20 bg-gold-500/5 p-3 space-y-2.5">
+                    <div className="border-gold-500/20 bg-gold-500/5 space-y-2.5 rounded-xl border p-3">
                       <div className="flex items-start gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center shrink-0">
-                          {isContact ? <BookUser size={14} className="text-gold-400" /> : <Store size={14} className="text-gold-400" />}
+                        <div className="bg-gold-500/10 border-gold-500/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
+                          {isContact ? (
+                            <BookUser size={14} className="text-gold-400" />
+                          ) : (
+                            <Store size={14} className="text-gold-400" />
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium text-gold-200 truncate">{vendorDisplayName}</p>
+                            <p className="text-gold-200 truncate text-sm font-medium">
+                              {vendorDisplayName}
+                            </p>
                             {isRegistered && liveItem.vendorProfile?.isVerified && (
                               <BadgeCheck size={12} className="text-gold-400 shrink-0" />
                             )}
                           </div>
-                          <p className="text-[10px] text-brand-600 mt-0.5">
+                          <p className="text-brand-600 mt-0.5 text-[10px]">
                             {isRegistered ? 'Registered vendor' : 'Saved contact'}
                           </p>
                         </div>
@@ -445,7 +582,7 @@ function ItemDrawer({
                           <Link
                             href={`/vendors/${liveItem.vendorProfile.slug}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded-lg text-brand-600 hover:text-gold-300 hover:bg-white/6 transition-colors shrink-0"
+                            className="text-brand-600 hover:text-gold-300 shrink-0 rounded-lg p-1.5 transition-colors hover:bg-white/6"
                             aria-label="View vendor profile"
                           >
                             <ExternalLink size={12} />
@@ -454,34 +591,51 @@ function ItemDrawer({
                       </div>
 
                       {isContact && liveItem.userVendorContact && (
-                        <div className="space-y-1.5 pt-1 border-t border-white/6">
+                        <div className="space-y-1.5 border-t border-white/6 pt-1">
                           {liveItem.userVendorContact.email && (
-                            <a href={`mailto:${liveItem.userVendorContact.email}`}
+                            <a
+                              href={`mailto:${liveItem.userVendorContact.email}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors group">
-                              <Mail size={11} className="text-brand-600 shrink-0 group-hover:text-gold-400" />
+                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 text-xs transition-colors"
+                            >
+                              <Mail
+                                size={11}
+                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                              />
                               {liveItem.userVendorContact.email}
                             </a>
                           )}
                           {liveItem.userVendorContact.phone && (
-                            <a href={`tel:${liveItem.userVendorContact.phone}`}
+                            <a
+                              href={`tel:${liveItem.userVendorContact.phone}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors group">
-                              <Phone size={11} className="text-brand-600 shrink-0 group-hover:text-gold-400" />
+                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 text-xs transition-colors"
+                            >
+                              <Phone
+                                size={11}
+                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                              />
                               {liveItem.userVendorContact.phone}
                             </a>
                           )}
                           {liveItem.userVendorContact.website && (
-                            <a href={liveItem.userVendorContact.website} target="_blank" rel="noreferrer"
+                            <a
+                              href={liveItem.userVendorContact.website}
+                              target="_blank"
+                              rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-2 text-xs text-brand-300 hover:text-gold-300 transition-colors group truncate">
-                              <Globe size={11} className="text-brand-600 shrink-0 group-hover:text-gold-400" />
+                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 truncate text-xs transition-colors"
+                            >
+                              <Globe
+                                size={11}
+                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                              />
                               {liveItem.userVendorContact.website}
                             </a>
                           )}
                           {liveItem.userVendorContact.notes && (
-                            <div className="flex items-start gap-2 text-xs text-brand-500">
-                              <FileText size={11} className="text-brand-700 shrink-0 mt-0.5" />
+                            <div className="text-brand-500 flex items-start gap-2 text-xs">
+                              <FileText size={11} className="text-brand-700 mt-0.5 shrink-0" />
                               <p className="leading-relaxed">{liveItem.userVendorContact.notes}</p>
                             </div>
                           )}
@@ -490,32 +644,37 @@ function ItemDrawer({
                     </div>
                   )}
 
-                  {!vendorDisplayName && liveItem.vendorCategory && liveItem.vendorCategory !== 'OTHER' && (
-                    <Link
-                      href={`/vendors?category=${liveItem.vendorCategory}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-2 text-xs text-brand-500 hover:text-gold-300 transition-colors"
-                    >
-                      <Search size={11} />
-                      Browse {getVendorCategoryLabel(liveItem.vendorCategory, tCat)} →
-                    </Link>
-                  )}
+                  {!vendorDisplayName &&
+                    liveItem.vendorCategory &&
+                    liveItem.vendorCategory !== 'OTHER' && (
+                      <Link
+                        href={`/vendors?category=${liveItem.vendorCategory}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-brand-500 hover:text-gold-300 flex items-center gap-2 text-xs transition-colors"
+                      >
+                        <Search size={11} />
+                        Browse {getVendorCategoryLabel(liveItem.vendorCategory, tCat)} →
+                      </Link>
+                    )}
                 </section>
               )}
 
-              {!liveItem.dueDate && !liveItem.notifyByEmail && !liveItem.notifyBySms && !liveItem.needsVendor && (
-                <div className="flex flex-col items-center gap-3 py-8 text-center">
-                  <p className="text-brand-700 text-xs">No additional details yet.</p>
-                  {canEdit('CHECKLIST') && (
-                  <button
-                    onClick={enterEdit}
-                    className="flex items-center gap-1.5 text-xs text-brand-500 hover:text-gold-300 transition-colors"
-                  >
-                    <Pencil size={11} /> Add a due date or vendor
-                  </button>
-                  )}
-                </div>
-              )}
+              {!liveItem.dueDate &&
+                !liveItem.notifyByEmail &&
+                !liveItem.notifyBySms &&
+                !liveItem.needsVendor && (
+                  <div className="flex flex-col items-center gap-3 py-8 text-center">
+                    <p className="text-brand-700 text-xs">No additional details yet.</p>
+                    {canEdit('CHECKLIST') && (
+                      <button
+                        onClick={enterEdit}
+                        className="text-brand-500 hover:text-gold-300 flex items-center gap-1.5 text-xs transition-colors"
+                      >
+                        <Pencil size={11} /> Add a due date or vendor
+                      </button>
+                    )}
+                  </div>
+                )}
 
               {/* Linked inspirations */}
               <LinkedInspirations checklistItemId={liveItem.id} />
@@ -541,8 +700,15 @@ interface VendorOption {
 }
 
 function VendorSection({
-  needsVendor, vendorCategory, vendorName, vendorProfileId, userVendorContactId,
-  onToggle, onCategoryChange, onVendorSelect, onVendorClear,
+  needsVendor,
+  vendorCategory,
+  vendorName,
+  vendorProfileId,
+  userVendorContactId,
+  onToggle,
+  onCategoryChange,
+  onVendorSelect,
+  onVendorClear,
 }: {
   needsVendor: boolean
   vendorCategory: string
@@ -584,7 +750,9 @@ function VendorSection({
     queueMicrotask(() => {
       if (!cancelled && needsVendor && vendorCategory) fetchVendorData(vendorCategory)
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [needsVendor, vendorCategory, fetchVendorData])
 
   const filteredVendors = registeredVendors.filter((v) =>
@@ -610,10 +778,10 @@ function VendorSection({
         type="button"
         onClick={onToggle}
         className={cn(
-          'flex items-center gap-2 text-[11px] px-2.5 py-1.5 rounded-lg border transition-all w-full',
+          'flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] transition-all',
           needsVendor
             ? 'bg-gold-500/10 border-gold-500/30 text-gold-300'
-            : 'border-white/8 text-brand-500 hover:text-brand-300 hover:border-white/15',
+            : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
         )}
       >
         <Store size={11} className={needsVendor ? 'text-gold-400' : 'text-brand-600'} />
@@ -627,38 +795,46 @@ function VendorSection({
         <div className="space-y-1.5 pl-1">
           {/* Category picker */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-brand-600 w-16 shrink-0">Category</span>
+            <span className="text-brand-600 w-16 shrink-0 text-[10px]">Category</span>
             <select
               value={vendorCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="flex-1 text-xs bg-[#111] text-brand-200 border border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-gold-500/40 transition-colors"
+              className="text-brand-200 focus:border-gold-500/40 flex-1 rounded-lg border border-white/10 bg-[#111] px-2 py-1 text-xs transition-colors focus:outline-none"
             >
               <option value="">— Select a category —</option>
               {VENDOR_CATEGORY_KEYS.map((key) => (
-                <option key={key} value={key}>{getVendorCategoryLabel(key, tCat)}</option>
+                <option key={key} value={key}>
+                  {getVendorCategoryLabel(key, tCat)}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Selected vendor chip */}
           {vendorName && (
-            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-gold-500/10 border border-gold-500/20">
+            <div className="bg-gold-500/10 border-gold-500/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5">
               {userVendorContactId ? (
                 <BookUser size={11} className="text-gold-400 shrink-0" />
               ) : (
                 <Store size={11} className="text-gold-400 shrink-0" />
               )}
-              <span className="flex-1 text-xs text-gold-300 truncate">{vendorName}</span>
+              <span className="text-gold-300 flex-1 truncate text-xs">{vendorName}</span>
               {vendorProfileId && (
-                <BadgeCheck size={10} className="text-gold-400 shrink-0" aria-label="Registered vendor" />
+                <BadgeCheck
+                  size={10}
+                  className="text-gold-400 shrink-0"
+                  aria-label="Registered vendor"
+                />
               )}
-              {userVendorContactId && (
-                <span className="text-[9px] text-brand-500">saved</span>
-              )}
+              {userVendorContactId && <span className="text-brand-500 text-[9px]">saved</span>}
               <button
                 type="button"
-                onClick={() => { onVendorClear(); setVendorSearch(''); setCustomMode(false) }}
-                className="text-brand-600 hover:text-red-400 transition-colors"
+                onClick={() => {
+                  onVendorClear()
+                  setVendorSearch('')
+                  setCustomMode(false)
+                }}
+                className="text-brand-600 transition-colors hover:text-red-400"
               >
                 <X size={10} />
               </button>
@@ -667,9 +843,9 @@ function VendorSection({
 
           {/* Vendor picker — shown when category is set and no vendor selected yet */}
           {pickerOpen && vendorCategory && (
-            <div className="rounded-xl border border-white/10 bg-white/4 overflow-hidden text-xs">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/4 text-xs">
               {loadingVendors ? (
-                <div className="flex items-center justify-center gap-1.5 py-4 text-brand-600">
+                <div className="text-brand-600 flex items-center justify-center gap-1.5 py-4">
                   <Loader2 size={11} className="animate-spin" /> Loading…
                 </div>
               ) : (
@@ -677,7 +853,7 @@ function VendorSection({
                   {/* My contacts section */}
                   {filteredContacts.length > 0 && !customMode && (
                     <div className="border-b border-white/8">
-                      <div className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-semibold text-brand-600 uppercase tracking-wider">
+                      <div className="text-brand-600 flex items-center gap-1 px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
                         <BookUser size={8} /> My contacts
                       </div>
                       <ul className="max-h-24 overflow-y-auto">
@@ -686,12 +862,16 @@ function VendorSection({
                             <button
                               type="button"
                               onClick={() => onVendorSelect(c.name, null, c.id)}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/6 transition-colors text-left group"
+                              className="group flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-white/6"
                             >
                               <BookUser size={10} className="text-brand-600 shrink-0" />
-                              <span className="flex-1 truncate text-brand-200 group-hover:text-gold-200">{c.name}</span>
+                              <span className="text-brand-200 group-hover:text-gold-200 flex-1 truncate">
+                                {c.name}
+                              </span>
                               {(c.email || c.phone) && (
-                                <span className="text-[9px] text-brand-600 truncate">{c.email ?? c.phone}</span>
+                                <span className="text-brand-600 truncate text-[9px]">
+                                  {c.email ?? c.phone}
+                                </span>
                               )}
                             </button>
                           </li>
@@ -703,44 +883,49 @@ function VendorSection({
                   {/* Registered vendors */}
                   {registeredVendors.length > 0 && !customMode && (
                     <>
-                      <div className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-semibold text-brand-600 uppercase tracking-wider border-b border-white/6">
+                      <div className="text-brand-600 flex items-center gap-1 border-b border-white/6 px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
                         <Store size={8} /> Registered vendors
                       </div>
                       {registeredVendors.length > 3 && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-white/6">
+                        <div className="flex items-center gap-1.5 border-b border-white/6 px-2.5 py-1.5">
                           <Search size={9} className="text-brand-600 shrink-0" />
                           <input
                             type="text"
                             value={vendorSearch}
                             onChange={(e) => setVendorSearch(e.target.value)}
                             placeholder="Search…"
-                            className="flex-1 bg-transparent text-brand-300 placeholder:text-brand-700 focus:outline-none"
+                            className="text-brand-300 placeholder:text-brand-700 flex-1 bg-transparent focus:outline-none"
                           />
                         </div>
                       )}
-                      <ul className="max-h-32 overflow-y-auto divide-y divide-white/5">
+                      <ul className="max-h-32 divide-y divide-white/5 overflow-y-auto">
                         {filteredVendors.map((v) => (
                           <li key={v.id}>
                             <button
                               type="button"
                               onClick={() => onVendorSelect(v.businessName, v.id, null)}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/6 transition-colors text-left group"
+                              className="group flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-white/6"
                             >
-                              <div className="w-5 h-5 rounded-full bg-white/8 flex items-center justify-center shrink-0">
+                              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8">
                                 <Store size={9} className="text-brand-600" />
                               </div>
-                              <span className="flex-1 truncate text-brand-200 group-hover:text-gold-200">{v.businessName}</span>
-                              {v.isVerified && <BadgeCheck size={10} className="text-gold-400 shrink-0" />}
+                              <span className="text-brand-200 group-hover:text-gold-200 flex-1 truncate">
+                                {v.businessName}
+                              </span>
+                              {v.isVerified && (
+                                <BadgeCheck size={10} className="text-gold-400 shrink-0" />
+                              )}
                               {v.averageRating !== null && (
                                 <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
-                                  <Star size={7} fill="currentColor" />{v.averageRating.toFixed(1)}
+                                  <Star size={7} fill="currentColor" />
+                                  {v.averageRating.toFixed(1)}
                                 </span>
                               )}
                             </button>
                           </li>
                         ))}
                         {filteredVendors.length === 0 && vendorSearch && (
-                          <li className="px-2.5 py-3 text-center text-brand-700 italic">
+                          <li className="text-brand-700 px-2.5 py-3 text-center italic">
                             No match for &ldquo;{vendorSearch}&rdquo;
                           </li>
                         )}
@@ -748,8 +933,11 @@ function VendorSection({
                       <div className="border-t border-white/8">
                         <button
                           type="button"
-                          onClick={() => { setCustomMode(true); setVendorSearch('') }}
-                          className="w-full flex items-center gap-1.5 px-2.5 py-2 text-brand-600 hover:text-gold-300 hover:bg-white/4 transition-colors"
+                          onClick={() => {
+                            setCustomMode(true)
+                            setVendorSearch('')
+                          }}
+                          className="text-brand-600 hover:text-gold-300 flex w-full items-center gap-1.5 px-2.5 py-2 transition-colors hover:bg-white/4"
                         >
                           <Plus size={10} /> Not listed — add by name
                         </button>
@@ -763,8 +951,11 @@ function VendorSection({
                       {customMode && registeredVendors.length > 0 && (
                         <button
                           type="button"
-                          onClick={() => { setCustomMode(false); setVendorSearch('') }}
-                          className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-brand-600 hover:text-brand-300 border-b border-white/8 transition-colors"
+                          onClick={() => {
+                            setCustomMode(false)
+                            setVendorSearch('')
+                          }}
+                          className="text-brand-600 hover:text-brand-300 flex w-full items-center gap-1.5 border-b border-white/8 px-2.5 py-1.5 transition-colors"
                         >
                           ← Back to list
                         </button>
@@ -783,13 +974,16 @@ function VendorSection({
                             }
                           }}
                           placeholder="Type vendor name and press Enter"
-                          className="flex-1 bg-transparent text-brand-300 placeholder:text-brand-700 focus:outline-none"
+                          className="text-brand-300 placeholder:text-brand-700 flex-1 bg-transparent focus:outline-none"
                         />
                         {vendorSearch.trim() && (
                           <button
                             type="button"
-                            onClick={() => { onVendorSelect(vendorSearch.trim(), null, null); setVendorSearch('') }}
-                            className="text-[9px] px-1.5 py-0.5 rounded bg-gold-600/15 border border-gold-500/25 text-gold-300 hover:bg-gold-600/25 transition-colors"
+                            onClick={() => {
+                              onVendorSelect(vendorSearch.trim(), null, null)
+                              setVendorSearch('')
+                            }}
+                            className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
                           >
                             Add
                           </button>
@@ -809,7 +1003,13 @@ function VendorSection({
 
 // ─── Reminder row ─────────────────────────────────────────────────────────────
 
-function ReminderRow({ dueDate, notifyEmail, notifySms, onToggleEmail, onToggleSms }: {
+function ReminderRow({
+  dueDate,
+  notifyEmail,
+  notifySms,
+  onToggleEmail,
+  onToggleSms,
+}: {
   dueDate: string
   notifyEmail: boolean
   notifySms: boolean
@@ -819,20 +1019,30 @@ function ReminderRow({ dueDate, notifyEmail, notifySms, onToggleEmail, onToggleS
   if (!dueDate) return null
   return (
     <div className="flex items-center gap-2 pt-0.5">
-      <span className="text-[10px] text-brand-600 w-14 shrink-0">Remind via</span>
+      <span className="text-brand-600 w-14 shrink-0 text-[10px]">Remind via</span>
       <div className="flex items-center gap-1.5">
-        <button type="button" onClick={onToggleEmail}
-          className={cn('flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border transition-all',
+        <button
+          type="button"
+          onClick={onToggleEmail}
+          className={cn(
+            'flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-all',
             notifyEmail
               ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-              : 'border-white/8 text-brand-600 hover:border-white/15 hover:text-brand-400')}>
+              : 'text-brand-600 hover:text-brand-400 border-white/8 hover:border-white/15',
+          )}
+        >
           <Mail size={8} /> Email
         </button>
-        <button type="button" onClick={onToggleSms}
-          className={cn('flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border transition-all',
+        <button
+          type="button"
+          onClick={onToggleSms}
+          className={cn(
+            'flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-all',
             notifySms
               ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-              : 'border-white/8 text-brand-600 hover:border-white/15 hover:text-brand-400')}>
+              : 'text-brand-600 hover:text-brand-400 border-white/8 hover:border-white/15',
+          )}
+        >
           <MessageSquare size={8} /> SMS
         </button>
       </div>
@@ -842,7 +1052,12 @@ function ReminderRow({ dueDate, notifyEmail, notifySms, onToggleEmail, onToggleS
 
 // ─── Edit form (inline) ───────────────────────────────────────────────────────
 
-function EditRow({ item, eventId, onSaved, onCancel }: {
+function EditRow({
+  item,
+  eventId,
+  onSaved,
+  onCancel,
+}: {
   item: EventChecklistItem
   eventId: string
   onSaved: (updated: EventChecklistItem) => void
@@ -851,7 +1066,9 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
   const [isPending, startTransition] = useTransition()
   const { canEdit } = useEventAccess()
   const [title, setTitle] = useState(item.title)
-  const [dueDate, setDueDate] = useState(item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '')
+  const [dueDate, setDueDate] = useState(
+    item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
+  )
   const [notifyEmail, setNotifyEmail] = useState(item.notifyByEmail)
   const [notifySms, setNotifySms] = useState(item.notifyBySms)
   const [needsVendor, setNeedsVendor] = useState(item.needsVendor ?? false)
@@ -860,13 +1077,21 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
   const [vendorName, setVendorName] = useState(
     item.vendorProfile?.businessName ?? item.userVendorContact?.name ?? '',
   )
-  const [vendorProfileId, setVendorProfileId] = useState<string | null>(item.vendorProfileId ?? null)
-  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(item.userVendorContactId ?? null)
+  const [vendorProfileId, setVendorProfileId] = useState<string | null>(
+    item.vendorProfileId ?? null,
+  )
+  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(
+    item.userVendorContactId ?? null,
+  )
   const [assigneeUserId, setAssigneeUserId] = useState(item.assigneeUserId ?? '')
-  const [assignees, setAssignees] = useState<{ id: string; firstName: string | null; lastName: string | null; email: string }[]>([])
+  const [assignees, setAssignees] = useState<
+    { id: string; firstName: string | null; lastName: string | null; email: string }[]
+  >([])
   const ref = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { ref.current?.focus() }, [])
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
   useEffect(() => {
     proxyClient
       .get<{ id: string; firstName: string | null; lastName: string | null; email: string }[]>(
@@ -882,17 +1107,20 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
     const t = title.trim()
     if (!t) return
     try {
-      const { data: updated } = await proxyClient.patch<EventChecklistItem>(`/events/${eventId}/checklist/${item.id}`, {
-        title: t,
-        dueDate: dueDate || null,
-        notifyByEmail: notifyEmail,
-        notifyBySms: notifySms,
-        needsVendor,
-        vendorCategory: needsVendor ? (vendorCategory || null) : null,
-        vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-        userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
-        assigneeUserId: assigneeUserId || null,
-      })
+      const { data: updated } = await proxyClient.patch<EventChecklistItem>(
+        `/events/${eventId}/checklist/${item.id}`,
+        {
+          title: t,
+          dueDate: dueDate || null,
+          notifyByEmail: notifyEmail,
+          notifyBySms: notifySms,
+          needsVendor,
+          vendorCategory: needsVendor ? vendorCategory || null : null,
+          vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
+          userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
+          assigneeUserId: assigneeUserId || null,
+        },
+      )
       onSaved(updated)
     } catch {
       // Keep the editor open so the user can retry.
@@ -900,16 +1128,26 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
   }
 
   return (
-    <div className="mx-0.5 mb-1 rounded-xl border border-white/12 bg-white/3 p-3 space-y-2.5">
-      <input ref={ref} value={title} onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startTransition(save) } if (e.key === 'Escape') onCancel() }}
-        className="w-full text-sm bg-transparent text-white placeholder:text-brand-600 focus:outline-none border-b border-white/10 pb-1.5 focus:border-gold-500/40 transition-colors"
-        placeholder="Task title" />
+    <div className="mx-0.5 mb-1 space-y-2.5 rounded-xl border border-white/12 bg-white/3 p-3">
+      <input
+        ref={ref}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            startTransition(save)
+          }
+          if (e.key === 'Escape') onCancel()
+        }}
+        className="placeholder:text-brand-600 focus:border-gold-500/40 w-full border-b border-white/10 bg-transparent pb-1.5 text-sm text-white transition-colors focus:outline-none"
+        placeholder="Task title"
+      />
 
       <select
         value={assigneeUserId}
         onChange={(e) => setAssigneeUserId(e.target.value)}
-        className="w-full text-xs bg-transparent border-b border-white/10 py-1 text-brand-200"
+        className="text-brand-200 w-full border-b border-white/10 bg-transparent py-1 text-xs"
       >
         <option value="">Unassigned</option>
         {assignees.map((person) => (
@@ -921,16 +1159,34 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
 
       <div className="flex items-center gap-2">
         <CalendarDays size={11} className="text-brand-600 shrink-0" />
-        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-          className="flex-1 text-xs bg-transparent text-brand-300 focus:outline-none [color-scheme:dark] border-b border-white/8 pb-0.5 focus:border-gold-500/30 transition-colors" />
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="text-brand-300 focus:border-gold-500/30 flex-1 border-b border-white/8 bg-transparent pb-0.5 text-xs [color-scheme:dark] transition-colors focus:outline-none"
+        />
         {dueDate && (
-          <button type="button" onClick={() => { setDueDate(''); setNotifyEmail(false); setNotifySms(false) }}
-            className="text-brand-600 hover:text-red-400 transition-colors"><X size={10} /></button>
+          <button
+            type="button"
+            onClick={() => {
+              setDueDate('')
+              setNotifyEmail(false)
+              setNotifySms(false)
+            }}
+            className="text-brand-600 transition-colors hover:text-red-400"
+          >
+            <X size={10} />
+          </button>
         )}
       </div>
 
-      <ReminderRow dueDate={dueDate} notifyEmail={notifyEmail} notifySms={notifySms}
-        onToggleEmail={() => setNotifyEmail((v) => !v)} onToggleSms={() => setNotifySms((v) => !v)} />
+      <ReminderRow
+        dueDate={dueDate}
+        notifyEmail={notifyEmail}
+        notifySms={notifySms}
+        onToggleEmail={() => setNotifyEmail((v) => !v)}
+        onToggleSms={() => setNotifySms((v) => !v)}
+      />
 
       <VendorSection
         needsVendor={needsVendor}
@@ -941,22 +1197,40 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
         onToggle={() => {
           const next = !needsVendor
           setNeedsVendor(next)
-          if (!next) { setVendorCategory(''); setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }
+          if (!next) {
+            setVendorCategory('')
+            setVendorName('')
+            setVendorProfileId(null)
+            setUserVendorContactId(null)
+          }
         }}
         onCategoryChange={setVendorCategory}
         onVendorSelect={(name, profileId, contactId) => {
-          setVendorName(name); setVendorProfileId(profileId); setUserVendorContactId(contactId)
+          setVendorName(name)
+          setVendorProfileId(profileId)
+          setUserVendorContactId(contactId)
         }}
-        onVendorClear={() => { setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }}
+        onVendorClear={() => {
+          setVendorName('')
+          setVendorProfileId(null)
+          setUserVendorContactId(null)
+        }}
       />
 
       <div className="flex items-center gap-2 pt-0.5">
-        <button type="button" onClick={() => startTransition(save)} disabled={!title.trim() || isPending}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold-600/15 border border-gold-500/25 text-gold-300 text-xs transition-colors hover:bg-gold-600/25 disabled:opacity-40 disabled:cursor-not-allowed">
+        <button
+          type="button"
+          onClick={() => startTransition(save)}
+          disabled={!title.trim() || isPending}
+          className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        >
           <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={onCancel}
-          className="px-2.5 py-1 rounded-lg border border-white/8 text-brand-500 text-xs hover:text-brand-200 transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-brand-500 hover:text-brand-200 rounded-lg border border-white/8 px-2.5 py-1 text-xs transition-colors"
+        >
           Cancel
         </button>
       </div>
@@ -966,7 +1240,11 @@ function EditRow({ item, eventId, onSaved, onCancel }: {
 
 // ─── Add row ──────────────────────────────────────────────────────────────────
 
-function AddRow({ eventId, onAdded, onClose }: {
+function AddRow({
+  eventId,
+  onAdded,
+  onClose,
+}: {
   eventId: string
   onAdded: (item: EventChecklistItem) => void
   onClose: () => void
@@ -985,7 +1263,9 @@ function AddRow({ eventId, onAdded, onClose }: {
   const [expanded, setExpanded] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { ref.current?.focus() }, [])
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
 
   const submit = useCallback(async () => {
     if (!canEdit('CHECKLIST')) return
@@ -993,56 +1273,105 @@ function AddRow({ eventId, onAdded, onClose }: {
     if (!t) return
     const tempId = `tmp-${Date.now()}`
     const optimistic: EventChecklistItem = {
-      id: tempId, title: t, isCompleted: false,
-      dueDate: dueDate || null, sortOrder: 9999,
-      notifyByEmail: notifyEmail, notifyBySms: notifySms,
-      needsVendor, vendorCategory: needsVendor ? (vendorCategory || null) : null,
-      vendorProfileId: null, userVendorContactId: null, userVendorContact: null, vendorProfile: null,
+      id: tempId,
+      title: t,
+      isCompleted: false,
+      dueDate: dueDate || null,
+      sortOrder: 9999,
+      notifyByEmail: notifyEmail,
+      notifyBySms: notifySms,
+      needsVendor,
+      vendorCategory: needsVendor ? vendorCategory || null : null,
+      vendorProfileId: null,
+      userVendorContactId: null,
+      userVendorContact: null,
+      vendorProfile: null,
     }
     onAdded(optimistic)
     onClose()
     try {
-      const { data: created } = await proxyClient.post<EventChecklistItem>(`/events/${eventId}/checklist`, {
-        title: t,
-        ...(dueDate && { dueDate }),
-        notifyByEmail: notifyEmail,
-        notifyBySms: notifySms,
-        needsVendor,
-        vendorCategory: needsVendor ? (vendorCategory || null) : null,
-        vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-        userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
-      })
+      const { data: created } = await proxyClient.post<EventChecklistItem>(
+        `/events/${eventId}/checklist`,
+        {
+          title: t,
+          ...(dueDate && { dueDate }),
+          notifyByEmail: notifyEmail,
+          notifyBySms: notifySms,
+          needsVendor,
+          vendorCategory: needsVendor ? vendorCategory || null : null,
+          vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
+          userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
+        },
+      )
       onAdded(created)
     } catch {
       onAdded({ ...optimistic, id: `REMOVE-${tempId}` })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, dueDate, notifyEmail, notifySms, needsVendor, vendorCategory, vendorProfileId, userVendorContactId, canEdit])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    title,
+    dueDate,
+    notifyEmail,
+    notifySms,
+    needsVendor,
+    vendorCategory,
+    vendorProfileId,
+    userVendorContactId,
+    canEdit,
+  ])
 
   return (
-    <div className="mx-0.5 rounded-xl border border-gold-500/20 bg-white/3 p-3 space-y-2.5">
-      <input ref={ref} value={title} onChange={(e) => setTitle(e.target.value)}
+    <div className="border-gold-500/20 mx-0.5 space-y-2.5 rounded-xl border bg-white/3 p-3">
+      <input
+        ref={ref}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
         onFocus={() => setExpanded(true)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startTransition(submit) } if (e.key === 'Escape') onClose() }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            startTransition(submit)
+          }
+          if (e.key === 'Escape') onClose()
+        }}
         placeholder="What needs to be done?"
-        className="w-full text-sm bg-transparent text-white placeholder:text-brand-600 focus:outline-none border-b border-white/8 pb-1.5 focus:border-gold-500/30 transition-colors" />
+        className="placeholder:text-brand-600 focus:border-gold-500/30 w-full border-b border-white/8 bg-transparent pb-1.5 text-sm text-white transition-colors focus:outline-none"
+      />
 
       {expanded && (
         <>
           <div className="flex items-center gap-2">
             <CalendarDays size={11} className="text-brand-600 shrink-0" />
-            <span className="text-[10px] text-brand-600 w-12 shrink-0">Due date</span>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+            <span className="text-brand-600 w-12 shrink-0 text-[10px]">Due date</span>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="flex-1 text-xs bg-transparent text-brand-300 focus:outline-none [color-scheme:dark] border-b border-white/8 pb-0.5 focus:border-gold-500/30 transition-colors" />
+              className="text-brand-300 focus:border-gold-500/30 flex-1 border-b border-white/8 bg-transparent pb-0.5 text-xs [color-scheme:dark] transition-colors focus:outline-none"
+            />
             {dueDate && (
-              <button type="button" onClick={() => { setDueDate(''); setNotifyEmail(false); setNotifySms(false) }}
-                className="text-brand-600 hover:text-red-400 transition-colors"><X size={10} /></button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueDate('')
+                  setNotifyEmail(false)
+                  setNotifySms(false)
+                }}
+                className="text-brand-600 transition-colors hover:text-red-400"
+              >
+                <X size={10} />
+              </button>
             )}
           </div>
 
-          <ReminderRow dueDate={dueDate} notifyEmail={notifyEmail} notifySms={notifySms}
-            onToggleEmail={() => setNotifyEmail((v) => !v)} onToggleSms={() => setNotifySms((v) => !v)} />
+          <ReminderRow
+            dueDate={dueDate}
+            notifyEmail={notifyEmail}
+            notifySms={notifySms}
+            onToggleEmail={() => setNotifyEmail((v) => !v)}
+            onToggleSms={() => setNotifySms((v) => !v)}
+          />
 
           <VendorSection
             needsVendor={needsVendor}
@@ -1053,27 +1382,45 @@ function AddRow({ eventId, onAdded, onClose }: {
             onToggle={() => {
               const next = !needsVendor
               setNeedsVendor(next)
-              if (!next) { setVendorCategory(''); setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }
+              if (!next) {
+                setVendorCategory('')
+                setVendorName('')
+                setVendorProfileId(null)
+                setUserVendorContactId(null)
+              }
             }}
             onCategoryChange={setVendorCategory}
             onVendorSelect={(name, profileId, contactId) => {
-              setVendorName(name); setVendorProfileId(profileId); setUserVendorContactId(contactId)
+              setVendorName(name)
+              setVendorProfileId(profileId)
+              setUserVendorContactId(contactId)
             }}
-            onVendorClear={() => { setVendorName(''); setVendorProfileId(null); setUserVendorContactId(null) }}
+            onVendorClear={() => {
+              setVendorName('')
+              setVendorProfileId(null)
+              setUserVendorContactId(null)
+            }}
           />
         </>
       )}
 
       <div className="flex items-center gap-2 pt-0.5">
-        <button type="button" onClick={() => startTransition(submit)} disabled={!title.trim() || isPending}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold-600/15 border border-gold-500/25 text-gold-300 text-xs transition-colors hover:bg-gold-600/25 disabled:opacity-40 disabled:cursor-not-allowed">
+        <button
+          type="button"
+          onClick={() => startTransition(submit)}
+          disabled={!title.trim() || isPending}
+          className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        >
           <Plus size={11} /> {isPending ? 'Adding…' : 'Add task'}
         </button>
-        <button type="button" onClick={onClose}
-          className="px-2.5 py-1 rounded-lg border border-white/8 text-brand-500 text-xs hover:text-brand-200 transition-colors">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-brand-500 hover:text-brand-200 rounded-lg border border-white/8 px-2.5 py-1 text-xs transition-colors"
+        >
           Cancel
         </button>
-        <span className="ml-auto text-[10px] text-brand-700">↵ to add · Esc to close</span>
+        <span className="text-brand-700 ml-auto text-[10px]">↵ to add · Esc to close</span>
       </div>
     </div>
   )
@@ -1105,28 +1452,28 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
   }, [items])
 
   const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
-    { value: 'all',      label: tCl('filters.all') },
-    { value: 'todo',     label: tCl('filters.todo') },
-    { value: 'done',     label: tCl('filters.done') },
-    { value: 'overdue',  label: tCl('filters.overdue') },
+    { value: 'all', label: tCl('filters.all') },
+    { value: 'todo', label: tCl('filters.todo') },
+    { value: 'done', label: tCl('filters.done') },
+    { value: 'overdue', label: tCl('filters.overdue') },
     { value: 'has-date', label: tCl('filters.dated') },
-    { value: 'mine',     label: 'Assigned to me' },
+    { value: 'mine', label: 'Assigned to me' },
   ]
 
   const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-    { value: 'default',       label: tCl('sort.default') },
-    { value: 'due-asc',       label: tCl('sort.dueAsc') },
-    { value: 'due-desc',      label: tCl('sort.dueDesc') },
+    { value: 'default', label: tCl('sort.default') },
+    { value: 'due-asc', label: tCl('sort.dueAsc') },
+    { value: 'due-desc', label: tCl('sort.dueDesc') },
     { value: 'overdue-first', label: tCl('sort.overdueFirst') },
-    { value: 'todo-first',    label: tCl('sort.todoFirst') },
-    { value: 'done-first',    label: tCl('sort.doneFirst') },
-    { value: 'alpha',         label: tCl('sort.alpha') },
+    { value: 'todo-first', label: tCl('sort.todoFirst') },
+    { value: 'done-first', label: tCl('sort.doneFirst') },
+    { value: 'alpha', label: tCl('sort.alpha') },
   ]
 
-  const total        = items.length
-  const doneCount    = items.filter((i) => i.isCompleted).length
+  const total = items.length
+  const doneCount = items.filter((i) => i.isCompleted).length
   const overdueCount = items.filter((i) => isOverdue(i.dueDate, i.isCompleted)).length
-  const pct          = total > 0 ? Math.round((doneCount / total) * 100) : 0
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0
 
   const displayed = useMemo(
     () => applySortFilter(items, sortBy, filterBy, viewer.userId),
@@ -1138,7 +1485,9 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     setFilterBy('all')
     setOpenItemId(focusItemId)
     const frame = requestAnimationFrame(() => {
-      document.getElementById(`checklist-item-${focusItemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document
+        .getElementById(`checklist-item-${focusItemId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
     return () => cancelAnimationFrame(frame)
   }, [focusItemId])
@@ -1151,7 +1500,9 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     try {
       await proxyClient.patch(`/events/${eventId}/checklist/${item.id}`, { isCompleted: next })
     } catch {
-      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isCompleted: item.isCompleted } : i)))
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, isCompleted: item.isCompleted } : i)),
+      )
     }
   }
 
@@ -1160,8 +1511,11 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     if (!canEdit('CHECKLIST')) return
     const snap = items
     setItems((prev) => prev.filter((i) => i.id !== itemId))
-    try { await proxyClient.delete(`/events/${eventId}/checklist/${itemId}`) }
-    catch { setItems(snap) }
+    try {
+      await proxyClient.delete(`/events/${eventId}/checklist/${itemId}`)
+    } catch {
+      setItems(snap)
+    }
   }
 
   // ── Optimistic add ────────────────────────────────────────────────────────
@@ -1173,35 +1527,37 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     }
     setItems((prev) => {
       const hasTmp = prev.some((i) => i.id.startsWith('tmp-'))
-      if (hasTmp && !item.id.startsWith('tmp-')) return prev.map((i) => i.id.startsWith('tmp-') ? item : i)
+      if (hasTmp && !item.id.startsWith('tmp-'))
+        return prev.map((i) => (i.id.startsWith('tmp-') ? item : i))
       if (prev.find((i) => i.id === item.id)) return prev
       return [...prev, item]
     })
   }
 
   return (
-    <div className="rounded-2xl bg-white/4 border border-white/10 p-5 flex flex-col gap-4">
-
+    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/4 p-5">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-white text-sm">Checklist</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white">Checklist</h2>
           <div className="flex items-center gap-2">
             {overdueCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/12 border border-red-500/20 text-red-400 font-medium">
+              <span className="rounded-full border border-red-500/20 bg-red-500/12 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
                 {overdueCount} overdue
               </span>
             )}
-            <span className="text-xs text-brand-500 tabular-nums">{doneCount}/{total}</span>
+            <span className="text-brand-500 text-xs tabular-nums">
+              {doneCount}/{total}
+            </span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 w-full rounded-full bg-white/6 overflow-hidden">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-white/6">
           <div
             className={cn(
               'h-full rounded-full transition-all duration-500',
-              'bg-gradient-to-r from-gold-600 to-gold-400',
+              'from-gold-600 to-gold-400 bg-gradient-to-r',
             )}
             style={{ width: `${pct}%` }}
           />
@@ -1211,30 +1567,35 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
       {/* ── Filter + Sort bar ───────────────────────────────────────────────── */}
       <div className="flex items-center gap-2">
         {/* Filter pills */}
-        <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-none">
+        <div className="flex flex-1 scrollbar-none items-center gap-1 overflow-x-auto">
           {FILTER_OPTIONS.map((opt) => {
             const count =
-              opt.value === 'all'      ? total :
-              opt.value === 'todo'     ? items.filter((i) => !i.isCompleted).length :
-              opt.value === 'done'     ? doneCount :
-              opt.value === 'overdue'  ? overdueCount :
-              items.filter((i) => !!i.dueDate).length
+              opt.value === 'all'
+                ? total
+                : opt.value === 'todo'
+                  ? items.filter((i) => !i.isCompleted).length
+                  : opt.value === 'done'
+                    ? doneCount
+                    : opt.value === 'overdue'
+                      ? overdueCount
+                      : items.filter((i) => !!i.dueDate).length
             if (opt.value !== 'all' && count === 0) return null
             const active = filterBy === opt.value
             return (
-              <button key={opt.value} onClick={() => setFilterBy(opt.value)}
+              <button
+                key={opt.value}
+                onClick={() => setFilterBy(opt.value)}
                 className={cn(
-                  'flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border whitespace-nowrap transition-all',
+                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap transition-all',
                   active
                     ? opt.value === 'overdue'
-                      ? 'bg-red-500/12 border-red-500/25 text-red-300'
-                      : 'bg-white/8 border-white/15 text-white'
-                    : 'border-transparent text-brand-500 hover:text-brand-300',
-                )}>
-                {opt.label}
-                {opt.value !== 'all' && (
-                  <span className="opacity-60 text-[9px]">{count}</span>
+                      ? 'border-red-500/25 bg-red-500/12 text-red-300'
+                      : 'border-white/15 bg-white/8 text-white'
+                    : 'text-brand-500 hover:text-brand-300 border-transparent',
                 )}
+              >
+                {opt.label}
+                {opt.value !== 'all' && <span className="text-[9px] opacity-60">{count}</span>}
               </button>
             )
           })}
@@ -1242,38 +1603,55 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
 
         {/* Sort button */}
         <div className="relative shrink-0">
-          <button onClick={() => setShowSortMenu((v) => !v)}
+          <button
+            onClick={() => setShowSortMenu((v) => !v)}
             className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] transition-colors',
+              'flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] transition-colors',
               sortBy !== 'default'
                 ? 'bg-gold-600/12 border-gold-500/25 text-gold-400'
-                : 'border-white/8 text-brand-500 hover:text-brand-300 hover:border-white/15',
-            )}>
+                : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+            )}
+          >
             <SlidersHorizontal size={10} />
             Sort
-            <ChevronDown size={9} className={cn('transition-transform', showSortMenu && 'rotate-180')} />
+            <ChevronDown
+              size={9}
+              className={cn('transition-transform', showSortMenu && 'rotate-180')}
+            />
           </button>
 
           {showSortMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-              <div className="absolute right-0 top-full mt-1.5 z-20 w-44 rounded-xl border border-white/10 bg-[#111111] shadow-2xl shadow-black/50 py-1.5 overflow-hidden">
+              <div className="absolute top-full right-0 z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-white/10 bg-[#111111] py-1.5 shadow-2xl shadow-black/50">
                 {SORT_OPTIONS.map((opt) => (
-                  <button key={opt.value}
-                    onClick={() => { setSortBy(opt.value); setShowSortMenu(false) }}
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setSortBy(opt.value)
+                      setShowSortMenu(false)
+                    }}
                     className={cn(
-                      'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between',
-                      sortBy === opt.value ? 'text-gold-300 bg-gold-600/8' : 'text-brand-400 hover:bg-white/5 hover:text-white',
-                    )}>
+                      'flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors',
+                      sortBy === opt.value
+                        ? 'text-gold-300 bg-gold-600/8'
+                        : 'text-brand-400 hover:bg-white/5 hover:text-white',
+                    )}
+                  >
                     {opt.label}
                     {sortBy === opt.value && <Check size={10} className="text-gold-400 shrink-0" />}
                   </button>
                 ))}
                 {sortBy !== 'default' && (
                   <>
-                    <div className="border-t border-white/6 my-1" />
-                    <button onClick={() => { setSortBy('default'); setShowSortMenu(false) }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-brand-600 hover:text-red-400 transition-colors">
+                    <div className="my-1 border-t border-white/6" />
+                    <button
+                      onClick={() => {
+                        setSortBy('default')
+                        setShowSortMenu(false)
+                      }}
+                      className="text-brand-600 w-full px-3 py-1.5 text-left text-xs transition-colors hover:text-red-400"
+                    >
                       Reset sort
                     </button>
                   </>
@@ -1284,170 +1662,226 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
         </div>
 
         {(sortBy !== 'default' || filterBy !== 'all') && (
-          <button onClick={() => { setSortBy('default'); setFilterBy('all') }}
-            className="shrink-0 text-[10px] text-brand-600 hover:text-red-400 transition-colors flex items-center gap-0.5">
+          <button
+            onClick={() => {
+              setSortBy('default')
+              setFilterBy('all')
+            }}
+            className="text-brand-600 flex shrink-0 items-center gap-0.5 text-[10px] transition-colors hover:text-red-400"
+          >
             <X size={9} />
           </button>
         )}
       </div>
 
       {/* ── Item list ───────────────────────────────────────────────────────── */}
-      <div className="space-y-0.5 max-h-[340px] overflow-y-auto -mx-1 px-1">
-
+      <div className="-mx-1 max-h-[340px] space-y-0.5 overflow-y-auto px-1">
         {displayed.length === 0 && !showAdd && (
-          <p className="text-brand-600 text-xs py-8 text-center">
+          <p className="text-brand-600 py-8 text-center text-xs">
             {total === 0 ? 'No tasks yet.' : 'Nothing matches this filter.'}
           </p>
         )}
 
         {displayed.map((item) =>
           editingId === item.id ? (
-            <EditRow key={item.id} item={item} eventId={eventId}
-              onSaved={(updated) => { setItems((prev) => prev.map((i) => i.id === item.id ? updated : i)); setEditingId(null) }}
-              onCancel={() => setEditingId(null)} />
+            <EditRow
+              key={item.id}
+              item={item}
+              eventId={eventId}
+              onSaved={(updated) => {
+                setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)))
+                setEditingId(null)
+              }}
+              onCancel={() => setEditingId(null)}
+            />
           ) : (
-            <div key={item.id}
+            <div
+              key={item.id}
               id={`checklist-item-${item.id}`}
               className={cn(
-                'group flex items-start gap-2.5 px-1.5 py-2 rounded-lg transition-colors hover:bg-white/3 cursor-pointer',
+                'group flex cursor-pointer items-start gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-white/3',
                 item.isCompleted && 'opacity-45',
                 item.id === focusItemId && 'bg-gold-500/10',
               )}
-              onClick={() => setOpenItemId(item.id)}>
-
+              onClick={() => setOpenItemId(item.id)}
+            >
               {/* Checkbox */}
               {canEdit('CHECKLIST') ? (
-              <button onClick={(e) => { e.stopPropagation(); toggle(item) }}
-                className="mt-0.5 shrink-0 transition-colors text-brand-600 hover:text-gold-400"
-                aria-label={item.isCompleted ? 'Mark incomplete' : 'Mark complete'}>
-                {item.isCompleted
-                  ? <CheckCircle2 size={15} className="text-gold-400" />
-                  : <Circle size={15} />}
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggle(item)
+                  }}
+                  className="text-brand-600 hover:text-gold-400 mt-0.5 shrink-0 transition-colors"
+                  aria-label={item.isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                >
+                  {item.isCompleted ? (
+                    <CheckCircle2 size={15} className="text-gold-400" />
+                  ) : (
+                    <Circle size={15} />
+                  )}
+                </button>
               ) : (
-              <span className="mt-0.5 shrink-0 text-brand-600" aria-hidden>
-                {item.isCompleted
-                  ? <CheckCircle2 size={15} className="text-gold-400" />
-                  : <Circle size={15} />}
-              </span>
+                <span className="text-brand-600 mt-0.5 shrink-0" aria-hidden>
+                  {item.isCompleted ? (
+                    <CheckCircle2 size={15} className="text-gold-400" />
+                  ) : (
+                    <Circle size={15} />
+                  )}
+                </span>
               )}
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className={cn('text-sm leading-snug',
-                  item.isCompleted ? 'line-through text-brand-600' : 'text-brand-100')}>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    'text-sm leading-snug',
+                    item.isCompleted ? 'text-brand-600 line-through' : 'text-brand-100',
+                  )}
+                >
                   {item.title}
                   {item.assignee && (
-                    <span className="ml-2 text-[10px] font-normal no-underline text-gold-500">
-                      {[item.assignee.firstName, item.assignee.lastName].filter(Boolean).join(' ') || 'Assigned'}
+                    <span className="text-gold-500 ml-2 text-[10px] font-normal no-underline">
+                      {[item.assignee.firstName, item.assignee.lastName]
+                        .filter(Boolean)
+                        .join(' ') || 'Assigned'}
                     </span>
                   )}
                 </p>
 
                 {/* Metadata row */}
-                {(item.dueDate || item.notifyByEmail || item.notifyBySms || item.needsVendor) && !item.isCompleted && (
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    {item.dueDate && (
-                      <span className={cn('inline-flex items-center gap-1 text-[10px]',
-                        isOverdue(item.dueDate, item.isCompleted)
-                          ? 'text-red-400'
-                          : isDueSoon(item.dueDate, item.isCompleted)
-                            ? 'text-amber-400'
-                            : 'text-brand-500')}>
-                        <CalendarDays size={9} />
-                        {isOverdue(item.dueDate, item.isCompleted) && <span className="font-medium">Overdue · </span>}
-                        {fmtDate(item.dueDate)}
-                      </span>
-                    )}
-                    {item.dueDate && (item.notifyByEmail || item.notifyBySms) && (
-                      <span className="text-brand-700">·</span>
-                    )}
-                    {item.notifyByEmail && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] text-brand-600">
-                        <Mail size={8} /> Email
-                      </span>
-                    )}
-                    {item.notifyBySms && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] text-brand-600">
-                        <MessageSquare size={8} /> SMS
-                      </span>
-                    )}
+                {(item.dueDate || item.notifyByEmail || item.notifyBySms || item.needsVendor) &&
+                  !item.isCompleted && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {item.dueDate && (
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 text-[10px]',
+                            isOverdue(item.dueDate, item.isCompleted)
+                              ? 'text-red-400'
+                              : isDueSoon(item.dueDate, item.isCompleted)
+                                ? 'text-amber-400'
+                                : 'text-brand-500',
+                          )}
+                        >
+                          <CalendarDays size={9} />
+                          {isOverdue(item.dueDate, item.isCompleted) && (
+                            <span className="font-medium">Overdue · </span>
+                          )}
+                          {fmtDate(item.dueDate)}
+                        </span>
+                      )}
+                      {item.dueDate && (item.notifyByEmail || item.notifyBySms) && (
+                        <span className="text-brand-700">·</span>
+                      )}
+                      {item.notifyByEmail && (
+                        <span className="text-brand-600 inline-flex items-center gap-0.5 text-[9px]">
+                          <Mail size={8} /> Email
+                        </span>
+                      )}
+                      {item.notifyBySms && (
+                        <span className="text-brand-600 inline-flex items-center gap-0.5 text-[9px]">
+                          <MessageSquare size={8} /> SMS
+                        </span>
+                      )}
 
-                    {/* Vendor badge */}
-                    {item.needsVendor && (
-                      <>
-                        {(item.dueDate || item.notifyByEmail || item.notifyBySms) && (
-                          <span className="text-brand-700">·</span>
-                        )}
-                        {(item.vendorProfile || item.userVendorContact) ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border border-gold-500/30 bg-gold-500/10 text-gold-300">
-                            {item.userVendorContact ? <BookUser size={8} /> : <Store size={8} />}
-                            {item.vendorProfile?.businessName ?? item.userVendorContact?.name}
-                            {item.vendorProfile?.isVerified && <BadgeCheck size={8} className="text-gold-400" />}
-                          </span>
-                        ) : item.vendorCategory && item.vendorCategory !== 'OTHER' ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border border-gold-500/25 bg-gold-500/8 text-gold-400">
-                            <Store size={8} />
-                            {getVendorCategoryLabel(item.vendorCategory!, tCat)}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border border-white/10 bg-white/4 text-brand-500">
-                            <Store size={8} />
-                            {item.vendorCategory === 'OTHER'
-                              ? 'Other service needed'
-                              : 'Vendor needed'}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
+                      {/* Vendor badge */}
+                      {item.needsVendor && (
+                        <>
+                          {(item.dueDate || item.notifyByEmail || item.notifyBySms) && (
+                            <span className="text-brand-700">·</span>
+                          )}
+                          {item.vendorProfile || item.userVendorContact ? (
+                            <span className="border-gold-500/30 bg-gold-500/10 text-gold-300 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
+                              {item.userVendorContact ? <BookUser size={8} /> : <Store size={8} />}
+                              {item.vendorProfile?.businessName ?? item.userVendorContact?.name}
+                              {item.vendorProfile?.isVerified && (
+                                <BadgeCheck size={8} className="text-gold-400" />
+                              )}
+                            </span>
+                          ) : item.vendorCategory && item.vendorCategory !== 'OTHER' ? (
+                            <span className="border-gold-500/25 bg-gold-500/8 text-gold-400 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
+                              <Store size={8} />
+                              {getVendorCategoryLabel(item.vendorCategory!, tCat)}
+                            </span>
+                          ) : (
+                            <span className="text-brand-500 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/4 px-1.5 py-0.5 text-[10px]">
+                              <Store size={8} />
+                              {item.vendorCategory === 'OTHER'
+                                ? 'Other service needed'
+                                : 'Vendor needed'}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
+              <div className="mt-0.5 flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 {canEdit('CHECKLIST') && (
                   <>
-                    <button onClick={(e) => { e.stopPropagation(); setEditingId(item.id); setShowAdd(false) }}
-                      className="p-1 rounded-md text-brand-600 hover:text-brand-300 hover:bg-white/5 transition-colors"
-                      aria-label="Edit">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingId(item.id)
+                        setShowAdd(false)
+                      }}
+                      className="text-brand-600 hover:text-brand-300 rounded-md p-1 transition-colors hover:bg-white/5"
+                      aria-label="Edit"
+                    >
                       <Pencil size={11} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); deleteItem(item.id) }}
-                      className="p-1 rounded-md text-brand-600 hover:text-red-400 hover:bg-red-500/8 transition-colors"
-                      aria-label="Delete">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteItem(item.id)
+                      }}
+                      className="text-brand-600 rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                      aria-label="Delete"
+                    >
                       <Trash2 size={11} />
                     </button>
                   </>
                 )}
               </div>
             </div>
-          )
+          ),
         )}
       </div>
 
       {/* ── Item detail drawer ────────────────────────────────────────────────── */}
-      {openItemId && (() => {
-        const openItem = items.find((i) => i.id === openItemId)
-        return openItem ? (
-          <ItemDrawer
-            item={openItem}
-            eventId={eventId}
-            onClose={() => setOpenItemId(null)}
-            onSaved={(updated) => setItems((prev) => prev.map((i) => i.id === updated.id ? updated : i))}
-            onToggle={() => { toggle(openItem) }}
-          />
-        ) : null
-      })()}
+      {openItemId &&
+        (() => {
+          const openItem = items.find((i) => i.id === openItemId)
+          return openItem ? (
+            <ItemDrawer
+              item={openItem}
+              eventId={eventId}
+              onClose={() => setOpenItemId(null)}
+              onSaved={(updated) =>
+                setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+              }
+              onToggle={() => {
+                toggle(openItem)
+              }}
+            />
+          ) : null
+        })()}
 
       {/* ── Add row ─────────────────────────────────────────────────────────── */}
       {showAdd ? (
         <AddRow eventId={eventId} onAdded={handleAdded} onClose={() => setShowAdd(false)} />
       ) : canEdit('CHECKLIST') ? (
         <button
-          onClick={() => { setShowAdd(true); setEditingId(null) }}
-          className="flex items-center gap-2 text-xs text-brand-600 hover:text-brand-300 transition-colors group -mt-1">
-          <span className="flex items-center justify-center w-5 h-5 rounded-md border border-dashed border-white/10 group-hover:border-white/20 transition-colors">
+          onClick={() => {
+            setShowAdd(true)
+            setEditingId(null)
+          }}
+          className="text-brand-600 hover:text-brand-300 group -mt-1 flex items-center gap-2 text-xs transition-colors"
+        >
+          <span className="flex h-5 w-5 items-center justify-center rounded-md border border-dashed border-white/10 transition-colors group-hover:border-white/20">
             <Plus size={10} className="group-hover:text-gold-400 transition-colors" />
           </span>
           Add task

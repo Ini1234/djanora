@@ -1,14 +1,14 @@
 export const clerkAppearance = {
   variables: {
-    colorPrimary:    '#c9973a',
+    colorPrimary: '#c9973a',
     colorBackground: '#ffffff',
     colorForeground: '#1c1917',
-    colorNeutral:    '#79716c',
-    colorDanger:     '#dc2626',
-    colorSuccess:    '#16a34a',
-    borderRadius:    '0.75rem',
-    fontFamily:      'var(--font-geist-sans), system-ui, sans-serif',
-    fontSize:        '0.9375rem',
+    colorNeutral: '#79716c',
+    colorDanger: '#dc2626',
+    colorSuccess: '#16a34a',
+    borderRadius: '0.75rem',
+    fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+    fontSize: '0.9375rem',
   },
   elements: {
     card: {

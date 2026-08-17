@@ -1,12 +1,4 @@
-import {
-  IsString,
-  IsEnum,
-  IsIn,
-  IsOptional,
-  MinLength,
-  IsISO8601,
-  IsArray,
-} from 'class-validator'
+import { IsString, IsEnum, IsIn, IsOptional, MinLength, IsISO8601, IsArray } from 'class-validator'
 import { Tribe } from '@prisma/client'
 
 export class CompleteOnboardingDto {

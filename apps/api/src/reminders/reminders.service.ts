@@ -36,10 +36,7 @@ export class RemindersService {
       where: {
         isCompleted: false,
         dueDate: { lte: tomorrow },
-        OR: [
-          { notifiedAt: null },
-          { notifiedAt: { lte: reNotifyThreshold } },
-        ],
+        OR: [{ notifiedAt: null }, { notifiedAt: { lte: reNotifyThreshold } }],
       },
       include: {
         event: {
@@ -77,6 +74,7 @@ export class RemindersService {
       if (item.notifyByEmail) {
         await this.delivery.sendEmail({
           to: user.email,
+          kind: 'notification',
           subject: `Reminder: "${item.title}" due ${dueDateLabel}`,
           html: this.delivery.buildChecklistReminderEmail({
             firstName: user.firstName,

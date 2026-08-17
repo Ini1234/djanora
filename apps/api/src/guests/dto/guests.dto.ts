@@ -5,11 +5,9 @@ import {
   IsBoolean,
   IsEnum,
   IsArray,
-  ValidateNested,
   IsNotEmpty,
   MinLength,
 } from 'class-validator'
-import { Type } from 'class-transformer'
 
 export class CreateGuestDto {
   @IsString()

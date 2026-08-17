@@ -58,7 +58,10 @@ export function PersonalChecklist({ events }: { events: Event[] }) {
     setCreating(false)
   }
 
-  async function saveItem(item: UserChecklist, input: { title: string; dueDate: string; eventId: string }) {
+  async function saveItem(
+    item: UserChecklist,
+    input: { title: string; dueDate: string; eventId: string },
+  ) {
     const { data } = await proxyClient.patch<UserChecklist>(`/users/me/checklists/${item.id}`, {
       title: input.title,
       dueDate: input.dueDate,
@@ -71,16 +74,22 @@ export function PersonalChecklist({ events }: { events: Event[] }) {
   async function toggle(item: UserChecklist) {
     if (pendingIds.has(item.id)) return
     const next = !item.isCompleted
-    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isCompleted: next } : row)))
+    setItems((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, isCompleted: next } : row)),
+    )
     setPendingIds((prev) => new Set(prev).add(item.id))
     try {
       if (item.source === 'ASSIGNED' && item.eventId) {
-        await proxyClient.patch(`/events/${item.eventId}/checklist/${item.id}`, { isCompleted: next })
+        await proxyClient.patch(`/events/${item.eventId}/checklist/${item.id}`, {
+          isCompleted: next,
+        })
       } else {
         await proxyClient.patch(`/users/me/checklists/${item.id}`, { isCompleted: next })
       }
     } catch {
-      setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isCompleted: item.isCompleted } : row)))
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? { ...row, isCompleted: item.isCompleted } : row)),
+      )
     } finally {
       setPendingIds((prev) => {
         const ids = new Set(prev)
@@ -134,10 +143,14 @@ export function PersonalChecklist({ events }: { events: Event[] }) {
                 item={item}
                 pending={pendingIds.has(item.id)}
                 onToggle={() => void toggle(item)}
-                onEdit={item.source === 'ASSIGNED' ? undefined : () => {
-                  setCreating(false)
-                  setEditingId(item.id)
-                }}
+                onEdit={
+                  item.source === 'ASSIGNED'
+                    ? undefined
+                    : () => {
+                        setCreating(false)
+                        setEditingId(item.id)
+                      }
+                }
                 onRemove={item.source === 'ASSIGNED' ? undefined : () => void remove(item)}
               />
             )}
@@ -161,7 +174,7 @@ export function PersonalChecklist({ events }: { events: Event[] }) {
             setEditingId(null)
             setCreating(true)
           }}
-          className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium hover:opacity-70 transition-opacity"
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70"
           style={{ color: 'var(--color-foreground)' }}
         >
           <Plus size={14} />
@@ -269,7 +282,12 @@ function ChecklistFields({
         >
           {submitLabel}
         </button>
-        <button type="button" onClick={onCancel} className="text-xs" style={{ color: 'var(--color-muted)' }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs"
+          style={{ color: 'var(--color-muted)' }}
+        >
           Cancel
         </button>
       </div>
@@ -300,12 +318,16 @@ function ChecklistRow({
         disabled={pending}
         onClick={onToggle}
         className="mt-0.5 shrink-0 disabled:opacity-40"
-        aria-label={item.isCompleted ? `Mark “${item.title}” incomplete` : `Mark “${item.title}” complete`}
+        aria-label={
+          item.isCompleted ? `Mark “${item.title}” incomplete` : `Mark “${item.title}” complete`
+        }
       >
         {item.isCompleted ? (
           <span
             className="flex h-4 w-4 items-center justify-center rounded-full"
-            style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)' }}
+            style={{
+              background: 'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)',
+            }}
           >
             <Check size={10} strokeWidth={2.5} style={{ color: 'var(--color-brand-primary)' }} />
           </span>
@@ -313,7 +335,12 @@ function ChecklistRow({
           <Circle size={16} style={{ color: 'var(--color-muted)' }} />
         )}
       </button>
-      <button type="button" onClick={onEdit} disabled={!onEdit} className="min-w-0 flex-1 text-left">
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={!onEdit}
+        className="min-w-0 flex-1 text-left"
+      >
         <p
           className="text-sm font-medium"
           style={{
@@ -323,40 +350,45 @@ function ChecklistRow({
         >
           {item.title}
         </p>
-        <p className="text-xs mt-0.5" style={{ color: overdue && !item.isCompleted ? '#b91c1c' : 'var(--color-muted)' }}>
-          {[due, item.event?.title, item.source === 'ASSIGNED' ? 'Assigned to you' : null].filter(Boolean).join(' · ')}
+        <p
+          className="mt-0.5 text-xs"
+          style={{ color: overdue && !item.isCompleted ? '#b91c1c' : 'var(--color-muted)' }}
+        >
+          {[due, item.event?.title, item.source === 'ASSIGNED' ? 'Assigned to you' : null]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </button>
       {item.event && (
         <Link
           href={`/events/${item.event.id}?tab=checklist`}
-          className="text-xs shrink-0 mt-0.5 hover:opacity-70"
+          className="mt-0.5 shrink-0 text-xs hover:opacity-70"
           style={{ color: 'var(--color-muted)' }}
         >
           View
         </Link>
       )}
       {onEdit && (
-      <button
-        type="button"
-        onClick={onEdit}
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0 mt-0.5"
-        style={{ color: 'var(--color-muted)' }}
-        aria-label={`Edit “${item.title}”`}
-      >
-        <Pencil size={12} />
-      </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          style={{ color: 'var(--color-muted)' }}
+          aria-label={`Edit “${item.title}”`}
+        >
+          <Pencil size={12} />
+        </button>
       )}
       {onRemove && (
-      <button
-        type="button"
-        onClick={onRemove}
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0 mt-0.5"
-        style={{ color: 'var(--color-muted)' }}
-        aria-label={`Remove “${item.title}”`}
-      >
-        <X size={12} />
-      </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          style={{ color: 'var(--color-muted)' }}
+          aria-label={`Remove “${item.title}”`}
+        >
+          <X size={12} />
+        </button>
       )}
     </div>
   )

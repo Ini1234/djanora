@@ -79,11 +79,14 @@ function RolePicker({
             key={r}
             type="button"
             onClick={() => onChange(r)}
-            className="flex-1 text-xs py-1.5 rounded-lg border"
+            className="flex-1 rounded-lg border py-1.5 text-xs"
             style={{
               borderColor: value === r ? 'var(--color-brand-primary)' : 'var(--color-border)',
               color: value === r ? 'var(--color-brand-primary)' : 'var(--color-text-secondary)',
-              background: value === r ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' : 'transparent',
+              background:
+                value === r
+                  ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)'
+                  : 'transparent',
             }}
           >
             {ROLE_LABELS[r]}
@@ -122,11 +125,13 @@ function ChildGrantPicker({
             <button
               type="button"
               onClick={() => onToggleEvent(stop.id)}
-              className="text-[11px] px-2 py-1 rounded-full border"
+              className="rounded-full border px-2 py-1 text-[11px]"
               style={{
                 borderColor: grant ? 'var(--color-brand-primary)' : 'var(--color-border)',
                 color: grant ? 'var(--color-brand-primary)' : 'var(--color-muted)',
-                background: grant ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' : 'transparent',
+                background: grant
+                  ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)'
+                  : 'transparent',
               }}
             >
               {stop.title}
@@ -140,7 +145,11 @@ function ChildGrantPicker({
                     onChange(value.filter((g) => g.eventId !== stop.id))
                     return
                   }
-                  onChange(value.map((g) => (g.eventId === stop.id ? { ...g, surfaces: nextSurfaces } : g)))
+                  onChange(
+                    value.map((g) =>
+                      g.eventId === stop.id ? { ...g, surfaces: nextSurfaces } : g,
+                    ),
+                  )
                 }}
               />
             )}
@@ -167,11 +176,13 @@ function SurfacePicker({
             key={s}
             type="button"
             onClick={() => onToggle(s)}
-            className="text-[11px] px-2 py-1 rounded-full border"
+            className="rounded-full border px-2 py-1 text-[11px]"
             style={{
               borderColor: on ? 'var(--color-brand-primary)' : 'var(--color-border)',
               color: on ? 'var(--color-brand-primary)' : 'var(--color-muted)',
-              background: on ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)' : 'transparent',
+              background: on
+                ? 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)'
+                : 'transparent',
             }}
           >
             {SURFACE_LABELS[s]}
@@ -182,10 +193,14 @@ function SurfacePicker({
   )
 }
 
-function Avatar({ person }: { person: { email: string; user: { firstName: string | null; lastName: string | null } | null } }) {
+function Avatar({
+  person,
+}: {
+  person: { email: string; user: { firstName: string | null; lastName: string | null } | null }
+}) {
   return (
     <span
-      className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[11px] font-semibold"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
       style={{
         background: 'color-mix(in srgb, var(--color-brand-primary) 14%, transparent)',
         color: 'var(--color-brand-primary)',
@@ -318,11 +333,11 @@ export function EventPeopleSection({
 
   return (
     <section
-      className="rounded-2xl overflow-hidden mb-8"
+      className="mb-8 overflow-hidden rounded-2xl"
       style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
     >
       <div
-        className="flex items-center justify-between gap-3 px-5 py-4 border-b"
+        className="flex items-center justify-between gap-3 border-b px-5 py-4"
         style={{ borderColor: 'var(--color-border)' }}
       >
         <div className="min-w-0">
@@ -333,7 +348,7 @@ export function EventPeopleSection({
             </h2>
           </div>
           {!loading && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-muted)' }}>
+            <p className="mt-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
               {members.length === 0
                 ? 'Only you so far'
                 : `${acceptedCount} accepted · ${pendingCount} pending`}
@@ -344,7 +359,7 @@ export function EventPeopleSection({
           <button
             type="button"
             onClick={() => onInviteOpenChange(!inviteOpen)}
-            className="shrink-0 h-8 px-3 rounded-lg text-xs font-semibold"
+            className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
             style={{
               background: inviteOpen ? 'transparent' : 'var(--color-brand-primary)',
               color: inviteOpen ? 'var(--color-text-secondary)' : '#fff',
@@ -356,10 +371,14 @@ export function EventPeopleSection({
         )}
       </div>
 
-      <div className="px-5 py-4 space-y-3">
+      <div className="space-y-3 px-5 py-4">
         {loading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="animate-spin" size={18} style={{ color: 'var(--color-brand-primary)' }} />
+            <Loader2
+              className="animate-spin"
+              size={18}
+              style={{ color: 'var(--color-brand-primary)' }}
+            />
           </div>
         ) : (
           <>
@@ -376,11 +395,18 @@ export function EventPeopleSection({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full text-sm rounded-xl px-3 py-2 focus:outline-none"
-                  style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+                  className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none"
+                  style={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
                 />
                 <RolePicker value={role} onChange={setRole} />
-                <SurfacePicker value={surfaces} onToggle={(s) => setSurfaces((prev) => toggleIn(prev, s))} />
+                <SurfacePicker
+                  value={surfaces}
+                  onToggle={(s) => setSurfaces((prev) => toggleIn(prev, s))}
+                />
                 {(subEvents?.length ?? 0) > 0 && (
                   <ChildGrantPicker
                     subEvents={subEvents ?? []}
@@ -391,9 +417,11 @@ export function EventPeopleSection({
                 )}
                 <button
                   type="button"
-                  disabled={pending || !email.trim() || (surfaces.length === 0 && childGrants.length === 0)}
+                  disabled={
+                    pending || !email.trim() || (surfaces.length === 0 && childGrants.length === 0)
+                  }
                   onClick={invite}
-                  className="w-full h-9 rounded-xl text-sm font-semibold disabled:opacity-40"
+                  className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
                   style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
                 >
                   {pending ? 'Sending…' : 'Send invite'}
@@ -401,19 +429,25 @@ export function EventPeopleSection({
               </div>
             )}
 
-            {error && <p className="text-xs" style={{ color: 'var(--color-error, #c45c4a)' }}>{error}</p>}
+            {error && (
+              <p className="text-xs" style={{ color: 'var(--color-error, #c45c4a)' }}>
+                {error}
+              </p>
+            )}
 
             {host && (
               <div className="flex items-center gap-3">
                 <Avatar person={host} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm truncate" style={{ color: 'var(--color-text-primary)' }}>
+                  <p className="truncate text-sm" style={{ color: 'var(--color-text-primary)' }}>
                     {displayName(host)}
                   </p>
-                  <p className="text-[11px] truncate" style={{ color: 'var(--color-muted)' }}>{host.email}</p>
+                  <p className="truncate text-[11px]" style={{ color: 'var(--color-muted)' }}>
+                    {host.email}
+                  </p>
                 </div>
                 <span
-                  className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
                   style={{
                     color: 'var(--color-brand-primary)',
                     background: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
@@ -432,36 +466,40 @@ export function EventPeopleSection({
                   <div className="flex items-start gap-3">
                     <Avatar person={m} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm truncate" style={{ color: 'var(--color-text-primary)' }}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p
+                          className="truncate text-sm"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
                           {displayName(m)}
                         </p>
                         <span
-                          className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
                           style={
                             accepted
                               ? { color: '#3d7a4a', background: 'rgba(61, 122, 74, 0.12)' }
                               : {
                                   color: 'var(--color-brand-primary)',
-                                  background: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
+                                  background:
+                                    'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)',
                                 }
                           }
                         >
                           {accepted ? 'Accepted' : 'Pending'}
                         </span>
                       </div>
-                      <p className="text-[11px] truncate" style={{ color: 'var(--color-muted)' }}>
+                      <p className="truncate text-[11px]" style={{ color: 'var(--color-muted)' }}>
                         {m.email} · {ROLE_LABELS[m.role]}
                         {!editing && ` · ${m.surfaces.map((s) => SURFACE_LABELS[s]).join(', ')}`}
                       </p>
                     </div>
                     {isHost && !editing && (
-                      <div className="flex items-center shrink-0">
+                      <div className="flex shrink-0 items-center">
                         {!accepted && m.inviteUrl && (
                           <button
                             type="button"
                             onClick={() => copyLink(m)}
-                            className="p-1.5 rounded-lg hover:opacity-70"
+                            className="rounded-lg p-1.5 hover:opacity-70"
                             style={{ color: 'var(--color-muted)' }}
                             aria-label="Copy invite link"
                           >
@@ -471,7 +509,7 @@ export function EventPeopleSection({
                         <button
                           type="button"
                           onClick={() => startEdit(m)}
-                          className="p-1.5 rounded-lg hover:opacity-70"
+                          className="rounded-lg p-1.5 hover:opacity-70"
                           style={{ color: 'var(--color-muted)' }}
                           aria-label="Edit invite"
                         >
@@ -480,7 +518,7 @@ export function EventPeopleSection({
                         <button
                           type="button"
                           onClick={() => remove(m.id)}
-                          className="p-1.5 rounded-lg hover:opacity-70"
+                          className="rounded-lg p-1.5 hover:opacity-70"
                           style={{ color: 'var(--color-muted)' }}
                           aria-label="Remove"
                         >
@@ -491,7 +529,7 @@ export function EventPeopleSection({
                   </div>
 
                   {isHost && editing && (
-                    <div className="pl-11 space-y-2.5">
+                    <div className="space-y-2.5 pl-11">
                       <RolePicker value={editRole} onChange={setEditRole} />
                       <SurfacePicker
                         value={editSurfaces}
@@ -502,23 +540,27 @@ export function EventPeopleSection({
                           subEvents={subEvents ?? []}
                           value={editChildGrants}
                           onChange={setEditChildGrants}
-                          onToggleEvent={(id) => setEditChildGrants((prev) => toggleChildGrant(prev, id))}
+                          onToggleEvent={(id) =>
+                            setEditChildGrants((prev) => toggleChildGrant(prev, id))
+                          }
                         />
                       )}
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="h-8 px-3 rounded-lg text-xs"
+                          className="h-8 rounded-lg px-3 text-xs"
                           style={{ color: 'var(--color-muted)' }}
                         >
                           Cancel
                         </button>
                         <button
                           type="button"
-                          disabled={pending || (editSurfaces.length === 0 && editChildGrants.length === 0)}
+                          disabled={
+                            pending || (editSurfaces.length === 0 && editChildGrants.length === 0)
+                          }
                           onClick={() => saveEdit(m.id)}
-                          className="h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-40"
+                          className="h-8 rounded-lg px-3 text-xs font-semibold disabled:opacity-40"
                           style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
                         >
                           {pending ? 'Saving…' : 'Save'}
@@ -534,7 +576,7 @@ export function EventPeopleSection({
                 type="button"
                 disabled={pending}
                 onClick={leave}
-                className="flex items-center gap-1.5 text-xs mt-2 hover:opacity-70 disabled:opacity-40"
+                className="mt-2 flex items-center gap-1.5 text-xs hover:opacity-70 disabled:opacity-40"
                 style={{ color: 'var(--color-muted)' }}
               >
                 <LogOut size={12} />
