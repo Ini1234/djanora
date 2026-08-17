@@ -42,7 +42,13 @@ jobs:
         run: npx prisma generate
 
       - name: Build
-        run: npm run build --workspace=api
+        run: |
+          npm run build --workspace=api
+          if [ ! -f apps/api/dist/main.js ]; then
+            echo "expected apps/api/dist/main.js after nest build" >&2
+            find apps/api/dist -name 'main.js' || true
+            exit 1
+          fi
 
       - name: Hardening tests
         run: npm run test:hardening

@@ -1,13 +1,19 @@
 import {
-  Controller, Get, Query, Req, Res, UnauthorizedException,
+  Controller, Headers, Query, UnauthorizedException,
   MessageEvent, Sse,
 } from '@nestjs/common'
-import type { Request, Response } from 'express'
 import { Observable, map } from 'rxjs'
 import { verifyToken } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService } from './sse.service'
+
+function bearerToken(authorization?: string): string | undefined {
+  if (!authorization) return undefined
+  const [scheme, token] = authorization.split(' ')
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return undefined
+  return token
+}
 
 @Controller('sse')
 export class SseController {
@@ -18,15 +24,15 @@ export class SseController {
   ) {}
 
   /**
-   * GET /api/sse/stream?token=<clerk_jwt>
-   * Browser EventSource can't set headers, so the token comes as a query param.
+   * GET /api/sse/stream
+   * The Next BFF sends Authorization. Query `token` is a fallback only.
    */
   @Sse('stream')
   async stream(
-    @Query('token') token: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Headers('authorization') authorization?: string,
+    @Query('token') queryToken?: string,
   ): Promise<Observable<MessageEvent>> {
+    const token = bearerToken(authorization) ?? queryToken
     if (!token) throw new UnauthorizedException('Missing token')
 
     const payload = await verifyToken(token, {
@@ -38,9 +44,6 @@ export class SseController {
       select: { id: true },
     })
     if (!user) throw new UnauthorizedException('User not found')
-
-    // Keep connection alive — close on client disconnect
-    res.on('close', () => { /* finalize() in subscribe() handles cleanup */ })
 
     return this.sseService.subscribe(user.id).pipe(
       map((data) => ({ data } as MessageEvent)),
