@@ -1,6 +1,7 @@
 # Deploys apps/coming-soon → Azure Static Web App (prod domain)
 #
-# Does not run on every push to main/test. Those stay on test-djanora-fe.
+# Runs on merge/push to prod, or manual Run workflow.
+# Push to main/test does not deploy here (those stay on test-djanora-fe).
 #
 # Required GitHub secret:
 #   AZURE_STATIC_WEB_APPS_API_TOKEN
@@ -18,15 +19,14 @@ name: Deploy Coming Soon
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'prod-*'
+    branches: [prod]
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/prod-')
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     environment: djanora-prod
     steps:
