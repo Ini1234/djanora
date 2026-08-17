@@ -1,5 +1,7 @@
 # Deploys apps/web (Next standalone) → Azure Web App test-djanora-fe
 #
+# Test only. Push to main does not deploy here (prod is coming-soon / tags).
+#
 # Required GitHub secrets / variables:
 #   AZUREAPPSERVICE_PUBLISHPROFILE_03E1EA2446DA476CA72C509E6F6F18B7
 #   vars.NEXT_PUBLIC_API_URL          e.g. https://test-djanora.azurewebsites.net
@@ -10,7 +12,7 @@ name: Deploy Web
 
 on:
   push:
-    branches: [main, test]
+    branches: [test]
     paths:
       - 'apps/web/**'
       - 'package.json'
@@ -19,6 +21,10 @@ on:
       - '.github/workflows/deploy-web.yml'
       - '.github/deployment.ini'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-web-test-djanora-fe
+  cancel-in-progress: false
 
 jobs:
   build:

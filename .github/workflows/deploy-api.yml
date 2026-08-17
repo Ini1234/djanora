@@ -1,5 +1,7 @@
 # Deploys apps/api → Azure Web App test-djanora
 #
+# Test only. Push to main does not deploy here (prod is coming-soon / tags).
+#
 # Required GitHub secret:
 #   AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A
 # Runtime env (set on the Azure app, not here): DATABASE_URL, WEB_URL,
@@ -9,7 +11,7 @@ name: Deploy API
 
 on:
   push:
-    branches: [main, test]
+    branches: [test]
     paths:
       - 'apps/api/**'
       - 'package.json'
@@ -18,6 +20,12 @@ on:
       - '.github/workflows/deploy-api.yml'
       - '.github/deployment.ini'
   workflow_dispatch:
+
+# OneDeploy 409s if two zips hit the same app. Queue, do not cancel — cancelling
+# a live Kudu deploy leaves the lock that causes the next 409.
+concurrency:
+  group: deploy-api-test-djanora
+  cancel-in-progress: false
 
 jobs:
   build:
