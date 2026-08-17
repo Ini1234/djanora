@@ -6,6 +6,7 @@ import {
 } from 'react'
 import { usePathname } from 'next/navigation'
 import { proxyClient } from '@/lib/proxy-client'
+import { onSse, retainSse } from '@/lib/sse-connection'
 import type { InAppNotification } from '@/lib/api.types'
 
 /* ─── Types ───────────────────────────────────────────────── */
@@ -139,20 +140,9 @@ export function SseProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<InAppNotification[]>([])
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0)
   const [toasts, setToasts] = useState<Toast[]>([])
-  const listeners = useRef<Set<Listener>>(new Set())
-  const esRef = useRef<EventSource | null>(null)
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const connectRef = useRef<() => void>(() => {})
   const hydratedNotificationsRef = useRef(false)
   const seenNotificationIdsRef = useRef<Set<string>>(new Set())
   const notificationsRef = useRef<InAppNotification[]>([])
-  /**
-   * Guards against React Strict-Mode double-invokes and also tracks whether
-   * we intentionally closed the connection (e.g. tab hidden) so we don't
-   * immediately reconnect in the onerror handler.
-   */
-  const intentionalCloseRef = useRef(false)
-  const connectingRef = useRef(false)
   const pathname = usePathname()
   const pathnameRef = useRef(pathname)
 
@@ -192,26 +182,10 @@ export function SseProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname])
 
-  const connect = useCallback(() => {
-    if (connectingRef.current) return
-    if (esRef.current?.readyState === EventSource.OPEN) return
+  useEffect(() => retainSse(), [])
 
-    connectingRef.current = true
-    intentionalCloseRef.current = false
-
-    esRef.current?.close()
-
-    const es = new EventSource('/api/sse/stream')
-    esRef.current = es
-    connectingRef.current = false
-
-    es.onmessage = (e: MessageEvent) => {
-      let event: SseEvent
-      try { event = JSON.parse(e.data as string) } catch { return }
-
-      // Broadcast to all active listeners (threads, notification bell, etc.)
-      listeners.current.forEach((fn) => fn(event))
-
+  useEffect(() => {
+    return onSse((event) => {
       if (event.type === 'new_message' && event.message) {
         if (event.message.isCurrentUser) return
         if (CHAT_PATHS.some((p) => pathnameRef.current.startsWith(p))) return
@@ -259,7 +233,6 @@ export function SseProvider({ children }: { children: ReactNode }) {
           if (!n.isRead) setNotificationUnreadCount((count) => count + 1)
         }
 
-        // Notification toast (different prefix to avoid collisions with message toasts)
         const toastId = `notif-${n.id}`
         setToasts((prev) => {
           const next: Toast = {
@@ -279,60 +252,10 @@ export function SseProvider({ children }: { children: ReactNode }) {
           setToasts((prev) => prev.filter((t) => t.id !== toastId))
         }, 6000)
       }
-    }
-
-    es.onerror = () => {
-      es.close()
-      esRef.current = null
-      connectingRef.current = false
-      if (intentionalCloseRef.current) return // don't reconnect on intentional close
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
-      reconnectTimer.current = setTimeout(() => connectRef.current(), 5000)
-    }
+    })
   }, [])
 
-  useEffect(() => {
-    connectRef.current = connect
-  }, [connect])
-
-  // ─── Initial connection & cleanup ────────────────────────
-  useEffect(() => {
-    connect()
-    return () => {
-      intentionalCloseRef.current = true
-      esRef.current?.close()
-      esRef.current = null
-      connectingRef.current = false
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
-    }
-  }, [connect])
-
-  // ─── Page Visibility: disconnect idle tabs, reconnect on focus ──────────────
-  // This is the key scalability improvement: no persistent idle connections.
-  useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.hidden) {
-        // Tab is backgrounded — close connection to free server resources
-        intentionalCloseRef.current = true
-        if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
-        esRef.current?.close()
-        esRef.current = null
-        connectingRef.current = false
-      } else {
-        // Tab is foregrounded — reconnect
-        intentionalCloseRef.current = false
-        connect()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [connect])
-
-  const on = useCallback((fn: Listener) => {
-    listeners.current.add(fn)
-    return () => listeners.current.delete(fn)
-  }, [])
+  const on = useCallback((fn: Listener) => onSse(fn), [])
 
   const clearUnread = useCallback(() => setUnreadCount(0), [])
 

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common'
-import { Observable, Subject } from 'rxjs'
-import { finalize } from 'rxjs/operators'
+import { interval, merge, Observable, Subject } from 'rxjs'
+import { finalize, map, takeUntil } from 'rxjs/operators'
 
 // ─── Payload types ────────────────────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ export interface SseActivityPayload {
 }
 
 export interface SsePayload {
-  type: 'new_message' | 'message_updated' | 'message_unsent' | 'messages_read' | 'inquiry_status' | 'notification' | 'event_comment' | 'event_activity'
+  type: 'heartbeat' | 'new_message' | 'message_updated' | 'message_unsent' | 'messages_read' | 'inquiry_status' | 'notification' | 'event_comment' | 'event_activity'
   inquiryId?: string
   eventId?: string
   comment?: SseCommentPayload
@@ -91,41 +91,75 @@ export interface SsePayload {
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
+/** Keep Azure / proxy idle timeouts from dropping a quiet stream. */
+export const SSE_HEARTBEAT_MS = 15_000
+/** Hard cap so a buggy client cannot unbounded-fan-out one user. */
+export const SSE_MAX_CONNECTIONS_PER_USER = 5
+
+interface SseConnection {
+  subject: Subject<SsePayload>
+  stop: Subject<void>
+}
+
 @Injectable()
 export class SseService implements OnModuleDestroy {
-  /** One Subject per connected user (keyed by DB user.id) */
-  private streams = new Map<string, Subject<SsePayload>>()
+  private streams = new Map<string, Set<SseConnection>>()
 
   /**
-   * Called by the controller to register a new connection for a user.
-   * Any existing connection is completed first so there is never more than
-   * one active subscriber per user.
+   * Register a live connection. Multiple tabs (and Strict Mode remounts)
+   * must share the user, not complete each other.
    */
   subscribe(userId: string): Observable<SsePayload> {
-    const existing = this.streams.get(userId)
-    if (existing && !existing.closed) {
-      existing.complete()
+    let set = this.streams.get(userId)
+    if (!set) {
+      set = new Set()
+      this.streams.set(userId, set)
     }
 
-    const subject = new Subject<SsePayload>()
-    this.streams.set(userId, subject)
+    while (set.size >= SSE_MAX_CONNECTIONS_PER_USER) {
+      const oldest = set.values().next().value
+      if (!oldest) break
+      this.drop(oldest)
+    }
 
-    return subject.asObservable().pipe(
+    const connection: SseConnection = {
+      subject: new Subject<SsePayload>(),
+      stop: new Subject<void>(),
+    }
+    set.add(connection)
+
+    return merge(
+      connection.subject.asObservable(),
+      interval(SSE_HEARTBEAT_MS).pipe(map((): SsePayload => ({ type: 'heartbeat' }))),
+    ).pipe(
+      takeUntil(connection.stop),
       finalize(() => {
-        if (this.streams.get(userId) === subject) {
-          this.streams.delete(userId)
-        }
+        set.delete(connection)
+        if (set.size === 0) this.streams.delete(userId)
+        if (!connection.subject.closed) connection.subject.complete()
+        if (!connection.stop.closed) connection.stop.complete()
       }),
     )
   }
 
-  /** Called by services to push an event to a specific user. */
   emit(userId: string, payload: SsePayload) {
-    this.streams.get(userId)?.next(payload)
+    const set = this.streams.get(userId)
+    if (!set) return
+    for (const connection of set) connection.subject.next(payload)
   }
 
   onModuleDestroy() {
-    this.streams.forEach((s) => s.complete())
+    for (const set of this.streams.values()) {
+      for (const connection of [...set]) this.drop(connection)
+    }
     this.streams.clear()
+  }
+
+  private drop(connection: SseConnection) {
+    if (!connection.stop.closed) {
+      connection.stop.next()
+      connection.stop.complete()
+    }
+    if (!connection.subject.closed) connection.subject.complete()
   }
 }

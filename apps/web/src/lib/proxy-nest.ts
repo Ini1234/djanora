@@ -83,7 +83,6 @@ export async function proxyNestStream(nestPath: string): Promise<Response> {
 
   try {
     const res = await backend.get(nestPath, {
-      params: { token },
       headers: {
         Accept: 'text/event-stream',
         Authorization: `Bearer ${token}`,
