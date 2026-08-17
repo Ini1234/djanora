@@ -1,0 +1,44 @@
+# Deploys apps/coming-soon → Azure Static Web App (prod domain)
+#
+# Does not run on every push to main/test. Those stay on test-djanora-fe.
+#
+# Required GitHub secret:
+#   AZURE_STATIC_WEB_APPS_API_TOKEN
+# Create the Static Web App in Azure (name: djanora), then copy Deployment token
+# from Overview / Manage deployment token into that secret.
+#
+# Custom domain (after first successful deploy):
+#   Azure → Static Web App djanora → Custom domains
+#   Add www.djanora.com (CNAME → the azurestaticapps.net host)
+#   Add djanora.com (ALIAS/ANAME or A record as Azure shows)
+#   Validate TXT, wait for SSL. Leave test-djanora*.azurewebsites.net alone.
+
+name: Deploy Coming Soon
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'prod-*'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/prod-')
+    runs-on: ubuntu-latest
+    environment: djanora-prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy static coming soon
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: apps/coming-soon
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true

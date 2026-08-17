@@ -20,9 +20,7 @@ let cachedTokenUserId: string | null = null
 // getToken() call is in flight at a time regardless of how many API calls fire.
 let inflightRefresh: Promise<string | null> | null = null
 
-const GET_REUSE_WINDOW_MS = 1_000
 const inFlightGets = new Map<string, Promise<AxiosResponse<unknown>>>()
-const recentGets = new Map<string, { expiresAt: number; response: AxiosResponse<unknown> }>()
 
 function parseExpiry(jwt: string): number {
   try {
@@ -32,11 +30,6 @@ function parseExpiry(jwt: string): number {
   } catch {
     return 0
   }
-}
-
-function clearGetCache() {
-  inFlightGets.clear()
-  recentGets.clear()
 }
 
 function isCachedTokenFresh(userId: string | null | undefined): boolean {
@@ -89,10 +82,6 @@ export function useApi() {
 
   const get = useCallback(async <T>(path: string): Promise<T> => {
     const key = `${userId ?? 'anonymous'}:${path}`
-    const now = Date.now()
-    const recent = recentGets.get(key) as { expiresAt: number; response: AxiosResponse<T> } | undefined
-    if (recent && now < recent.expiresAt) return recent.response.data
-
     const hit = inFlightGets.get(key) as Promise<AxiosResponse<T>> | undefined
     if (hit) {
       const { data } = await hit
@@ -101,13 +90,6 @@ export function useApi() {
 
     const request = apiAxios
       .get<T>(path, { headers: await authHeaders() })
-      .then((response) => {
-        recentGets.set(key, {
-          expiresAt: Date.now() + GET_REUSE_WINDOW_MS,
-          response: response as AxiosResponse<unknown>,
-        })
-        return response
-      })
       .finally(() => inFlightGets.delete(key))
 
     inFlightGets.set(key, request as Promise<AxiosResponse<unknown>>)
@@ -116,19 +98,16 @@ export function useApi() {
   }, [authHeaders, userId])
 
   const post = useCallback(async <T>(path: string, body: unknown): Promise<T> => {
-    clearGetCache()
     const { data } = await apiAxios.post<T>(path, body, { headers: await authHeaders() })
     return data
   }, [authHeaders])
 
   const patch = useCallback(async <T>(path: string, body: unknown): Promise<T> => {
-    clearGetCache()
     const { data } = await apiAxios.patch<T>(path, body, { headers: await authHeaders() })
     return data
   }, [authHeaders])
 
   const del = useCallback(async <T>(path: string): Promise<T> => {
-    clearGetCache()
     const { data } = await apiAxios.delete<T>(path, { headers: await authHeaders() })
     return data
   }, [authHeaders])

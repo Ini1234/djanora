@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MessageSquare, ArrowRight, Clock, CheckCircle, XCircle, ArrowLeft, ExternalLink, CalendarCheck } from 'lucide-react'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { useTranslations } from 'next-intl'
@@ -17,7 +18,9 @@ import {
   type StatusFilterKey,
 } from '@/components/inquiries/inquiry-list-filters'
 import { proxyClient } from '@/lib/proxy-client'
-import { useSse } from '@/contexts/sse-context'
+import { replaceShallowQuery } from '@/lib/shallow-query'
+import { queryKeys } from '@/lib/query-keys'
+import { useInboxSse } from '@/lib/inbox-sse'
 
 interface Inquiry {
   id: string
@@ -37,7 +40,7 @@ interface Inquiry {
     estimatedDate: string | null
   } | null
   originInspirationItem?: { id: string; title: string; imageUrl: string | null } | null
-  messages?: { message: string; createdAt: string }[]
+  messages?: { id?: string; message: string; createdAt: string }[]
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof Clock; color: string; bg: string; border: string }> = {
@@ -207,48 +210,29 @@ const STATUS_TABS: { key: StatusFilterKey; label: string }[] = [
 ]
 
 export default function MessagesPage() {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const selectedId = searchParams.get('inquiry')
   const eventFilter = parseEventFilter(searchParams.get('event'))
   const statusFilter = parseStatusFilter(searchParams.get('status'))
   const categoryFilter = searchParams.get('category') ?? 'all'
-  const [inquiries, setInquiries] = useState<Inquiry[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const didAutoSelect = useRef(false)
-  const { on } = useSse()
+  const queryClient = useQueryClient()
   const tCat = useTranslations('vendorCategories')
 
   const replaceParams = useCallback((next: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString())
-    for (const [key, value] of Object.entries(next)) {
-      if (!value || value === 'all' || value === 'ALL') params.delete(key)
-      else params.set(key, value)
-    }
-    const qs = params.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
-  }, [pathname, router, searchParams])
+    replaceShallowQuery(pathname, next)
+  }, [pathname])
 
-  const loadInquiries = useCallback(async () => {
-    try {
+  const { data: inquiries = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.inquiriesMe,
+    queryFn: async () => {
       const { data } = await proxyClient.get<Inquiry[]>('/inquiries/me')
-      setInquiries(Array.isArray(data) ? data : [])
-    } catch {
-      setInquiries([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) loadInquiries()
-    })
-    return () => { cancelled = true }
-  }, [loadInquiries])
+      return Array.isArray(data) ? data : []
+    },
+  })
+  useInboxSse(queryKeys.inquiriesMe)
 
   const events = useMemo(() => uniqueEvents(inquiries), [inquiries])
   const categories = useMemo(() => {
@@ -280,27 +264,14 @@ export default function MessagesPage() {
     replaceParams({ inquiry: displayed[0].id })
   }, [loading, inquiries, displayed, selectedId, replaceParams])
 
-  useEffect(() => {
-    const off = on((event) => {
-      if (
-        event.type === 'new_message'
-        || event.type === 'message_updated'
-        || event.type === 'message_unsent'
-        || event.type === 'inquiry_status'
-      ) {
-        proxyClient.clearGetCache()
-        loadInquiries()
-      }
-    })
-    return off
-  }, [on, loadInquiries])
-
   function selectInquiry(id: string | null) {
     replaceParams({ inquiry: id })
   }
 
   function handleStatusChange(id: string, status: string) {
-    setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)))
+    queryClient.setQueryData<Inquiry[]>(queryKeys.inquiriesMe, (prev) =>
+      (prev ?? []).map((i) => (i.id === id ? { ...i, status } : i)),
+    )
   }
 
   function clearListFilters() {

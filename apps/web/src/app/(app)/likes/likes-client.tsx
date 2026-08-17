@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { BadgeCheck, Heart, Loader2, MapPin, Star, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { proxyClient } from '@/lib/proxy-client'
+import { queryKeys } from '@/lib/query-keys'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { InspirationDetail, type InspirationDetailItem } from '@/app/(app)/inspiration/inspiration-detail'
 
@@ -48,54 +50,56 @@ interface LikedVendor {
 
 export function LikesClient() {
   const tCat = useTranslations('vendorCategories')
+  const queryClient = useQueryClient()
   const [tab, setTab] = useState<'looks' | 'vendors'>('looks')
-  const [looks, setLooks] = useState<LikedLook[]>([])
-  const [vendors, setVendors] = useState<LikedVendor[]>([])
-  const [loading, setLoading] = useState(true)
   const [openLook, setOpenLook] = useState<LikedLook | null>(null)
   const [saveLook, setSaveLook] = useState<LikedLook | null>(null)
   const [events, setEvents] = useState<{ id: string; title: string }[]>([])
   const [eventId, setEventId] = useState('')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      proxyClient.get<LikedLook[]>('/inspiration/liked'),
-      proxyClient.get<LikedVendor[]>('/vendors/favorites'),
-    ])
-      .then(([lookRes, vendorRes]) => {
-        if (cancelled) return
-        setLooks(Array.isArray(lookRes.data) ? lookRes.data : [])
-        setVendors(Array.isArray(vendorRes.data) ? vendorRes.data : [])
-      })
-      .catch(() => {
-        if (cancelled) return
-        setLooks([])
-        setVendors([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [])
+  const { data: looks = [], isPending: looksLoading } = useQuery({
+    queryKey: queryKeys.likedLooks,
+    queryFn: async () => {
+      const { data } = await proxyClient.get<LikedLook[]>('/inspiration/liked')
+      return Array.isArray(data) ? data : []
+    },
+  })
+  const { data: vendors = [], isPending: vendorsLoading } = useQuery({
+    queryKey: queryKeys.likedVendors,
+    queryFn: async () => {
+      const { data } = await proxyClient.get<LikedVendor[]>('/vendors/favorites')
+      return Array.isArray(data) ? data : []
+    },
+  })
+  const loading = looksLoading || vendorsLoading
 
   async function unlikeLook(item: LikedLook) {
-    setLooks((prev) => prev.filter((look) => look.id !== item.id))
+    queryClient.setQueryData<LikedLook[]>(queryKeys.likedLooks, (prev) =>
+      (prev ?? []).filter((look) => look.id !== item.id),
+    )
+    queryClient.setQueryData<string[]>(queryKeys.inspirationLikedIds, (prev) =>
+      (prev ?? []).filter((id) => id !== item.id),
+    )
     if (openLook?.id === item.id) setOpenLook(null)
     try {
       await proxyClient.delete(`/inspiration/${item.id}/like`)
     } catch {
-      setLooks((prev) => [item, ...prev])
+      queryClient.setQueryData<LikedLook[]>(queryKeys.likedLooks, (prev) => [item, ...(prev ?? [])])
+      queryClient.setQueryData<string[]>(queryKeys.inspirationLikedIds, (prev) =>
+        prev?.includes(item.id) ? prev : [...(prev ?? []), item.id],
+      )
     }
   }
 
   async function unfavoriteVendor(vendor: LikedVendor) {
-    setVendors((prev) => prev.filter((v) => v.id !== vendor.id))
+    queryClient.setQueryData<LikedVendor[]>(queryKeys.likedVendors, (prev) =>
+      (prev ?? []).filter((v) => v.id !== vendor.id),
+    )
     try {
       await proxyClient.delete(`/vendors/${vendor.slug}/favorite`)
     } catch {
-      setVendors((prev) => [vendor, ...prev])
+      queryClient.setQueryData<LikedVendor[]>(queryKeys.likedVendors, (prev) => [vendor, ...(prev ?? [])])
     }
   }
 

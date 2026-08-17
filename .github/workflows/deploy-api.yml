@@ -68,7 +68,12 @@ jobs:
           node -e "const p=require('./.deploy/api/package.json'); p.scripts.start='sh start.sh'; require('fs').writeFileSync('./.deploy/api/package.json', JSON.stringify(p,null,2))"
           cd .deploy/api
           npm install --omit=dev --ignore-scripts
-          DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci npx prisma generate
+          if [ ! -f node_modules/prisma/build/index.js ]; then
+            echo "expected node_modules/prisma/build/index.js after npm install" >&2
+            ls -la node_modules/prisma node_modules/prisma/build node_modules/.bin/prisma 2>/dev/null || true
+            exit 1
+          fi
+          DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci node node_modules/prisma/build/index.js generate
 
       - uses: actions/upload-artifact@v4
         with:

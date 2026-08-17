@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, useMemo } from 'react'
+import { useSearchParams, usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { Search, BadgeCheck, Star, MapPin, ArrowRight, SlidersHorizontal, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { proxyClient } from '@/lib/proxy-client'
+import { replaceShallowQuery } from '@/lib/shallow-query'
+import { queryKeys } from '@/lib/query-keys'
 
 interface VendorListing {
   id: string
@@ -49,31 +52,26 @@ function PriceTag({ from, to, currency }: { from: number | null; to: number | nu
 }
 
 export default function VendorsPage() {
-  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const tCat = useTranslations('vendorCategories')
 
-  const [vendors, setVendors] = useState<VendorListing[]>([])
-  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>(searchParams.get('category') ?? 'ALL')
   const [showFilters, setShowFilters] = useState(false)
 
-  useEffect(() => {
-    setLoading(true)
-    const params = activeCategory !== 'ALL' ? `?category=${activeCategory}` : ''
-    proxyClient.get(`/vendors${params}`)
-      .then(({ data }) => setVendors(Array.isArray(data) ? data : []))
-      .catch(() => setVendors([]))
-      .finally(() => setLoading(false))
-  }, [activeCategory])
+  const { data: vendors = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.vendors(activeCategory),
+    queryFn: async () => {
+      const params = activeCategory !== 'ALL' ? `?category=${activeCategory}` : ''
+      const { data } = await proxyClient.get(`/vendors${params}`)
+      return Array.isArray(data) ? data : []
+    },
+  })
 
   function selectCategory(cat: string) {
     setActiveCategory(cat)
-    const params = new URLSearchParams(searchParams.toString())
-    if (cat === 'ALL') params.delete('category')
-    else params.set('category', cat)
-    router.replace(`/vendors?${params.toString()}`, { scroll: false })
+    replaceShallowQuery(pathname, { category: cat })
   }
 
   const displayed = useMemo(() => {
