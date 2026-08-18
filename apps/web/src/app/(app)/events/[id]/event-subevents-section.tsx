@@ -211,7 +211,10 @@ export function EventSubEventsSection({
               void loadStandalone()
             }}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             <Plus size={14} /> Add
           </button>
@@ -257,7 +260,9 @@ export function EventSubEventsSection({
                       background: stop.isCompleted
                         ? 'var(--color-brand-primary)'
                         : 'var(--color-card)',
-                      color: stop.isCompleted ? '#fff' : 'var(--color-text-primary)',
+                      color: stop.isCompleted
+                        ? 'var(--color-primary-foreground)'
+                        : 'var(--color-text-primary)',
                       border: '1.5px solid var(--color-brand-primary)',
                     }}
                   >
@@ -527,7 +532,10 @@ export function EventSubEventsSection({
               type="submit"
               disabled={pending}
               className="h-10 rounded-xl px-4 text-sm font-semibold disabled:opacity-50"
-              style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+              style={{
+                background: 'var(--color-brand-primary)',
+                color: 'var(--color-primary-foreground)',
+              }}
             >
               {pending ? 'Adding…' : 'Add sub-event'}
             </button>

@@ -51,9 +51,8 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 transition-opacity duration-300"
+        className="overlay absolute inset-0 transition-opacity duration-300"
         style={{
-          background: 'rgba(0,0,0,0.5)',
           backdropFilter: 'blur(2px)',
           opacity: open ? 1 : 0,
         }}
@@ -64,10 +63,8 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`absolute top-0 right-0 h-full w-full ${width} flex flex-col shadow-2xl transition-transform duration-300 ease-out`}
+        className={`sheet absolute top-0 right-0 h-full w-full ${width} flex flex-col border-l shadow-2xl transition-transform duration-300 ease-out`}
         style={{
-          background: 'var(--page-bg)',
-          borderLeft: '1px solid var(--color-border)',
           transform: open ? 'translateX(0)' : 'translateX(100%)',
         }}
       >
@@ -79,12 +76,7 @@ export function SlideOver({ open, onClose, title, children, width = 'max-w-lg' }
           <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             {title}
           </h2>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
-            style={{ color: 'var(--color-text-secondary)' }}
-            aria-label="Close panel"
-          >
+          <button onClick={onClose} className="icon-btn" type="button" aria-label="Close panel">
             <X size={16} />
           </button>
         </div>

@@ -105,11 +105,7 @@ export function NotificationBell({ vendorMode = false }: { vendorMode?: boolean 
 
       {/* Floating panel — rendered outside the sidebar via fixed positioning */}
       {open && (
-        <div
-          ref={panelRef}
-          style={panelStyle}
-          className="bg-brand-800 overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
-        >
+        <div ref={panelRef} style={panelStyle} className="popover overflow-hidden rounded-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
             <h3 className="text-sm font-semibold text-white">Notifications</h3>
@@ -129,7 +125,10 @@ export function NotificationBell({ vendorMode = false }: { vendorMode?: boolean 
           </div>
 
           {/* List */}
-          <div className="max-h-[min(360px,calc(100vh-8rem))] divide-y divide-white/6 overflow-y-auto">
+          <div
+            className="max-h-[min(360px,calc(100vh-8rem))] divide-y overflow-y-auto"
+            style={{ borderColor: 'var(--border)' }}
+          >
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell size={24} className="text-brand-600 mx-auto mb-2" />

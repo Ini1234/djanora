@@ -362,7 +362,7 @@ export function EventPeopleSection({
             className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
             style={{
               background: inviteOpen ? 'transparent' : 'var(--color-brand-primary)',
-              color: inviteOpen ? 'var(--color-text-secondary)' : '#fff',
+              color: inviteOpen ? 'var(--color-text-secondary)' : 'var(--color-primary-foreground)',
               border: inviteOpen ? '1px solid var(--color-border)' : 'none',
             }}
           >
@@ -422,7 +422,10 @@ export function EventPeopleSection({
                   }
                   onClick={invite}
                   className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
-                  style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                  style={{
+                    background: 'var(--color-brand-primary)',
+                    color: 'var(--color-primary-foreground)',
+                  }}
                 >
                   {pending ? 'Sending…' : 'Send invite'}
                 </button>
@@ -561,7 +564,10 @@ export function EventPeopleSection({
                           }
                           onClick={() => saveEdit(m.id)}
                           className="h-8 rounded-lg px-3 text-xs font-semibold disabled:opacity-40"
-                          style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                          style={{
+                            background: 'var(--color-brand-primary)',
+                            color: 'var(--color-primary-foreground)',
+                          }}
                         >
                           {pending ? 'Saving…' : 'Save'}
                         </button>

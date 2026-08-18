@@ -1536,7 +1536,10 @@ function ThreadSaveLookModal({
               disabled={saving || !eventId}
               onClick={() => void save()}
               className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
-              style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+              style={{
+                background: 'var(--color-brand-primary)',
+                color: 'var(--color-primary-foreground)',
+              }}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>

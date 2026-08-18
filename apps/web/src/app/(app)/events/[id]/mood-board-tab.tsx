@@ -115,7 +115,10 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
         <Link
           href="/inspiration"
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium"
-          style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+          style={{
+            background: 'var(--color-brand-primary)',
+            color: 'var(--color-primary-foreground)',
+          }}
         >
           <Sparkles size={14} /> Browse Inspiration
         </Link>
@@ -162,7 +165,11 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
                 background: active
                   ? (color?.text ?? 'var(--color-brand-primary)')
                   : (color?.bg ?? 'color-mix(in srgb, var(--color-text-primary) 6%, transparent)'),
-                color: active ? '#fff' : (color?.text ?? 'var(--color-text-secondary)'),
+                color: active
+                  ? color
+                    ? '#fff'
+                    : 'var(--color-primary-foreground)'
+                  : (color?.text ?? 'var(--color-text-secondary)'),
                 border: '1px solid transparent',
               }}
             >

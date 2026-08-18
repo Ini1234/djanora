@@ -65,7 +65,10 @@ export function JoinInviteActions({ token, signedIn }: { token: string; signedIn
           <Link
             href="/events"
             className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             Back to events
           </Link>
@@ -97,7 +100,10 @@ export function JoinInviteActions({ token, signedIn }: { token: string; signedIn
       <Link
         href={`/sign-in?${authQuery}`}
         className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold"
-        style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+        style={{
+          background: 'var(--color-brand-primary)',
+          color: 'var(--color-primary-foreground)',
+        }}
       >
         Sign in
       </Link>

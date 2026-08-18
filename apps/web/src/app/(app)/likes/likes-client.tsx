@@ -139,7 +139,8 @@ export function LikesClient() {
             className="h-9 rounded-xl px-3 text-sm font-medium"
             style={{
               background: tab === item.id ? 'var(--color-brand-primary)' : 'var(--card-bg)',
-              color: tab === item.id ? '#fff' : 'var(--color-foreground)',
+              color:
+                tab === item.id ? 'var(--color-primary-foreground)' : 'var(--color-foreground)',
               border: tab === item.id ? 'none' : '1px solid var(--color-border)',
             }}
           >
@@ -286,7 +287,10 @@ export function LikesClient() {
                   type="button"
                   onClick={() => void unfavoriteVendor(v)}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                  style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                  style={{
+                    background: 'var(--color-brand-primary)',
+                    color: 'var(--color-primary-foreground)',
+                  }}
                   aria-label={`Unlike ${v.businessName}`}
                 >
                   <Heart size={14} className="fill-current" />
@@ -370,7 +374,10 @@ export function LikesClient() {
                       .finally(() => setSaving(false))
                   }}
                   className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
-                  style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                  style={{
+                    background: 'var(--color-brand-primary)',
+                    color: 'var(--color-primary-foreground)',
+                  }}
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
