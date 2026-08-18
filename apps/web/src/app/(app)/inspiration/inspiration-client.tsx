@@ -709,7 +709,10 @@ function SaveModal({
                 onClick={() => setStep(2)}
                 disabled={!selectedEvent}
                 className="h-9 flex-1 rounded-xl text-sm font-medium disabled:opacity-50"
-                style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                style={{
+                  background: 'var(--color-brand-primary)',
+                  color: 'var(--color-primary-foreground)',
+                }}
               >
                 Next →
               </button>
@@ -731,7 +734,10 @@ function SaveModal({
                 onClick={handleSave}
                 disabled={saving}
                 className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-medium disabled:opacity-50"
-                style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                style={{
+                  background: 'var(--color-brand-primary)',
+                  color: 'var(--color-primary-foreground)',
+                }}
               >
                 {saving ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -903,7 +909,7 @@ function InspirationCard({
             style={{
               background: liked ? 'var(--color-brand-primary)' : 'rgba(0,0,0,0.45)',
               backdropFilter: 'blur(4px)',
-              color: '#fff',
+              color: liked ? 'var(--color-primary-foreground)' : '#fff',
             }}
             title={liked ? 'Unlike' : 'Like'}
             aria-pressed={liked}
@@ -920,7 +926,7 @@ function InspirationCard({
             style={{
               background: saved ? 'var(--color-brand-primary)' : 'rgba(0,0,0,0.45)',
               backdropFilter: 'blur(4px)',
-              color: '#fff',
+              color: saved ? 'var(--color-primary-foreground)' : '#fff',
             }}
             title={saved ? 'Saved to mood board' : 'Save to mood board'}
           >
@@ -1494,7 +1500,7 @@ export function InspirationClient({
                 className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium"
                 style={{
                   background: active ? 'var(--color-brand-primary)' : 'transparent',
-                  color: active ? '#fff' : 'var(--color-text-secondary)',
+                  color: active ? 'var(--color-primary-foreground)' : 'var(--color-text-secondary)',
                 }}
               >
                 <Icon size={13} />
@@ -1583,7 +1589,7 @@ export function InspirationClient({
               style={{
                 background: active ? 'var(--color-brand-primary)' : 'var(--card-bg)',
                 border: `1px solid ${active ? 'transparent' : 'var(--color-border)'}`,
-                color: active ? '#fff' : 'var(--color-text-secondary)',
+                color: active ? 'var(--color-primary-foreground)' : 'var(--color-text-secondary)',
               }}
             >
               <Icon size={13} />
@@ -1606,7 +1612,7 @@ export function InspirationClient({
                 style={{
                   background: active ? 'var(--color-brand-primary)' : 'var(--card-bg)',
                   border: `1px solid ${active ? 'transparent' : 'var(--color-border)'}`,
-                  color: active ? '#fff' : 'var(--color-text-secondary)',
+                  color: active ? 'var(--color-primary-foreground)' : 'var(--color-text-secondary)',
                 }}
               >
                 {tag.label}
@@ -1639,7 +1645,10 @@ export function InspirationClient({
               type="button"
               onClick={() => setView('browse')}
               className="mt-1 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium"
-              style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+              style={{
+                background: 'var(--color-brand-primary)',
+                color: 'var(--color-primary-foreground)',
+              }}
             >
               <Sparkles size={14} /> Browse inspiration
             </button>

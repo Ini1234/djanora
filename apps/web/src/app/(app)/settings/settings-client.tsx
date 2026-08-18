@@ -133,7 +133,10 @@ export function SettingsClient({ user }: { user: UserMe }) {
           disabled={pending}
           onClick={save}
           className="h-9 rounded-xl px-4 text-sm font-semibold disabled:opacity-40"
-          style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+          style={{
+            background: 'var(--color-brand-primary)',
+            color: 'var(--color-primary-foreground)',
+          }}
         >
           {pending ? 'Saving…' : 'Save profile'}
         </button>

@@ -283,7 +283,10 @@ function EditEventModal({
             onClick={handleSave}
             disabled={isPending}
             className="flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-opacity disabled:opacity-60"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             Save Changes
@@ -619,7 +622,7 @@ export function EventDetailClient({ event, guestCount }: Props) {
                     className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-all hover:opacity-80 active:scale-[.98]"
                     style={{
                       background: 'var(--color-brand-primary)',
-                      color: '#fff',
+                      color: 'var(--color-primary-foreground)',
                     }}
                   >
                     <Sparkles size={13} />
@@ -706,7 +709,10 @@ export function EventDetailClient({ event, guestCount }: Props) {
                     {(unread[TAB_UNREAD[id]] ?? 0) > 0 && (
                       <span
                         className="ml-1.5 inline-flex h-4 min-w-[1.1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold"
-                        style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                        style={{
+                          background: 'var(--color-brand-primary)',
+                          color: 'var(--color-primary-foreground)',
+                        }}
                       >
                         {unread[TAB_UNREAD[id]] > 9 ? '9+' : unread[TAB_UNREAD[id]]}
                       </span>

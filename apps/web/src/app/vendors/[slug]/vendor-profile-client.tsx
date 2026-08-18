@@ -174,7 +174,10 @@ function SaveLookModal({ post, onClose }: { post: VendorLook; onClose: () => voi
               disabled={saving || !selectedEventId}
               onClick={() => void save()}
               className="h-9 w-full rounded-xl text-sm font-semibold disabled:opacity-40"
-              style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+              style={{
+                background: 'var(--color-brand-primary)',
+                color: 'var(--color-primary-foreground)',
+              }}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
@@ -473,7 +476,9 @@ export function VendorProfileClient({
                   className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
                   style={{
                     background: favorited ? 'var(--color-brand-primary)' : 'var(--card-bg)',
-                    color: favorited ? '#fff' : 'var(--color-foreground)',
+                    color: favorited
+                      ? 'var(--color-primary-foreground)'
+                      : 'var(--color-foreground)',
                     border: favorited ? 'none' : '1px solid var(--color-border)',
                   }}
                   aria-pressed={favorited}
@@ -670,7 +675,10 @@ export function VendorProfileClient({
                 type="button"
                 onClick={() => signInTo(`${profilePath}?review=1`)}
                 className="h-9 rounded-xl px-4 text-sm font-semibold"
-                style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                style={{
+                  background: 'var(--color-brand-primary)',
+                  color: 'var(--color-primary-foreground)',
+                }}
               >
                 Sign in
               </button>
@@ -776,7 +784,10 @@ export function VendorProfileClient({
                   })
                 }}
                 className="h-9 rounded-xl px-4 text-sm font-semibold disabled:opacity-40"
-                style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                style={{
+                  background: 'var(--color-brand-primary)',
+                  color: 'var(--color-primary-foreground)',
+                }}
               >
                 {reviewPending ? 'Sending…' : 'Submit review'}
               </button>

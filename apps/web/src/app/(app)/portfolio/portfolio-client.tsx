@@ -143,7 +143,10 @@ export function PortfolioClient({
           disabled={creating || posts.length >= POSTS_LIMIT}
           onClick={() => void createPost()}
           className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold disabled:opacity-40"
-          style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+          style={{
+            background: 'var(--color-brand-primary)',
+            color: 'var(--color-primary-foreground)',
+          }}
         >
           <Plus size={15} />
           {creating ? 'Creating…' : 'New look'}
@@ -189,7 +192,10 @@ export function PortfolioClient({
             disabled={savingExternal}
             onClick={saveExternal}
             className="h-9 rounded-xl px-4 text-sm font-medium disabled:opacity-40"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             {savingExternal ? 'Saving…' : 'Save'}
           </button>
@@ -290,7 +296,10 @@ export function PortfolioClient({
         >
           <span
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             <Check size={14} />
           </span>
@@ -544,7 +553,7 @@ function PostEditor({
                   style={{
                     background: active ? 'var(--color-brand-primary)' : 'var(--input-bg)',
                     border: `1px solid ${active ? 'var(--color-brand-primary)' : 'var(--color-border)'}`,
-                    color: active ? '#fff' : 'var(--color-foreground)',
+                    color: active ? 'var(--color-primary-foreground)' : 'var(--color-foreground)',
                   }}
                 >
                   {active && <Check size={12} />}
@@ -693,7 +702,10 @@ function PostEditor({
                 className="h-8 rounded-lg px-3 text-xs font-medium"
                 style={
                   visibility === opt.id
-                    ? { background: 'var(--color-brand-primary)', color: '#fff' }
+                    ? {
+                        background: 'var(--color-brand-primary)',
+                        color: 'var(--color-primary-foreground)',
+                      }
                     : {
                         background: 'var(--card-bg)',
                         color: 'var(--color-muted)',
@@ -720,7 +732,10 @@ function PostEditor({
               disabled={uploading || post.media.length >= MEDIA_LIMIT}
               onClick={() => fileRef.current?.click()}
               className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium disabled:opacity-40"
-              style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+              style={{
+                background: 'var(--color-brand-primary)',
+                color: 'var(--color-primary-foreground)',
+              }}
             >
               <ImagePlus size={12} />
               {uploading ? 'Uploading…' : 'Add photo'}
@@ -827,7 +842,10 @@ function PostEditor({
             disabled={saving || done || !title.trim()}
             onClick={() => void saveMeta()}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold disabled:opacity-40"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             {done ? (
               <>

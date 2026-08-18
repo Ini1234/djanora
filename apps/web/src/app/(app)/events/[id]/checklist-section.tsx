@@ -123,7 +123,7 @@ function LinkedInspirations({ checklistItemId }: { checklistItemId: string }) {
 
   return (
     <section className="space-y-2">
-      <p className="text-brand-600 flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase">
+      <p className="text-muted flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase">
         <Sparkles size={10} /> Saved Inspiration ({items.length})
       </p>
       <div className="space-y-1.5">
@@ -143,18 +143,18 @@ function LinkedInspirations({ checklistItemId }: { checklistItemId: string }) {
               {insp.imageUrl ? (
                 <img src={insp.imageUrl} alt={insp.title} className="h-full w-full object-cover" />
               ) : (
-                <Sparkles size={12} className="text-brand-600" />
+                <Sparkles size={12} className="text-muted" />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-brand-200 truncate text-xs font-medium">{insp.title}</p>
-              <p className="text-brand-600 text-[10px]">
+              <p className="text-foreground truncate text-xs font-medium">{insp.title}</p>
+              <p className="text-muted text-[10px]">
                 {insp.category.charAt(0) + insp.category.slice(1).toLowerCase()}
               </p>
             </div>
             <Link
               href="/inspiration"
-              className="text-brand-600 hover:text-gold-300 transition-colors"
+              className="text-muted hover:text-foreground transition-colors"
               title="View in inspiration"
             >
               <ExternalLink size={11} />
@@ -263,7 +263,7 @@ function ItemDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
+        className="overlay fixed inset-0 z-40 backdrop-blur-[2px]"
         onClick={() => {
           if (isEditing) setIsEditing(false)
           else onClose()
@@ -271,9 +271,9 @@ function ItemDrawer({
       />
 
       {/* Drawer panel */}
-      <div className="animate-in slide-in-from-bottom md:slide-in-from-right fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-white/10 bg-[#0f0f0f] shadow-2xl shadow-black/60 duration-200 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-[380px] md:border-t-0 md:border-l">
+      <div className="sheet animate-in slide-in-from-bottom md:slide-in-from-right fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] flex-col border-t shadow-2xl duration-200 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:max-h-none md:w-[380px] md:border-t-0 md:border-l">
         {/* ── Header ───────────────────────────────────────────────────────── */}
-        <div className="flex items-start gap-3 border-b border-white/8 px-5 pt-5 pb-4">
+        <div className="border-border flex items-start gap-3 border-b px-5 pt-5 pb-4">
           {!isEditing &&
             (canEdit('CHECKLIST') ? (
               <button
@@ -282,19 +282,19 @@ function ItemDrawer({
                   onToggle()
                   setLiveItem((prev) => ({ ...prev, isCompleted: !prev.isCompleted }))
                 }}
-                className="text-brand-600 hover:text-gold-400 mt-0.5 shrink-0 transition-colors"
+                className="text-muted hover:text-foreground mt-0.5 shrink-0 transition-colors"
                 aria-label={liveItem.isCompleted ? 'Mark incomplete' : 'Mark complete'}
               >
                 {liveItem.isCompleted ? (
-                  <CheckCircle2 size={18} className="text-gold-400" />
+                  <CheckCircle2 size={18} className="text-foreground" />
                 ) : (
                   <Circle size={18} />
                 )}
               </button>
             ) : (
-              <span className="text-brand-600 mt-0.5 shrink-0" aria-hidden>
+              <span className="text-muted mt-0.5 shrink-0" aria-hidden>
                 {liveItem.isCompleted ? (
-                  <CheckCircle2 size={18} className="text-gold-400" />
+                  <CheckCircle2 size={18} className="text-foreground" />
                 ) : (
                   <Circle size={18} />
                 )}
@@ -312,7 +312,7 @@ function ItemDrawer({
                     startTransition(save)
                   }
                 }}
-                className="placeholder:text-brand-600 border-gold-500/30 focus:border-gold-500/60 w-full border-b bg-transparent pb-1 text-sm font-medium text-white transition-colors focus:outline-none"
+                className="placeholder:text-muted border-gold-500/30 focus:border-gold-500/60 text-foreground w-full border-b bg-transparent pb-1 text-sm font-medium transition-colors focus:outline-none"
                 placeholder="Task title"
               />
             ) : (
@@ -320,14 +320,12 @@ function ItemDrawer({
                 <p
                   className={cn(
                     'text-sm leading-snug font-medium',
-                    liveItem.isCompleted ? 'text-brand-500 line-through' : 'text-white',
+                    liveItem.isCompleted ? 'text-muted line-through' : 'text-foreground',
                   )}
                 >
                   {liveItem.title}
                 </p>
-                {liveItem.isCompleted && (
-                  <p className="text-brand-700 mt-0.5 text-[10px]">Completed</p>
-                )}
+                {liveItem.isCompleted && <p className="text-muted mt-0.5 text-[10px]">Completed</p>}
               </>
             )}
           </div>
@@ -337,13 +335,13 @@ function ItemDrawer({
                 <button
                   onClick={() => startTransition(save)}
                   disabled={!title.trim() || isPending}
-                  className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:opacity-40"
+                  className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:opacity-40"
                 >
                   <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
+                  className="icon-btn"
                   aria-label="Cancel edit"
                 >
                   <X size={13} />
@@ -352,19 +350,11 @@ function ItemDrawer({
             ) : (
               <>
                 {canEdit('CHECKLIST') && (
-                  <button
-                    onClick={enterEdit}
-                    className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
-                    aria-label="Edit task"
-                  >
+                  <button onClick={enterEdit} className="icon-btn" aria-label="Edit task">
                     <Pencil size={13} />
                   </button>
                 )}
-                <button
-                  onClick={onClose}
-                  className="text-brand-600 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
-                  aria-label="Close"
-                >
+                <button onClick={onClose} className="icon-btn" aria-label="Close">
                   <X size={13} />
                 </button>
               </>
@@ -379,17 +369,17 @@ function ItemDrawer({
             <div className="space-y-4">
               {/* Due date */}
               <div className="space-y-1">
-                <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
                   Due date
                 </p>
                 <div className="flex items-center gap-2">
-                  <CalendarDays size={13} className="text-brand-600 shrink-0" />
+                  <CalendarDays size={13} className="text-muted shrink-0" />
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="text-brand-200 focus:border-gold-500/30 flex-1 border-b border-white/10 bg-transparent pb-0.5 text-sm [color-scheme:dark] transition-colors focus:outline-none"
+                    className="text-foreground focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-sm transition-colors focus:outline-none"
                   />
                   {dueDate && (
                     <button
@@ -399,7 +389,7 @@ function ItemDrawer({
                         setNotifyEmail(false)
                         setNotifySms(false)
                       }}
-                      className="text-brand-600 transition-colors hover:text-red-400"
+                      className="text-muted transition-colors hover:text-red-400"
                     >
                       <X size={11} />
                     </button>
@@ -410,7 +400,7 @@ function ItemDrawer({
               {/* Reminders */}
               {dueDate && (
                 <div className="space-y-1">
-                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                  <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
                     Remind via
                   </p>
                   <div className="flex items-center gap-2">
@@ -420,8 +410,8 @@ function ItemDrawer({
                       className={cn(
                         'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all',
                         notifyEmail
-                          ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-                          : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+                          ? 'bg-foreground/10 border-border text-foreground'
+                          : 'text-muted hover:text-foreground border-border hover:border-border',
                       )}
                     >
                       <Mail size={11} /> Email
@@ -432,8 +422,8 @@ function ItemDrawer({
                       className={cn(
                         'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all',
                         notifySms
-                          ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-                          : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+                          ? 'bg-foreground/10 border-border text-foreground'
+                          : 'text-muted hover:text-foreground border-border hover:border-border',
                       )}
                     >
                       <MessageSquare size={11} /> SMS
@@ -478,7 +468,7 @@ function ItemDrawer({
               {/* Due date & reminders */}
               {(liveItem.dueDate || liveItem.notifyByEmail || liveItem.notifyBySms) && (
                 <section className="space-y-2">
-                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                  <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
                     Schedule
                   </p>
                   {liveItem.dueDate && (
@@ -491,7 +481,7 @@ function ItemDrawer({
                             ? 'text-red-400'
                             : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
                               ? 'text-amber-400'
-                              : 'text-brand-500',
+                              : 'text-muted',
                         )}
                       />
                       <span
@@ -501,7 +491,7 @@ function ItemDrawer({
                             ? 'text-red-300'
                             : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
                               ? 'text-amber-300'
-                              : 'text-brand-200',
+                              : 'text-foreground',
                         )}
                       >
                         {isOverdue(liveItem.dueDate, liveItem.isCompleted) && (
@@ -518,18 +508,18 @@ function ItemDrawer({
                   )}
                   {(liveItem.notifyByEmail || liveItem.notifyBySms) && (
                     <div className="flex items-center gap-2.5">
-                      <AlarmClock size={13} className="text-brand-600 shrink-0" />
+                      <AlarmClock size={13} className="text-muted shrink-0" />
                       <div className="flex items-center gap-1.5">
                         {liveItem.notifyByEmail && (
-                          <span className="text-brand-400 inline-flex items-center gap-1 text-xs">
+                          <span className="text-muted inline-flex items-center gap-1 text-xs">
                             <Mail size={10} /> Email reminder
                           </span>
                         )}
                         {liveItem.notifyByEmail && liveItem.notifyBySms && (
-                          <span className="text-brand-700 text-xs">·</span>
+                          <span className="text-muted text-xs">·</span>
                         )}
                         {liveItem.notifyBySms && (
-                          <span className="text-brand-400 inline-flex items-center gap-1 text-xs">
+                          <span className="text-muted inline-flex items-center gap-1 text-xs">
                             <MessageSquare size={10} /> SMS reminder
                           </span>
                         )}
@@ -542,14 +532,14 @@ function ItemDrawer({
               {/* Vendor / service info */}
               {liveItem.needsVendor && (
                 <section className="space-y-3">
-                  <p className="text-brand-600 text-[10px] font-semibold tracking-wider uppercase">
+                  <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
                     Vendor / Service
                   </p>
 
                   {liveItem.vendorCategory && (
                     <div className="flex items-center gap-2">
-                      <Store size={12} className="text-brand-600 shrink-0" />
-                      <span className="text-brand-300 text-xs">
+                      <Store size={12} className="text-muted shrink-0" />
+                      <span className="text-muted text-xs">
                         {getVendorCategoryLabel(liveItem.vendorCategory, tCat)}
                       </span>
                     </div>
@@ -560,21 +550,21 @@ function ItemDrawer({
                       <div className="flex items-start gap-2">
                         <div className="bg-gold-500/10 border-gold-500/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
                           {isContact ? (
-                            <BookUser size={14} className="text-gold-400" />
+                            <BookUser size={14} className="text-foreground" />
                           ) : (
-                            <Store size={14} className="text-gold-400" />
+                            <Store size={14} className="text-foreground" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-gold-200 truncate text-sm font-medium">
+                            <p className="text-foreground truncate text-sm font-medium">
                               {vendorDisplayName}
                             </p>
                             {isRegistered && liveItem.vendorProfile?.isVerified && (
-                              <BadgeCheck size={12} className="text-gold-400 shrink-0" />
+                              <BadgeCheck size={12} className="text-foreground shrink-0" />
                             )}
                           </div>
-                          <p className="text-brand-600 mt-0.5 text-[10px]">
+                          <p className="text-muted mt-0.5 text-[10px]">
                             {isRegistered ? 'Registered vendor' : 'Saved contact'}
                           </p>
                         </div>
@@ -582,7 +572,7 @@ function ItemDrawer({
                           <Link
                             href={`/vendors/${liveItem.vendorProfile.slug}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-brand-600 hover:text-gold-300 shrink-0 rounded-lg p-1.5 transition-colors hover:bg-white/6"
+                            className="text-muted hover:text-foreground hover:bg-foreground/5 shrink-0 rounded-lg p-1.5 transition-colors"
                             aria-label="View vendor profile"
                           >
                             <ExternalLink size={12} />
@@ -591,16 +581,16 @@ function ItemDrawer({
                       </div>
 
                       {isContact && liveItem.userVendorContact && (
-                        <div className="space-y-1.5 border-t border-white/6 pt-1">
+                        <div className="border-border space-y-1.5 border-t pt-1">
                           {liveItem.userVendorContact.email && (
                             <a
                               href={`mailto:${liveItem.userVendorContact.email}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 text-xs transition-colors"
+                              className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
                             >
                               <Mail
                                 size={11}
-                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                                className="text-muted group-hover:text-foreground shrink-0"
                               />
                               {liveItem.userVendorContact.email}
                             </a>
@@ -609,11 +599,11 @@ function ItemDrawer({
                             <a
                               href={`tel:${liveItem.userVendorContact.phone}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 text-xs transition-colors"
+                              className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
                             >
                               <Phone
                                 size={11}
-                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                                className="text-muted group-hover:text-foreground shrink-0"
                               />
                               {liveItem.userVendorContact.phone}
                             </a>
@@ -624,18 +614,18 @@ function ItemDrawer({
                               target="_blank"
                               rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-brand-300 hover:text-gold-300 group flex items-center gap-2 truncate text-xs transition-colors"
+                              className="text-muted hover:text-foreground group flex items-center gap-2 truncate text-xs transition-colors"
                             >
                               <Globe
                                 size={11}
-                                className="text-brand-600 group-hover:text-gold-400 shrink-0"
+                                className="text-muted group-hover:text-foreground shrink-0"
                               />
                               {liveItem.userVendorContact.website}
                             </a>
                           )}
                           {liveItem.userVendorContact.notes && (
-                            <div className="text-brand-500 flex items-start gap-2 text-xs">
-                              <FileText size={11} className="text-brand-700 mt-0.5 shrink-0" />
+                            <div className="text-muted flex items-start gap-2 text-xs">
+                              <FileText size={11} className="text-muted mt-0.5 shrink-0" />
                               <p className="leading-relaxed">{liveItem.userVendorContact.notes}</p>
                             </div>
                           )}
@@ -650,7 +640,7 @@ function ItemDrawer({
                       <Link
                         href={`/vendors?category=${liveItem.vendorCategory}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-brand-500 hover:text-gold-300 flex items-center gap-2 text-xs transition-colors"
+                        className="text-muted hover:text-foreground flex items-center gap-2 text-xs transition-colors"
                       >
                         <Search size={11} />
                         Browse {getVendorCategoryLabel(liveItem.vendorCategory, tCat)} →
@@ -664,11 +654,11 @@ function ItemDrawer({
                 !liveItem.notifyBySms &&
                 !liveItem.needsVendor && (
                   <div className="flex flex-col items-center gap-3 py-8 text-center">
-                    <p className="text-brand-700 text-xs">No additional details yet.</p>
+                    <p className="text-muted text-xs">No additional details yet.</p>
                     {canEdit('CHECKLIST') && (
                       <button
                         onClick={enterEdit}
-                        className="text-brand-500 hover:text-gold-300 flex items-center gap-1.5 text-xs transition-colors"
+                        className="text-muted hover:text-foreground flex items-center gap-1.5 text-xs transition-colors"
                       >
                         <Pencil size={11} /> Add a due date or vendor
                       </button>
@@ -780,11 +770,11 @@ function VendorSection({
         className={cn(
           'flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] transition-all',
           needsVendor
-            ? 'bg-gold-500/10 border-gold-500/30 text-gold-300'
-            : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+            ? 'bg-gold-500/10 border-gold-500/30 text-foreground'
+            : 'text-muted hover:text-foreground border-border hover:border-border',
         )}
       >
-        <Store size={11} className={needsVendor ? 'text-gold-400' : 'text-brand-600'} />
+        <Store size={11} className={needsVendor ? 'text-foreground' : 'text-muted'} />
         <span className="flex-1 text-left">
           {needsVendor ? 'Needs a vendor / service' : 'Needs a vendor or service?'}
         </span>
@@ -795,11 +785,11 @@ function VendorSection({
         <div className="space-y-1.5 pl-1">
           {/* Category picker */}
           <div className="flex items-center gap-2">
-            <span className="text-brand-600 w-16 shrink-0 text-[10px]">Category</span>
+            <span className="text-muted w-16 shrink-0 text-[10px]">Category</span>
             <select
               value={vendorCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="text-brand-200 focus:border-gold-500/40 flex-1 rounded-lg border border-white/10 bg-[#111] px-2 py-1 text-xs transition-colors focus:outline-none"
+              className="input flex-1"
             >
               <option value="">— Select a category —</option>
               {VENDOR_CATEGORY_KEYS.map((key) => (
@@ -814,19 +804,19 @@ function VendorSection({
           {vendorName && (
             <div className="bg-gold-500/10 border-gold-500/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5">
               {userVendorContactId ? (
-                <BookUser size={11} className="text-gold-400 shrink-0" />
+                <BookUser size={11} className="text-foreground shrink-0" />
               ) : (
-                <Store size={11} className="text-gold-400 shrink-0" />
+                <Store size={11} className="text-foreground shrink-0" />
               )}
-              <span className="text-gold-300 flex-1 truncate text-xs">{vendorName}</span>
+              <span className="text-foreground flex-1 truncate text-xs">{vendorName}</span>
               {vendorProfileId && (
                 <BadgeCheck
                   size={10}
-                  className="text-gold-400 shrink-0"
+                  className="text-foreground shrink-0"
                   aria-label="Registered vendor"
                 />
               )}
-              {userVendorContactId && <span className="text-brand-500 text-[9px]">saved</span>}
+              {userVendorContactId && <span className="text-muted text-[9px]">saved</span>}
               <button
                 type="button"
                 onClick={() => {
@@ -834,7 +824,7 @@ function VendorSection({
                   setVendorSearch('')
                   setCustomMode(false)
                 }}
-                className="text-brand-600 transition-colors hover:text-red-400"
+                className="text-muted transition-colors hover:text-red-400"
               >
                 <X size={10} />
               </button>
@@ -843,17 +833,17 @@ function VendorSection({
 
           {/* Vendor picker — shown when category is set and no vendor selected yet */}
           {pickerOpen && vendorCategory && (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/4 text-xs">
+            <div className="border-border bg-card overflow-hidden rounded-xl border text-xs">
               {loadingVendors ? (
-                <div className="text-brand-600 flex items-center justify-center gap-1.5 py-4">
+                <div className="text-muted flex items-center justify-center gap-1.5 py-4">
                   <Loader2 size={11} className="animate-spin" /> Loading…
                 </div>
               ) : (
                 <>
                   {/* My contacts section */}
                   {filteredContacts.length > 0 && !customMode && (
-                    <div className="border-b border-white/8">
-                      <div className="text-brand-600 flex items-center gap-1 px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
+                    <div className="border-border border-b">
+                      <div className="text-muted flex items-center gap-1 px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
                         <BookUser size={8} /> My contacts
                       </div>
                       <ul className="max-h-24 overflow-y-auto">
@@ -862,14 +852,14 @@ function VendorSection({
                             <button
                               type="button"
                               onClick={() => onVendorSelect(c.name, null, c.id)}
-                              className="group flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-white/6"
+                              className="group hover:bg-foreground/5 flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
                             >
-                              <BookUser size={10} className="text-brand-600 shrink-0" />
-                              <span className="text-brand-200 group-hover:text-gold-200 flex-1 truncate">
+                              <BookUser size={10} className="text-muted shrink-0" />
+                              <span className="text-foreground group-hover:text-foreground flex-1 truncate">
                                 {c.name}
                               </span>
                               {(c.email || c.phone) && (
-                                <span className="text-brand-600 truncate text-[9px]">
+                                <span className="text-muted truncate text-[9px]">
                                   {c.email ?? c.phone}
                                 </span>
                               )}
@@ -883,37 +873,37 @@ function VendorSection({
                   {/* Registered vendors */}
                   {registeredVendors.length > 0 && !customMode && (
                     <>
-                      <div className="text-brand-600 flex items-center gap-1 border-b border-white/6 px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
+                      <div className="text-muted border-border flex items-center gap-1 border-b px-2.5 py-1 text-[9px] font-semibold tracking-wider uppercase">
                         <Store size={8} /> Registered vendors
                       </div>
                       {registeredVendors.length > 3 && (
-                        <div className="flex items-center gap-1.5 border-b border-white/6 px-2.5 py-1.5">
-                          <Search size={9} className="text-brand-600 shrink-0" />
+                        <div className="border-border flex items-center gap-1.5 border-b px-2.5 py-1.5">
+                          <Search size={9} className="text-muted shrink-0" />
                           <input
                             type="text"
                             value={vendorSearch}
                             onChange={(e) => setVendorSearch(e.target.value)}
                             placeholder="Search…"
-                            className="text-brand-300 placeholder:text-brand-700 flex-1 bg-transparent focus:outline-none"
+                            className="text-muted placeholder:text-muted flex-1 bg-transparent focus:outline-none"
                           />
                         </div>
                       )}
-                      <ul className="max-h-32 divide-y divide-white/5 overflow-y-auto">
+                      <ul className="divide-border max-h-32 divide-y overflow-y-auto">
                         {filteredVendors.map((v) => (
                           <li key={v.id}>
                             <button
                               type="button"
                               onClick={() => onVendorSelect(v.businessName, v.id, null)}
-                              className="group flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-white/6"
+                              className="group hover:bg-foreground/5 flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
                             >
-                              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8">
-                                <Store size={9} className="text-brand-600" />
+                              <div className="bg-foreground/5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+                                <Store size={9} className="text-muted" />
                               </div>
-                              <span className="text-brand-200 group-hover:text-gold-200 flex-1 truncate">
+                              <span className="text-foreground group-hover:text-foreground flex-1 truncate">
                                 {v.businessName}
                               </span>
                               {v.isVerified && (
-                                <BadgeCheck size={10} className="text-gold-400 shrink-0" />
+                                <BadgeCheck size={10} className="text-foreground shrink-0" />
                               )}
                               {v.averageRating !== null && (
                                 <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
@@ -925,19 +915,19 @@ function VendorSection({
                           </li>
                         ))}
                         {filteredVendors.length === 0 && vendorSearch && (
-                          <li className="text-brand-700 px-2.5 py-3 text-center italic">
+                          <li className="text-muted px-2.5 py-3 text-center italic">
                             No match for &ldquo;{vendorSearch}&rdquo;
                           </li>
                         )}
                       </ul>
-                      <div className="border-t border-white/8">
+                      <div className="border-border border-t">
                         <button
                           type="button"
                           onClick={() => {
                             setCustomMode(true)
                             setVendorSearch('')
                           }}
-                          className="text-brand-600 hover:text-gold-300 flex w-full items-center gap-1.5 px-2.5 py-2 transition-colors hover:bg-white/4"
+                          className="text-muted hover:text-foreground hover:bg-foreground/5 flex w-full items-center gap-1.5 px-2.5 py-2 transition-colors"
                         >
                           <Plus size={10} /> Not listed — add by name
                         </button>
@@ -955,13 +945,13 @@ function VendorSection({
                             setCustomMode(false)
                             setVendorSearch('')
                           }}
-                          className="text-brand-600 hover:text-brand-300 flex w-full items-center gap-1.5 border-b border-white/8 px-2.5 py-1.5 transition-colors"
+                          className="text-muted hover:text-foreground border-border flex w-full items-center gap-1.5 border-b px-2.5 py-1.5 transition-colors"
                         >
                           ← Back to list
                         </button>
                       )}
                       <div className="flex items-center gap-2 px-2.5 py-2">
-                        <Store size={10} className="text-brand-600 shrink-0" />
+                        <Store size={10} className="text-muted shrink-0" />
                         <input
                           autoFocus
                           type="text"
@@ -974,7 +964,7 @@ function VendorSection({
                             }
                           }}
                           placeholder="Type vendor name and press Enter"
-                          className="text-brand-300 placeholder:text-brand-700 flex-1 bg-transparent focus:outline-none"
+                          className="text-muted placeholder:text-muted flex-1 bg-transparent focus:outline-none"
                         />
                         {vendorSearch.trim() && (
                           <button
@@ -983,7 +973,7 @@ function VendorSection({
                               onVendorSelect(vendorSearch.trim(), null, null)
                               setVendorSearch('')
                             }}
-                            className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
+                            className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
                           >
                             Add
                           </button>
@@ -1019,7 +1009,7 @@ function ReminderRow({
   if (!dueDate) return null
   return (
     <div className="flex items-center gap-2 pt-0.5">
-      <span className="text-brand-600 w-14 shrink-0 text-[10px]">Remind via</span>
+      <span className="text-muted w-14 shrink-0 text-[10px]">Remind via</span>
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -1027,8 +1017,8 @@ function ReminderRow({
           className={cn(
             'flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-all',
             notifyEmail
-              ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-              : 'text-brand-600 hover:text-brand-400 border-white/8 hover:border-white/15',
+              ? 'bg-foreground/10 border-border text-foreground'
+              : 'text-muted hover:text-muted border-border hover:border-border',
           )}
         >
           <Mail size={8} /> Email
@@ -1039,8 +1029,8 @@ function ReminderRow({
           className={cn(
             'flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-all',
             notifySms
-              ? 'bg-brand-700/50 border-brand-500/50 text-brand-200'
-              : 'text-brand-600 hover:text-brand-400 border-white/8 hover:border-white/15',
+              ? 'bg-foreground/10 border-border text-foreground'
+              : 'text-muted hover:text-muted border-border hover:border-border',
           )}
         >
           <MessageSquare size={8} /> SMS
@@ -1128,7 +1118,7 @@ function EditRow({
   }
 
   return (
-    <div className="mx-0.5 mb-1 space-y-2.5 rounded-xl border border-white/12 bg-white/3 p-3">
+    <div className="border-border bg-foreground/5 mx-0.5 mb-1 space-y-2.5 rounded-xl border p-3">
       <input
         ref={ref}
         value={title}
@@ -1140,14 +1130,14 @@ function EditRow({
           }
           if (e.key === 'Escape') onCancel()
         }}
-        className="placeholder:text-brand-600 focus:border-gold-500/40 w-full border-b border-white/10 bg-transparent pb-1.5 text-sm text-white transition-colors focus:outline-none"
+        className="placeholder:text-muted focus:border-gold-500/40 border-border text-foreground w-full border-b bg-transparent pb-1.5 text-sm transition-colors focus:outline-none"
         placeholder="Task title"
       />
 
       <select
         value={assigneeUserId}
         onChange={(e) => setAssigneeUserId(e.target.value)}
-        className="text-brand-200 w-full border-b border-white/10 bg-transparent py-1 text-xs"
+        className="text-foreground border-border w-full border-b bg-transparent py-1 text-xs"
       >
         <option value="">Unassigned</option>
         {assignees.map((person) => (
@@ -1158,12 +1148,12 @@ function EditRow({
       </select>
 
       <div className="flex items-center gap-2">
-        <CalendarDays size={11} className="text-brand-600 shrink-0" />
+        <CalendarDays size={11} className="text-muted shrink-0" />
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="text-brand-300 focus:border-gold-500/30 flex-1 border-b border-white/8 bg-transparent pb-0.5 text-xs [color-scheme:dark] transition-colors focus:outline-none"
+          className="text-muted focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-xs transition-colors focus:outline-none"
         />
         {dueDate && (
           <button
@@ -1173,7 +1163,7 @@ function EditRow({
               setNotifyEmail(false)
               setNotifySms(false)
             }}
-            className="text-brand-600 transition-colors hover:text-red-400"
+            className="text-muted transition-colors hover:text-red-400"
           >
             <X size={10} />
           </button>
@@ -1222,14 +1212,14 @@ function EditRow({
           type="button"
           onClick={() => startTransition(save)}
           disabled={!title.trim() || isPending}
-          className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-brand-500 hover:text-brand-200 rounded-lg border border-white/8 px-2.5 py-1 text-xs transition-colors"
+          className="text-muted hover:text-foreground border-border rounded-lg border px-2.5 py-1 text-xs transition-colors"
         >
           Cancel
         </button>
@@ -1321,7 +1311,7 @@ function AddRow({
   ])
 
   return (
-    <div className="border-gold-500/20 mx-0.5 space-y-2.5 rounded-xl border bg-white/3 p-3">
+    <div className="border-gold-500/20 bg-foreground/5 mx-0.5 space-y-2.5 rounded-xl border p-3">
       <input
         ref={ref}
         value={title}
@@ -1335,20 +1325,20 @@ function AddRow({
           if (e.key === 'Escape') onClose()
         }}
         placeholder="What needs to be done?"
-        className="placeholder:text-brand-600 focus:border-gold-500/30 w-full border-b border-white/8 bg-transparent pb-1.5 text-sm text-white transition-colors focus:outline-none"
+        className="placeholder:text-muted focus:border-gold-500/30 border-border text-foreground w-full border-b bg-transparent pb-1.5 text-sm transition-colors focus:outline-none"
       />
 
       {expanded && (
         <>
           <div className="flex items-center gap-2">
-            <CalendarDays size={11} className="text-brand-600 shrink-0" />
-            <span className="text-brand-600 w-12 shrink-0 text-[10px]">Due date</span>
+            <CalendarDays size={11} className="text-muted shrink-0" />
+            <span className="text-muted w-12 shrink-0 text-[10px]">Due date</span>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="text-brand-300 focus:border-gold-500/30 flex-1 border-b border-white/8 bg-transparent pb-0.5 text-xs [color-scheme:dark] transition-colors focus:outline-none"
+              className="text-muted focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-xs transition-colors focus:outline-none"
             />
             {dueDate && (
               <button
@@ -1358,7 +1348,7 @@ function AddRow({
                   setNotifyEmail(false)
                   setNotifySms(false)
                 }}
-                className="text-brand-600 transition-colors hover:text-red-400"
+                className="text-muted transition-colors hover:text-red-400"
               >
                 <X size={10} />
               </button>
@@ -1409,18 +1399,18 @@ function AddRow({
           type="button"
           onClick={() => startTransition(submit)}
           disabled={!title.trim() || isPending}
-          className="bg-gold-600/15 border-gold-500/25 text-gold-300 hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={11} /> {isPending ? 'Adding…' : 'Add task'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="text-brand-500 hover:text-brand-200 rounded-lg border border-white/8 px-2.5 py-1 text-xs transition-colors"
+          className="text-muted hover:text-foreground border-border rounded-lg border px-2.5 py-1 text-xs transition-colors"
         >
           Cancel
         </button>
-        <span className="text-brand-700 ml-auto text-[10px]">↵ to add · Esc to close</span>
+        <span className="text-muted ml-auto text-[10px]">↵ to add · Esc to close</span>
       </div>
     </div>
   )
@@ -1535,32 +1525,26 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/4 p-5">
+    <div className="card flex flex-col gap-4 p-5">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Checklist</h2>
+          <h2 className="text-foreground text-sm font-semibold">Checklist</h2>
           <div className="flex items-center gap-2">
             {overdueCount > 0 && (
               <span className="rounded-full border border-red-500/20 bg-red-500/12 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
                 {overdueCount} overdue
               </span>
             )}
-            <span className="text-brand-500 text-xs tabular-nums">
+            <span className="text-muted text-xs tabular-nums">
               {doneCount}/{total}
             </span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 w-full overflow-hidden rounded-full bg-white/6">
-          <div
-            className={cn(
-              'h-full rounded-full transition-all duration-500',
-              'from-gold-600 to-gold-400 bg-gradient-to-r',
-            )}
-            style={{ width: `${pct}%` }}
-          />
+        <div className="progress">
+          <div className="progress-bar transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
@@ -1590,8 +1574,8 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                   active
                     ? opt.value === 'overdue'
                       ? 'border-red-500/25 bg-red-500/12 text-red-300'
-                      : 'border-white/15 bg-white/8 text-white'
-                    : 'text-brand-500 hover:text-brand-300 border-transparent',
+                      : 'border-border bg-foreground/5 text-foreground'
+                    : 'text-muted hover:text-foreground border-transparent',
                 )}
               >
                 {opt.label}
@@ -1608,8 +1592,8 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
             className={cn(
               'flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] transition-colors',
               sortBy !== 'default'
-                ? 'bg-gold-600/12 border-gold-500/25 text-gold-400'
-                : 'text-brand-500 hover:text-brand-300 border-white/8 hover:border-white/15',
+                ? 'bg-gold-600/12 border-gold-500/25 text-foreground'
+                : 'text-muted hover:text-foreground border-border hover:border-border',
             )}
           >
             <SlidersHorizontal size={10} />
@@ -1623,7 +1607,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
           {showSortMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-              <div className="absolute top-full right-0 z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-white/10 bg-[#111111] py-1.5 shadow-2xl shadow-black/50">
+              <div className="popover absolute top-full right-0 z-20 mt-1.5 w-44 overflow-hidden rounded-xl py-1.5">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -1634,23 +1618,25 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                     className={cn(
                       'flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors',
                       sortBy === opt.value
-                        ? 'text-gold-300 bg-gold-600/8'
-                        : 'text-brand-400 hover:bg-white/5 hover:text-white',
+                        ? 'text-foreground bg-gold-600/8'
+                        : 'text-muted hover:bg-foreground/5 hover:text-foreground',
                     )}
                   >
                     {opt.label}
-                    {sortBy === opt.value && <Check size={10} className="text-gold-400 shrink-0" />}
+                    {sortBy === opt.value && (
+                      <Check size={10} className="text-foreground shrink-0" />
+                    )}
                   </button>
                 ))}
                 {sortBy !== 'default' && (
                   <>
-                    <div className="my-1 border-t border-white/6" />
+                    <div className="border-border my-1 border-t" />
                     <button
                       onClick={() => {
                         setSortBy('default')
                         setShowSortMenu(false)
                       }}
-                      className="text-brand-600 w-full px-3 py-1.5 text-left text-xs transition-colors hover:text-red-400"
+                      className="text-muted w-full px-3 py-1.5 text-left text-xs transition-colors hover:text-red-400"
                     >
                       Reset sort
                     </button>
@@ -1667,7 +1653,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
               setSortBy('default')
               setFilterBy('all')
             }}
-            className="text-brand-600 flex shrink-0 items-center gap-0.5 text-[10px] transition-colors hover:text-red-400"
+            className="text-muted flex shrink-0 items-center gap-0.5 text-[10px] transition-colors hover:text-red-400"
           >
             <X size={9} />
           </button>
@@ -1677,7 +1663,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
       {/* ── Item list ───────────────────────────────────────────────────────── */}
       <div className="-mx-1 max-h-[340px] space-y-0.5 overflow-y-auto px-1">
         {displayed.length === 0 && !showAdd && (
-          <p className="text-brand-600 py-8 text-center text-xs">
+          <p className="text-muted py-8 text-center text-xs">
             {total === 0 ? 'No tasks yet.' : 'Nothing matches this filter.'}
           </p>
         )}
@@ -1699,7 +1685,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
               key={item.id}
               id={`checklist-item-${item.id}`}
               className={cn(
-                'group flex cursor-pointer items-start gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-white/3',
+                'group hover:bg-foreground/5 flex cursor-pointer items-start gap-2.5 rounded-lg px-1.5 py-2 transition-colors',
                 item.isCompleted && 'opacity-45',
                 item.id === focusItemId && 'bg-gold-500/10',
               )}
@@ -1712,19 +1698,19 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                     e.stopPropagation()
                     toggle(item)
                   }}
-                  className="text-brand-600 hover:text-gold-400 mt-0.5 shrink-0 transition-colors"
+                  className="text-muted hover:text-foreground mt-0.5 shrink-0 transition-colors"
                   aria-label={item.isCompleted ? 'Mark incomplete' : 'Mark complete'}
                 >
                   {item.isCompleted ? (
-                    <CheckCircle2 size={15} className="text-gold-400" />
+                    <CheckCircle2 size={15} className="text-foreground" />
                   ) : (
                     <Circle size={15} />
                   )}
                 </button>
               ) : (
-                <span className="text-brand-600 mt-0.5 shrink-0" aria-hidden>
+                <span className="text-muted mt-0.5 shrink-0" aria-hidden>
                   {item.isCompleted ? (
-                    <CheckCircle2 size={15} className="text-gold-400" />
+                    <CheckCircle2 size={15} className="text-foreground" />
                   ) : (
                     <Circle size={15} />
                   )}
@@ -1736,7 +1722,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                 <p
                   className={cn(
                     'text-sm leading-snug',
-                    item.isCompleted ? 'text-brand-600 line-through' : 'text-brand-100',
+                    item.isCompleted ? 'text-muted line-through' : 'text-foreground',
                   )}
                 >
                   {item.title}
@@ -1761,7 +1747,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                               ? 'text-red-400'
                               : isDueSoon(item.dueDate, item.isCompleted)
                                 ? 'text-amber-400'
-                                : 'text-brand-500',
+                                : 'text-muted',
                           )}
                         >
                           <CalendarDays size={9} />
@@ -1772,15 +1758,15 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                         </span>
                       )}
                       {item.dueDate && (item.notifyByEmail || item.notifyBySms) && (
-                        <span className="text-brand-700">·</span>
+                        <span className="text-muted">·</span>
                       )}
                       {item.notifyByEmail && (
-                        <span className="text-brand-600 inline-flex items-center gap-0.5 text-[9px]">
+                        <span className="text-muted inline-flex items-center gap-0.5 text-[9px]">
                           <Mail size={8} /> Email
                         </span>
                       )}
                       {item.notifyBySms && (
-                        <span className="text-brand-600 inline-flex items-center gap-0.5 text-[9px]">
+                        <span className="text-muted inline-flex items-center gap-0.5 text-[9px]">
                           <MessageSquare size={8} /> SMS
                         </span>
                       )}
@@ -1789,23 +1775,23 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                       {item.needsVendor && (
                         <>
                           {(item.dueDate || item.notifyByEmail || item.notifyBySms) && (
-                            <span className="text-brand-700">·</span>
+                            <span className="text-muted">·</span>
                           )}
                           {item.vendorProfile || item.userVendorContact ? (
-                            <span className="border-gold-500/30 bg-gold-500/10 text-gold-300 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
+                            <span className="border-gold-500/30 bg-gold-500/10 text-foreground inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
                               {item.userVendorContact ? <BookUser size={8} /> : <Store size={8} />}
                               {item.vendorProfile?.businessName ?? item.userVendorContact?.name}
                               {item.vendorProfile?.isVerified && (
-                                <BadgeCheck size={8} className="text-gold-400" />
+                                <BadgeCheck size={8} className="text-foreground" />
                               )}
                             </span>
                           ) : item.vendorCategory && item.vendorCategory !== 'OTHER' ? (
-                            <span className="border-gold-500/25 bg-gold-500/8 text-gold-400 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
+                            <span className="border-gold-500/25 bg-gold-500/8 text-foreground inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
                               <Store size={8} />
                               {getVendorCategoryLabel(item.vendorCategory!, tCat)}
                             </span>
                           ) : (
-                            <span className="text-brand-500 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/4 px-1.5 py-0.5 text-[10px]">
+                            <span className="text-muted border-border bg-card inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
                               <Store size={8} />
                               {item.vendorCategory === 'OTHER'
                                 ? 'Other service needed'
@@ -1828,7 +1814,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                         setEditingId(item.id)
                         setShowAdd(false)
                       }}
-                      className="text-brand-600 hover:text-brand-300 rounded-md p-1 transition-colors hover:bg-white/5"
+                      className="text-muted hover:text-foreground hover:bg-foreground/5 rounded-md p-1 transition-colors"
                       aria-label="Edit"
                     >
                       <Pencil size={11} />
@@ -1838,7 +1824,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                         e.stopPropagation()
                         deleteItem(item.id)
                       }}
-                      className="text-brand-600 rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                      className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
                       aria-label="Delete"
                     >
                       <Trash2 size={11} />
@@ -1879,10 +1865,10 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
             setShowAdd(true)
             setEditingId(null)
           }}
-          className="text-brand-600 hover:text-brand-300 group -mt-1 flex items-center gap-2 text-xs transition-colors"
+          className="text-muted hover:text-foreground group -mt-1 flex items-center gap-2 text-xs transition-colors"
         >
-          <span className="flex h-5 w-5 items-center justify-center rounded-md border border-dashed border-white/10 transition-colors group-hover:border-white/20">
-            <Plus size={10} className="group-hover:text-gold-400 transition-colors" />
+          <span className="border-border group-hover:border-border flex h-5 w-5 items-center justify-center rounded-md border border-dashed transition-colors">
+            <Plus size={10} className="group-hover:text-foreground transition-colors" />
           </span>
           Add task
         </button>

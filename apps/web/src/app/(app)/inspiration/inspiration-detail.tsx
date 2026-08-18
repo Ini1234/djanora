@@ -461,7 +461,10 @@ export function InspirationDetail({
                       disabled={posting || !draft.trim()}
                       onClick={() => void submitComment()}
                       className="h-9 rounded-xl px-3 text-sm font-medium disabled:opacity-40"
-                      style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                      style={{
+                        background: 'var(--color-brand-primary)',
+                        color: 'var(--color-primary-foreground)',
+                      }}
                       aria-label="Post comment"
                     >
                       {posting ? (
@@ -498,7 +501,7 @@ export function InspirationDetail({
                 className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-xs font-semibold"
                 style={{
                   background: liked ? 'var(--color-brand-primary)' : 'var(--card-bg)',
-                  color: liked ? '#fff' : 'var(--color-foreground)',
+                  color: liked ? 'var(--color-primary-foreground)' : 'var(--color-foreground)',
                   border: liked ? 'none' : '1px solid var(--color-border)',
                 }}
                 aria-pressed={liked}
@@ -513,7 +516,7 @@ export function InspirationDetail({
                 className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-xs font-semibold"
                 style={{
                   background: saved ? 'var(--color-brand-primary)' : 'var(--card-bg)',
-                  color: saved ? '#fff' : 'var(--color-foreground)',
+                  color: saved ? 'var(--color-primary-foreground)' : 'var(--color-foreground)',
                   border: saved ? 'none' : '1px solid var(--color-border)',
                 }}
               >
@@ -525,7 +528,10 @@ export function InspirationDetail({
                   type="button"
                   onClick={() => requireAuth(() => setAskOpen(true))}
                   className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-xs font-semibold"
-                  style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                  style={{
+                    background: 'var(--color-brand-primary)',
+                    color: 'var(--color-primary-foreground)',
+                  }}
                 >
                   <MessageSquare size={13} /> Ask {detail.vendorProfile.businessName}
                 </button>
@@ -534,7 +540,10 @@ export function InspirationDetail({
                   type="button"
                   onClick={() => requireAuth(onFindVendors)}
                   className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-xs font-semibold"
-                  style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+                  style={{
+                    background: 'var(--color-brand-primary)',
+                    color: 'var(--color-primary-foreground)',
+                  }}
                 >
                   <Users size={13} /> Find matching vendors
                 </button>

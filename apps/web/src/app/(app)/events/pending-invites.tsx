@@ -54,7 +54,10 @@ export function PendingEventInvites() {
               })
             }
             className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
-            style={{ background: 'var(--color-brand-primary)', color: '#fff' }}
+            style={{
+              background: 'var(--color-brand-primary)',
+              color: 'var(--color-primary-foreground)',
+            }}
           >
             Accept
           </button>
