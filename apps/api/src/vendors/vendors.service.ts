@@ -5,7 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common'
-import { InspirationVisibility } from '@prisma/client'
+import { InspirationVisibility, VendorCategory, Tribe } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateVendorProfileDto } from './dto/create-vendor-profile.dto'
 import { CreateReviewDto } from './dto/create-review.dto'
@@ -18,12 +18,16 @@ export class VendorsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(category?: string) {
+    const parsed =
+      category && (Object.values(VendorCategory) as string[]).includes(category)
+        ? (category as VendorCategory)
+        : undefined
     const vendors = await this.prisma.vendorProfile.findMany({
       where: {
         isActive: true,
-        ...(category
+        ...(parsed
           ? {
-              OR: [{ category: category as any }, { categories: { has: category as any } }],
+              OR: [{ category: parsed }, { categories: { has: parsed } }],
             }
           : {}),
       },
@@ -101,10 +105,10 @@ export class VendorsService {
         userId: user.id,
         slug,
         businessName: dto.businessName,
-        category: allCategories[0] as any,
-        categories: allCategories as any,
+        category: allCategories[0] as VendorCategory,
+        categories: allCategories as VendorCategory[],
         bio: dto.bio ?? null,
-        tribesServed: (dto.tribesServed ?? []) as any,
+        tribesServed: (dto.tribesServed ?? []) as Tribe[],
         estimatedPriceFrom: dto.estimatedPriceFrom ?? null,
         estimatedPriceTo: dto.estimatedPriceTo ?? null,
         websiteUrl: dto.websiteUrl ?? null,

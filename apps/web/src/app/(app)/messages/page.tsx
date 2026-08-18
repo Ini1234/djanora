@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useSyncedState } from '@/lib/use-synced-state'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -304,7 +305,7 @@ export default function MessagesPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const urlInquiryId = searchParams.get('inquiry')
-  const [selectedId, setSelectedId] = useState<string | null>(urlInquiryId)
+  const [selectedId, setSelectedId] = useSyncedState<string | null>(urlInquiryId)
   const eventFilter = parseEventFilter(searchParams.get('event'))
   const statusFilter = parseStatusFilter(searchParams.get('status'))
   const categoryFilter = searchParams.get('category') ?? 'all'
@@ -355,12 +356,8 @@ export default function MessagesPage() {
       setSelectedId(id)
       replaceParams({ inquiry: id })
     },
-    [replaceParams],
+    [replaceParams, setSelectedId],
   )
-
-  useEffect(() => {
-    setSelectedId(urlInquiryId)
-  }, [urlInquiryId])
 
   useEffect(() => {
     if (loading || inquiries.length === 0) return
@@ -371,8 +368,8 @@ export default function MessagesPage() {
     if (didAutoSelect.current && !selectedId) return
     if (displayed.length === 0) return
     didAutoSelect.current = true
-    selectInquiry(displayed[0].id)
-  }, [loading, inquiries, displayed, selectedId, selectInquiry])
+    replaceParams({ inquiry: displayed[0].id })
+  }, [loading, inquiries, displayed, selectedId, replaceParams])
 
   function handleStatusChange(id: string, status: string) {
     queryClient.setQueryData<Inquiry[]>(queryKeys.inquiriesMe, (prev) =>

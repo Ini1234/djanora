@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useHydratedState, useSyncedState } from '@/lib/use-synced-state'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -740,6 +741,8 @@ function LinkedBudgetInspirations({ budgetItemId }: { budgetItemId: string }) {
             }}
           >
             {insp.imageUrl && (
+              // Dynamic inspiration thumbs; next/image needs a known remote host.
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={insp.imageUrl} alt={insp.title} className="h-5 w-5 rounded object-cover" />
             )}
             <span className="text-muted max-w-[120px] truncate">{insp.title}</span>
@@ -1131,10 +1134,7 @@ function MoneyInput({
   ariaLabel: string
   danger?: boolean
 }) {
-  const [draft, setDraft] = useState(String(value))
-  useEffect(() => {
-    setDraft(String(value))
-  }, [value])
+  const [draft, setDraft] = useSyncedState(String(value))
 
   function commit() {
     const n = Math.max(0, Math.round(Number(draft)))
@@ -1420,17 +1420,26 @@ export function BudgetSection({
   const tPort = useTranslations('dataPort')
   const { canEdit } = useEventAccess()
   const fetched = useLazyGet<EventBudgetItem[]>(initialItems ? null : `/events/${eventId}/budget`)
-  const [items, setItems] = useState<EventBudgetItem[]>(initialItems ?? [])
+  const [items, setItems] = useHydratedState(
+    fetched.data === undefined ? undefined : Array.isArray(fetched.data) ? fetched.data : [],
+    initialItems ?? [],
+  )
   const [editingItem, setEditingItem] = useState<EventBudgetItem | null | 'new'>(null)
   const [sortBy, setSortBy] = useState<BudgetSortKey>('allocated-desc')
   const [filterBy, setFilterBy] = useState<BudgetFilterKey>('all')
   const [groupBy, setGroupBy] = useState<BudgetGroupKey>('category')
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set())
+  const [prevGroupBy, setPrevGroupBy] = useState(groupBy)
+  if (groupBy !== prevGroupBy) {
+    setPrevGroupBy(groupBy)
+    setExpandedGroups(new Set())
+  }
+  const [handledFocus, setHandledFocus] = useState<string | null>(null)
+  if (focusItemId && focusItemId !== handledFocus) {
+    setHandledFocus(focusItemId)
+    setFilterBy('all')
+  }
   const [, startTransition] = useTransition()
-
-  useEffect(() => {
-    if (fetched.data) setItems(Array.isArray(fetched.data) ? fetched.data : [])
-  }, [fetched.data])
 
   const loading = !initialItems && fetched.loading && items.length === 0
 
@@ -1470,31 +1479,25 @@ export function BudgetSection({
   )
 
   const labeledKeys = grouped.filter((section) => section.label).map((section) => section.key)
-  const allCollapsed = labeledKeys.length > 0 && labeledKeys.every((key) => collapsed.has(key))
+  const allCollapsed =
+    labeledKeys.length > 0 && labeledKeys.every((key) => !expandedGroups.has(key))
 
-  useEffect(() => {
-    setCollapsed((prev) => (prev.size === 0 ? prev : new Set()))
-  }, [groupBy])
+  if (focusItemId) {
+    const section = grouped.find((row) => row.items.some((item) => item.id === focusItemId))
+    if (section?.label && !expandedGroups.has(section.key)) {
+      setExpandedGroups((prev) => new Set(prev).add(section.key))
+    }
+  }
 
   useEffect(() => {
     if (!focusItemId) return
-    setFilterBy('all')
-    const section = grouped.find((row) => row.items.some((item) => item.id === focusItemId))
-    if (section?.label) {
-      setCollapsed((prev) => {
-        if (!prev.has(section.key)) return prev
-        const next = new Set(prev)
-        next.delete(section.key)
-        return next
-      })
-    }
     const frame = requestAnimationFrame(() => {
       document
         .getElementById(`budget-item-${focusItemId}`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
     return () => cancelAnimationFrame(frame)
-  }, [focusItemId, grouped])
+  }, [focusItemId])
 
   const handleSaved = (saved: EventBudgetItem) => {
     setItems((prev) => {
@@ -1655,7 +1658,7 @@ export function BudgetSection({
           {labeledKeys.length > 1 && (
             <button
               type="button"
-              onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(labeledKeys))}
+              onClick={() => setExpandedGroups(allCollapsed ? new Set(labeledKeys) : new Set())}
               className="text-muted hover:text-foreground text-[11px] transition-colors"
             >
               {allCollapsed ? t('expandAll') : t('collapseAll')}
@@ -1729,7 +1732,7 @@ export function BudgetSection({
             {grouped.map((section) => {
               const sectionAlloc = section.items.reduce((s, i) => s + i.allocatedAmount, 0)
               const sectionSpent = section.items.reduce((s, i) => s + i.spentAmount, 0)
-              const isOpen = !section.label || !collapsed.has(section.key)
+              const isOpen = !section.label || expandedGroups.has(section.key)
               const sectionOver = sectionSpent > sectionAlloc
               return (
                 <tbody key={section.key}>
@@ -1740,7 +1743,7 @@ export function BudgetSection({
                           type="button"
                           aria-expanded={isOpen}
                           onClick={() =>
-                            setCollapsed((prev) => {
+                            setExpandedGroups((prev) => {
                               const next = new Set(prev)
                               if (next.has(section.key)) next.delete(section.key)
                               else next.add(section.key)

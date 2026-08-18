@@ -253,7 +253,7 @@ export class InquiriesService {
 
     return this.prisma.inquiry.update({
       where: { id: inquiryId },
-      data: { status: status as any },
+      data: { status },
       select: { id: true, status: true },
     })
   }

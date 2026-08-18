@@ -228,6 +228,7 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
         }}
       >
         {vendor.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={vendor.avatarUrl}
             alt={vendor.businessName}
@@ -475,10 +476,12 @@ function SaveModal({
   useEffect(() => {
     if (step !== 2 || !selectedEvent) return
     let cancelled = false
+    /* eslint-disable react-hooks/set-state-in-effect -- reset link fields before the fetch */
     setLinksLoading(true)
     setLinkedChecklist('')
     setLinkedBudget('')
     setLinkedSchedules([])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     Promise.all([
       proxyClient.get<ChecklistItem[]>(`/events/${selectedEvent}/checklist`),
@@ -1393,6 +1396,7 @@ export function InspirationClient({
   }
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- open look from query param */
     if (!initialItemId) return
     if (openedQueryItem.current === initialItemId) return
     const fromFeed = items.find((i) => i.id === initialItemId)
@@ -1421,6 +1425,7 @@ export function InspirationClient({
     return () => {
       cancelled = true
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [initialItemId, items, savedEntries, hasSearched, savedLoading])
 
   function handleSaved() {

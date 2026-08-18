@@ -64,9 +64,14 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
       ? entries
       : entries.filter((e) => lookInCategory(e.inspirationItem, activeFilter))
 
+  const [prevFocus, setPrevFocus] = useState(focusEntryId)
+  if (focusEntryId && focusEntryId !== prevFocus) {
+    setPrevFocus(focusEntryId)
+    setActiveFilter('ALL')
+  }
+
   useEffect(() => {
     if (!focusEntryId) return
-    setActiveFilter('ALL')
     const frame = requestAnimationFrame(() => {
       document
         .getElementById(`mood-entry-${focusEntryId}`)

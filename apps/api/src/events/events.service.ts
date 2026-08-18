@@ -10,11 +10,7 @@ import { BlobStorageService } from '../uploads/blob-storage.service'
 import { EventActivityAction, EventSurface, VendorCategory } from '@prisma/client'
 import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './dto/children.dto'
 import { CreateEventDto } from './dto/create-event.dto'
-import {
-  CreateChecklistItemDto,
-  UpdateChecklistItemDto,
-  ChecklistVendorInputDto,
-} from './dto/checklist.dto'
+import { CreateChecklistItemDto, UpdateChecklistItemDto } from './dto/checklist.dto'
 import { CreateBudgetItemDto, UpdateBudgetItemDto, ImportBudgetDto } from './dto/budget.dto'
 import { UpdateEventDto } from './dto/update-event.dto'
 import { CreateScheduleItemDto, UpdateScheduleItemDto } from './dto/schedule.dto'
@@ -101,6 +97,43 @@ function defaultBudgetItems(total: number) {
   }))
 }
 
+type ChecklistVendorInput = {
+  vendorProfileId?: string | null
+  userVendorContactId?: string | null
+  name?: string | null
+}
+
+type ChecklistVendorRow = {
+  vendorProfileId: string | null
+  userVendorContactId: string | null
+  name: string | null
+  sortOrder: number
+}
+
+type ChecklistVendorStore = {
+  deleteMany: (args: { where: { checklistId: string } }) => Promise<unknown>
+  createMany: (args: {
+    data: Array<ChecklistVendorRow & { checklistId: string }>
+  }) => Promise<unknown>
+}
+
+function checklistVendorStore(prisma: PrismaService): ChecklistVendorStore {
+  const store: unknown = Reflect.get(prisma, 'eventChecklistVendor')
+  return store as ChecklistVendorStore
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+}
+
+function asOptionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function foldKey(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
 const CHECKLIST_VENDOR_INCLUDE = {
   orderBy: { sortOrder: 'asc' as const },
   include: {
@@ -157,13 +190,23 @@ export class EventsService {
   }
 
   private vendorsFromDto(dto: {
-    vendors?: ChecklistVendorInputDto[]
+    vendors?: ChecklistVendorInput[]
     vendorProfileId?: string | null
     userVendorContactId?: string | null
     needsVendor?: boolean
-  }): ChecklistVendorInputDto[] | undefined {
+  }): ChecklistVendorInput[] | undefined {
     if (dto.needsVendor === false) return []
-    if (dto.vendors !== undefined) return dto.vendors
+    if (dto.vendors !== undefined) {
+      const raw = Array.isArray(dto.vendors) ? dto.vendors : []
+      return raw.map((entry) => {
+        const rec = asRecord(entry)
+        return {
+          vendorProfileId: asOptionalString(rec.vendorProfileId),
+          userVendorContactId: asOptionalString(rec.userVendorContactId),
+          name: asOptionalString(rec.name),
+        }
+      })
+    }
     if (dto.vendorProfileId !== undefined || dto.userVendorContactId !== undefined) {
       if (!dto.vendorProfileId && !dto.userVendorContactId) return []
       return [
@@ -179,32 +222,28 @@ export class EventsService {
   private async replaceChecklistVendors(
     checklistId: string,
     userId: string,
-    vendors: ChecklistVendorInputDto[],
+    vendors: ChecklistVendorInput[],
   ) {
-    const cleaned: {
-      vendorProfileId: string | null
-      userVendorContactId: string | null
-      name: string | null
-      sortOrder: number
-    }[] = []
+    const cleaned: ChecklistVendorRow[] = []
     const seen = new Set<string>()
 
     for (const vendor of vendors) {
-      let vendorProfileId: string | null = null
-      let userVendorContactId: string | null = null
-      let name = vendor.name?.trim() || null
+      const rec = asRecord(vendor)
+      let vendorProfileId: string | null = asOptionalString(rec.vendorProfileId)
+      let userVendorContactId: string | null = asOptionalString(rec.userVendorContactId)
+      let name = asOptionalString(rec.name)?.trim() || null
 
-      if (vendor.vendorProfileId) {
+      if (vendorProfileId) {
         const profile = await this.prisma.vendorProfile.findUnique({
-          where: { id: vendor.vendorProfileId },
+          where: { id: vendorProfileId },
           select: { id: true, businessName: true },
         })
         if (!profile) continue
         vendorProfileId = profile.id
         name = profile.businessName
-      } else if (vendor.userVendorContactId) {
+      } else if (userVendorContactId) {
         const contact = await this.prisma.userVendorContact.findFirst({
-          where: { id: vendor.userVendorContactId, userId },
+          where: { id: userVendorContactId, userId },
           select: { id: true, name: true },
         })
         if (!contact) continue
@@ -217,17 +256,28 @@ export class EventsService {
         ? `p:${vendorProfileId}`
         : userVendorContactId
           ? `c:${userVendorContactId}`
-          : `n:${name!.toLowerCase()}`
+          : `n:${foldKey(name)}`
       if (seen.has(key)) continue
       seen.add(key)
       cleaned.push({ vendorProfileId, userVendorContactId, name, sortOrder: cleaned.length })
     }
 
-    await this.prisma.eventChecklistVendor.deleteMany({ where: { checklistId } })
-    if (cleaned.length === 0) return
-    await this.prisma.eventChecklistVendor.createMany({
-      data: cleaned.map((row) => ({ checklistId, ...row })),
+    const vendorStore = checklistVendorStore(this.prisma)
+    await vendorStore.deleteMany({ where: { checklistId } })
+    const primary = cleaned[0]
+    await this.prisma.eventChecklist.update({
+      where: { id: checklistId },
+      data: {
+        vendorProfileId: primary?.vendorProfileId ?? null,
+        userVendorContactId: primary?.userVendorContactId ?? null,
+      },
     })
+    if (cleaned.length === 0) return
+    const rows: Array<ChecklistVendorRow & { checklistId: string }> = cleaned.map((row) => ({
+      checklistId,
+      ...row,
+    }))
+    await vendorStore.createMany({ data: rows })
   }
 
   private toChecklistItemDto<
@@ -742,21 +792,36 @@ export class EventsService {
       spentAmount: number
     }[] = []
     let skipped = 0
-    for (const item of dto.items) {
-      const key = `${item.category}|${(item.label ?? '').trim().toLowerCase()}|${(item.vendorName ?? '').trim().toLowerCase()}`
+    const rawItems: unknown[] = Array.isArray(asRecord(dto).items)
+      ? (asRecord(dto).items as unknown[])
+      : []
+    for (const raw of rawItems) {
+      const item = asRecord(raw)
+      const category = item.category
+      if (typeof category !== 'string' || !(category in VendorCategory)) continue
+      const label = asOptionalString(item.label)
+      const vendorName = asOptionalString(item.vendorName)
+      const key = `${category}|${foldKey(label)}|${foldKey(vendorName)}`
       if (seen.has(key)) {
         skipped += 1
         continue
       }
       seen.add(key)
+      const allocatedAmount =
+        typeof item.allocatedAmount === 'number'
+          ? item.allocatedAmount
+          : Number(item.allocatedAmount)
+      const spentAmount =
+        typeof item.spentAmount === 'number' ? item.spentAmount : Number(item.spentAmount ?? 0)
+      if (!Number.isFinite(allocatedAmount)) continue
       toCreate.push({
         eventId,
-        category: item.category,
-        label: item.label ?? null,
-        vendorName: item.vendorName ?? null,
-        notes: item.notes ?? null,
-        allocatedAmount: item.allocatedAmount,
-        spentAmount: item.spentAmount ?? 0,
+        category: category as VendorCategory,
+        label,
+        vendorName,
+        notes: asOptionalString(item.notes),
+        allocatedAmount,
+        spentAmount: Number.isFinite(spentAmount) ? spentAmount : 0,
       })
     }
     if (toCreate.length > 0) {
@@ -998,19 +1063,20 @@ export class EventsService {
       orderBy: { sortOrder: 'desc' },
     })
 
-    const assigneeUserId = dto.assigneeUserId || null
+    const dtoFields = asRecord(dto)
+    const assigneeUserId = asOptionalString(dtoFields.assigneeUserId)
     if (assigneeUserId) await this.assertAssignee(eventId, assigneeUserId)
 
     const created = await this.prisma.eventChecklist.create({
       data: {
         eventId,
-        title: dto.title,
-        description: dto.description ?? null,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        notifyByEmail: dto.notifyByEmail ?? false,
-        notifyBySms: dto.notifyBySms ?? false,
-        needsVendor: dto.needsVendor ?? false,
-        vendorCategory: dto.vendorCategory ?? null,
+        title: asOptionalString(dtoFields.title) ?? '',
+        description: asOptionalString(dtoFields.description),
+        dueDate: typeof dtoFields.dueDate === 'string' ? new Date(dtoFields.dueDate) : null,
+        notifyByEmail: dtoFields.notifyByEmail === true,
+        notifyBySms: dtoFields.notifyBySms === true,
+        needsVendor: dtoFields.needsVendor === true,
+        vendorCategory: asOptionalString(dtoFields.vendorCategory),
         assigneeUserId,
         sortOrder: (last?.sortOrder ?? 0) + 1,
       },

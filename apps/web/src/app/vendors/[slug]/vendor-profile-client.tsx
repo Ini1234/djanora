@@ -345,16 +345,23 @@ export function VendorProfileClient({
     }
   }, [signedIn, vendor.slug])
 
-  useEffect(() => {
-    if (signedIn && searchParams.get('inquire') === '1') setShowModal(true)
-  }, [signedIn, searchParams])
-
-  useEffect(() => {
-    const lookId = searchParams.get('look')
-    if (!lookId || !vendor.posts) return
+  const inquire = signedIn && searchParams.get('inquire') === '1'
+  const [sawInquire, setSawInquire] = useState(false)
+  if (inquire && !sawInquire) {
+    setSawInquire(true)
+    setShowModal(true)
+  } else if (!inquire && sawInquire) {
+    setSawInquire(false)
+  }
+  const lookId = searchParams.get('look')
+  const [openedLook, setOpenedLook] = useState<string | null>(null)
+  if (lookId && lookId !== openedLook && vendor.posts) {
     const post = vendor.posts.find((p) => p.id === lookId)
-    if (post) setOpenPost(post)
-  }, [searchParams, vendor.posts])
+    if (post) {
+      setOpenedLook(lookId)
+      setOpenPost(post)
+    }
+  }
 
   const priceLabel = (() => {
     const { estimatedPriceFrom: from, estimatedPriceTo: to, currency } = vendor
