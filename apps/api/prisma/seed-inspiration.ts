@@ -1,10 +1,12 @@
 /**
- * Seed starter inspiration items.
- * Run: npx ts-node prisma/seed-inspiration.ts
- * (from apps/api directory)
+ * Local helper to upsert starter Inspiration looks.
+ * Production/test Azure get the same rows from
+ * prisma/migrations/20260818140000_inspiration_item_categories (run by migrate deploy).
+ *
+ * From repo root: npm run seed:inspiration --workspace=api
  */
 import 'dotenv/config'
-import { PrismaClient, InspirationCategory } from '@prisma/client'
+import { InspirationCategory, InspirationVisibility, PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 
@@ -349,8 +351,19 @@ async function main() {
       where: { title: item.title },
     })
     if (!existing) {
-      await prisma.inspirationItem.create({ data: item as never })
+      await prisma.inspirationItem.create({
+        data: {
+          ...item,
+          categories: [item.category],
+          visibility: InspirationVisibility.INSPIRATION,
+        } as never,
+      })
       created++
+    } else if (existing.visibility !== InspirationVisibility.INSPIRATION) {
+      await prisma.inspirationItem.update({
+        where: { id: existing.id },
+        data: { visibility: InspirationVisibility.INSPIRATION },
+      })
     }
   }
 

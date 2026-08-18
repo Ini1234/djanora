@@ -16,6 +16,19 @@ const _base = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+_base.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    const headers = config.headers
+    if (headers && typeof headers.delete === 'function') {
+      headers.delete('Content-Type')
+    } else if (headers) {
+      delete (headers as Record<string, unknown>)['Content-Type']
+      delete (headers as Record<string, unknown>)['content-type']
+    }
+  }
+  return config
+})
+
 const _inFlight = new Map<string, Promise<AxiosResponse<unknown>>>()
 
 function getKey(url: string, config?: AxiosRequestConfig) {

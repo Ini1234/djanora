@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, IsNumber } from 'class-validator'
+import { IsString, IsEnum, IsOptional, IsArray, IsNumber, ArrayMinSize } from 'class-validator'
 import { InspirationCategory } from '@prisma/client'
 
 export class CreateInspirationDto {
@@ -8,8 +8,15 @@ export class CreateInspirationDto {
   @IsString()
   description: string
 
+  @IsOptional()
   @IsEnum(InspirationCategory)
-  category: InspirationCategory
+  category?: InspirationCategory
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(InspirationCategory, { each: true })
+  categories?: InspirationCategory[]
 
   @IsOptional()
   @IsArray()

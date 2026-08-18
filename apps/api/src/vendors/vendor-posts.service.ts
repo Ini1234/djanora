@@ -7,6 +7,7 @@ import {
   POST_INCLUDE,
   TAGS_PER_POST,
   mapPost,
+  normalizePostCategories,
   slugifyTag,
 } from '../inspiration/post-shape'
 import type { CreateVendorPostDto, UpdateVendorPostDto } from './dto/vendor-post.dto'
@@ -75,7 +76,7 @@ export class VendorPostsService {
       where: { id: postId },
       select: { title: true, _count: { select: { media: true } } },
     })
-    if (!post?.title.trim()) {
+    if (!post?.title?.trim()) {
       throw new BadRequestException('Add a title before publishing to Inspiration')
     }
     if (post._count.media < 1) {
@@ -109,11 +110,13 @@ export class VendorPostsService {
       throw new BadRequestException('Add media before publishing to Inspiration')
     }
 
+    const { category, categories } = normalizePostCategories(dto.category, dto.categories)
     const created = await this.prisma.inspirationItem.create({
       data: {
         title: dto.title.trim(),
         description: dto.description?.trim() ?? '',
-        category: dto.category,
+        category,
+        categories,
         location: dto.location?.trim() || null,
         priceRangeFrom: dto.priceRangeFrom ?? null,
         priceRangeTo: dto.priceRangeTo ?? null,
@@ -139,10 +142,12 @@ export class VendorPostsService {
     if (dto.visibility) await this.assertCanBeInspiration(postId, dto.visibility)
 
     const data: Prisma.InspirationItemUpdateInput = {
-      ...(dto.title !== undefined && { title: dto.title.trim() }),
-      ...(dto.description !== undefined && { description: dto.description.trim() }),
-      ...(dto.category !== undefined && { category: dto.category }),
-      ...(dto.location !== undefined && { location: dto.location.trim() || null }),
+      ...(dto.title !== undefined && { title: dto.title?.trim() ?? '' }),
+      ...(dto.description !== undefined && { description: dto.description?.trim() ?? '' }),
+      ...(dto.category !== undefined || dto.categories !== undefined
+        ? normalizePostCategories(dto.category, dto.categories)
+        : {}),
+      ...(dto.location !== undefined && { location: dto.location?.trim() || null }),
       ...(dto.priceRangeFrom !== undefined && { priceRangeFrom: dto.priceRangeFrom }),
       ...(dto.priceRangeTo !== undefined && { priceRangeTo: dto.priceRangeTo }),
       ...(dto.currency !== undefined && { currency: dto.currency }),

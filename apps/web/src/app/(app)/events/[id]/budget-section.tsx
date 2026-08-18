@@ -765,7 +765,6 @@ function ReceiptUploader({ eventId, item, onUploaded }: ReceiptUploaderProps) {
       const { data: receipt } = await proxyClient.post<BudgetReceipt>(
         `/events/${eventId}/budget/${item.id}/receipts`,
         fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       )
       onUploaded(receipt)
     } catch (err: unknown) {

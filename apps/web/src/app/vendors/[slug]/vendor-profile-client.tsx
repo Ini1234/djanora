@@ -59,6 +59,7 @@ export interface VendorLook {
   title: string
   description: string
   category: string
+  categories?: string[]
   tags: string[]
   imageUrl: string | null
   location: string | null

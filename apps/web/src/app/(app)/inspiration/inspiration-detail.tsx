@@ -21,6 +21,7 @@ import {
 import { proxyClient } from '@/lib/proxy-client'
 import { backend } from '@/lib/backend'
 import { InquiryModal } from '@/components/inquiries/inquiry-modal'
+import { lookCategoryLabel, lookCategories } from '@/lib/look-categories'
 import type { UserMe } from '@/lib/api.types'
 
 export interface InspirationDetailItem {
@@ -28,6 +29,7 @@ export interface InspirationDetailItem {
   title: string
   description: string
   category: string
+  categories?: string[]
   tags: string[]
   tagItems?: { slug: string; label: string }[]
   imageUrl: string | null
@@ -278,7 +280,7 @@ export function InspirationDetail({
                   className="text-[10px] font-semibold tracking-wider uppercase"
                   style={{ color: 'var(--color-brand-primary)' }}
                 >
-                  {detail.category}
+                  {lookCategoryLabel(lookCategories(detail))}
                 </p>
                 <h2
                   className="font-display text-lg leading-snug font-semibold"

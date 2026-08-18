@@ -20,8 +20,9 @@ import type { CreateInspirationDto } from './dto/create-inspiration.dto'
 import { EventAccessService, ALL_SURFACES, type EventAccess } from '../events/event-access.service'
 import { EventActivityService } from '../events/event-activity.service'
 import { NotificationsService } from '../notifications/notifications.service'
-import { POST_INCLUDE, mapPost } from './post-shape'
+import { POST_INCLUDE, mapPost, normalizePostCategories } from './post-shape'
 import { attachLookStats } from './look-stats'
+import { rewriteAppUploadUrl } from '../uploads/public-upload-url'
 
 // Re-export so controller can import from one place without emitDecoratorMetadata issues
 export type { CreateInspirationDto }
@@ -45,6 +46,7 @@ const ITEM_SELECT = {
   title: true,
   description: true,
   category: true,
+  categories: true,
   tags: true,
   imageUrl: true,
   location: true,
@@ -84,7 +86,7 @@ export class InspirationService {
   ): Prisma.InspirationItemWhereInput {
     return {
       visibility: InspirationVisibility.INSPIRATION,
-      ...(category ? { category } : {}),
+      ...(category ? { OR: [{ category }, { categories: { has: category } }] } : {}),
       ...(tag ? { tagLinks: { some: { tag: { slug: tag } } } } : {}),
     }
   }
@@ -238,12 +240,14 @@ export class InspirationService {
 
     const text = [dto.title, dto.description, ...(dto.tags ?? [])].join(' ')
     const embBytes = await this.embedding.embedDocument(text)
+    const { category, categories } = normalizePostCategories(dto.category, dto.categories)
 
     return this.prisma.inspirationItem.create({
       data: {
         title: dto.title,
         description: dto.description,
-        category: dto.category,
+        category,
+        categories,
         tags: dto.tags ?? [],
         imageUrl: dto.imageUrl,
         location: dto.location,
@@ -492,11 +496,15 @@ export class InspirationService {
     await this.access.assertCanSeeChecklistItem(access, checklistItemId)
     if (!this.access.canSee(access, EventSurface.MOODBOARD)) return []
 
-    return this.prisma.moodBoardItem.findMany({
+    const rows = await this.prisma.moodBoardItem.findMany({
       where: { checklistItemId },
       include: { inspirationItem: { select: ITEM_SELECT } },
       orderBy: { createdAt: 'desc' },
     })
+    return rows.map((row) => ({
+      ...row,
+      inspirationItem: this.withPublicCover(row.inspirationItem),
+    }))
   }
 
   // ─── Mood board: get by budget item ──────────────────────────────────────────
@@ -513,11 +521,15 @@ export class InspirationService {
     })
     if (!this.access.canSee(access, EventSurface.MOODBOARD)) return []
 
-    return this.prisma.moodBoardItem.findMany({
+    const rows = await this.prisma.moodBoardItem.findMany({
       where: { budgetItemId },
       include: { inspirationItem: { select: ITEM_SELECT } },
       orderBy: { createdAt: 'desc' },
     })
+    return rows.map((row) => ({
+      ...row,
+      inspirationItem: this.withPublicCover(row.inspirationItem),
+    }))
   }
 
   // ─── Re-embed all (admin utility) ─────────────────────────────────────────────
@@ -591,6 +603,7 @@ export class InspirationService {
       where: { id: itemId },
       select: {
         category: true,
+        categories: true,
         tags: true,
         title: true,
         description: true,
@@ -656,7 +669,13 @@ export class InspirationService {
     }
 
     // ── Case 3: category affinity + keyword fallback ──────────────────────
-    const affinityCategories = INSPIRATION_TO_VENDOR[item.category] ?? []
+    const affinityCategories = [
+      ...new Set(
+        (item.categories.length > 0 ? item.categories : [item.category]).flatMap(
+          (cat) => INSPIRATION_TO_VENDOR[cat] ?? [],
+        ),
+      ),
+    ]
     const itemKeywords = [
       ...item.tags,
       ...item.title.toLowerCase().split(/\s+/),
@@ -691,8 +710,13 @@ export class InspirationService {
       .slice(0, limit)
   }
 
+  private withPublicCover<T extends { imageUrl: string | null }>(item: T): T {
+    return { ...item, imageUrl: rewriteAppUploadUrl(item.imageUrl) }
+  }
+
   private projectMoodBoardRow<
     T extends {
+      inspirationItem: { imageUrl: string | null }
       checklistItem: { id: string; title: string } | null
       budgetItem: { id: string; label: string | null; category: string } | null
       scheduleLinks: { scheduleItem: { id: string; title: string } }[]
@@ -703,6 +727,7 @@ export class InspirationService {
     const can = (s: EventSurface) => isHost || surfaces.includes(s)
     return {
       ...rest,
+      inspirationItem: this.withPublicCover(row.inspirationItem),
       checklistItem: can(EventSurface.CHECKLIST) ? row.checklistItem : null,
       budgetItem: can(EventSurface.BUDGET) ? row.budgetItem : null,
       scheduleItems: can(EventSurface.SCHEDULE)

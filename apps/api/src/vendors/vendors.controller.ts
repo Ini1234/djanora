@@ -19,6 +19,7 @@ import { VendorsService } from './vendors.service'
 import { VendorPostsService } from './vendor-posts.service'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.service'
+import { storedUploadPath } from '../uploads/public-upload-url'
 import { CreateVendorProfileDto } from './dto/create-vendor-profile.dto'
 import { CreateReviewDto } from './dto/create-review.dto'
 import {
@@ -37,11 +38,6 @@ const imageUpload = FileInterceptor('file', {
   },
   limits: { fileSize: 10 * 1024 * 1024 },
 })
-
-function uploadedUrl(filename: string) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-  return `${apiBase}/uploads/${filename}`
-}
 
 @Controller('vendors')
 export class VendorsController {
@@ -113,7 +109,7 @@ export class VendorsController {
     if (!file) throw new BadRequestException('No file uploaded')
     const filename = makeUploadName(file.originalname, 'post-')
     await this.storage.upload('images', filename, file.buffer, file.mimetype)
-    return this.posts.addImage(req.userId, id, uploadedUrl(filename))
+    return this.posts.addImage(req.userId, id, storedUploadPath(filename))
   }
 
   @Post('me/posts/:id/media/link')
