@@ -17,6 +17,7 @@ import {
   Loader2,
   ArrowRight,
   Share2,
+  ChevronRight,
 } from 'lucide-react'
 import { ChecklistSection } from './checklist-section'
 import { BudgetSection } from './budget-section'
@@ -77,6 +78,28 @@ const TAB_IDS = new Set<Tab>(TABS.map((t) => t.id))
 function tabFromParam(value: string | null): Tab | null {
   if (value && TAB_IDS.has(value as Tab)) return value as Tab
   return null
+}
+
+function OverviewChip({
+  title,
+  summary,
+  onOpen,
+}: {
+  title: string
+  summary?: string
+  onOpen: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="card flex w-full items-center gap-2 px-5 py-4 text-left transition-opacity hover:opacity-80"
+    >
+      <ChevronRight size={14} className="text-muted shrink-0" />
+      <span className="text-foreground text-sm font-semibold">{title}</span>
+      {summary && <span className="text-muted ml-auto text-xs tabular-nums">{summary}</span>}
+    </button>
+  )
 }
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
@@ -301,10 +324,9 @@ function EditEventModal({
 
 interface Props {
   event: Event
-  guestCount: number
 }
 
-export function EventDetailClient({ event, guestCount }: Props) {
+export function EventDetailClient({ event }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { on } = useSse()
@@ -319,6 +341,7 @@ export function EventDetailClient({ event, guestCount }: Props) {
   const [focusItem, setFocusItem] = useState<{ tab: Tab; id: string } | null>(
     urlTab && urlItem ? { tab: urlTab, id: urlItem } : null,
   )
+  const [open, setOpen] = useState({ schedule: false, budget: false, checklist: false })
   const tabListRef = useRef<HTMLDivElement>(null)
   const peopleRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
@@ -402,8 +425,12 @@ export function EventDetailClient({ event, guestCount }: Props) {
     }
   }
 
-  function setChecklist(checklist: typeof localEvent.checklist) {
+  function setChecklist(checklist: NonNullable<typeof localEvent.checklist>) {
     setLocalEvent((prev) => ({ ...prev, checklist }))
+  }
+
+  function toggleOpen(key: keyof typeof open) {
+    setOpen((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   useLayoutEffect(() => {
@@ -430,11 +457,13 @@ export function EventDetailClient({ event, guestCount }: Props) {
 
   const past = isPastEvent(localEvent)
   const days = past ? null : daysUntil(localEvent.estimatedDate)
-  const totalSpent = localEvent.budgetItems.reduce((s, i) => s + i.spentAmount, 0)
-  const doneCount = localEvent.checklist.filter((c) => c.isCompleted).length
-  const totalTasks = localEvent.checklist.length
+  const stats = localEvent.stats
+  const totalSpent = stats?.spentTotal ?? 0
+  const doneCount = stats?.checklistDone ?? 0
+  const totalTasks = stats?.checklistTotal ?? 0
   const remaining = localEvent.totalBudget - totalSpent
   const budgetOver = remaining < 0
+  const guestCount = stats?.confirmedGuestCount ?? 0
 
   const subtitle = [
     EVENT_TYPE_LABELS[localEvent.eventType] ?? localEvent.eventType,
@@ -621,8 +650,9 @@ export function EventDetailClient({ event, guestCount }: Props) {
                     href="/vendors"
                     className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-all hover:opacity-80 active:scale-[.98]"
                     style={{
-                      background: 'var(--color-brand-primary)',
-                      color: 'var(--color-primary-foreground)',
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-text-primary)',
                     }}
                   >
                     <Sparkles size={13} />
@@ -690,8 +720,11 @@ export function EventDetailClient({ event, guestCount }: Props) {
                 return (
                   <button
                     key={id}
+                    type="button"
                     role="tab"
                     aria-selected={active}
+                    tabIndex={active ? 0 : -1}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                       setTab(id)
                       setFocusItem(null)
@@ -736,35 +769,57 @@ export function EventDetailClient({ event, guestCount }: Props) {
 
           {tab === 'overview' && (
             <div className="space-y-6">
-              {canSee('SCHEDULE') && (
-                <ScheduleSection
-                  eventId={localEvent.id}
-                  itinerary={!localEvent.parentId}
-                  childrenEvents={localEvent.children ?? []}
-                  initialItems={localEvent.schedule ?? []}
-                  budgetItems={localEvent.budgetItems}
-                  checklistItems={localEvent.checklist}
-                  onItemsChange={(schedule) => setLocalEvent((prev) => ({ ...prev, schedule }))}
-                  onOpenLinkedItem={openLinkedItem}
-                  onChecklistChange={setChecklist}
-                />
-              )}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {canSee('BUDGET') && (
+              {canSee('SCHEDULE') &&
+                (open.schedule ? (
+                  <ScheduleSection
+                    eventId={localEvent.id}
+                    itinerary={!localEvent.parentId}
+                    childrenEvents={localEvent.children ?? []}
+                    onItemsChange={(schedule) => setLocalEvent((prev) => ({ ...prev, schedule }))}
+                    onOpenLinkedItem={openLinkedItem}
+                    onChecklistChange={setChecklist}
+                    onCollapse={() => toggleOpen('schedule')}
+                  />
+                ) : (
+                  <OverviewChip
+                    title="Schedule"
+                    summary={
+                      stats?.scheduleCount
+                        ? `${stats.scheduleCount} block${stats.scheduleCount === 1 ? '' : 's'}`
+                        : undefined
+                    }
+                    onOpen={() => toggleOpen('schedule')}
+                  />
+                ))}
+              {canSee('BUDGET') &&
+                (open.budget ? (
                   <BudgetSection
                     eventId={localEvent.id}
-                    initialItems={localEvent.budgetItems}
+                    eventTitle={localEvent.title}
                     totalBudget={localEvent.totalBudget}
+                    onCollapse={() => toggleOpen('budget')}
                   />
-                )}
-                {canSee('CHECKLIST') && (
+                ) : (
+                  <OverviewChip
+                    title="Budget"
+                    summary={`CA$${totalSpent.toLocaleString('en-CA')} spent`}
+                    onOpen={() => toggleOpen('budget')}
+                  />
+                ))}
+              {canSee('CHECKLIST') &&
+                (open.checklist ? (
                   <ChecklistSection
                     eventId={localEvent.id}
-                    initialItems={localEvent.checklist}
                     onItemsChange={setChecklist}
+                    onCollapse={() => toggleOpen('checklist')}
                   />
-                )}
-              </div>
+                ) : (
+                  <OverviewChip
+                    title="Checklist"
+                    summary={totalTasks > 0 ? `${doneCount}/${totalTasks}` : undefined}
+                    onOpen={() => toggleOpen('checklist')}
+                  />
+                ))}
               <EventActivityFeed eventId={localEvent.id} />
               <div
                 className="rounded-2xl px-5 py-4"
@@ -780,9 +835,6 @@ export function EventDetailClient({ event, guestCount }: Props) {
               eventId={localEvent.id}
               itinerary={!localEvent.parentId}
               childrenEvents={localEvent.children ?? []}
-              initialItems={localEvent.schedule ?? []}
-              budgetItems={localEvent.budgetItems}
-              checklistItems={localEvent.checklist}
               focusItemId={focusItem?.tab === 'schedule' ? focusItem.id : undefined}
               onItemsChange={(schedule) => setLocalEvent((prev) => ({ ...prev, schedule }))}
               onOpenLinkedItem={openLinkedItem}
@@ -793,7 +845,6 @@ export function EventDetailClient({ event, guestCount }: Props) {
           {tab === 'checklist' && (
             <ChecklistSection
               eventId={localEvent.id}
-              initialItems={localEvent.checklist}
               focusItemId={focusItem?.tab === 'checklist' ? focusItem.id : undefined}
               onItemsChange={setChecklist}
             />
@@ -802,7 +853,7 @@ export function EventDetailClient({ event, guestCount }: Props) {
           {tab === 'budget' && (
             <BudgetSection
               eventId={localEvent.id}
-              initialItems={localEvent.budgetItems}
+              eventTitle={localEvent.title}
               totalBudget={localEvent.totalBudget}
               focusItemId={focusItem?.tab === 'budget' ? focusItem.id : undefined}
             />

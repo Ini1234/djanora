@@ -97,6 +97,20 @@ export interface EventBudgetItem {
   receipts: BudgetReceipt[]
 }
 
+export interface EventChecklistVendor {
+  id?: string
+  vendorProfileId: string | null
+  userVendorContactId: string | null
+  name: string | null
+  vendorProfile: {
+    id: string
+    businessName: string
+    isVerified: boolean
+    slug: string
+  } | null
+  userVendorContact: UserVendorContact | null
+}
+
 export interface EventChecklistItem {
   id: string
   title: string
@@ -107,6 +121,7 @@ export interface EventChecklistItem {
   notifyBySms: boolean
   needsVendor: boolean
   vendorCategory: string | null
+  vendors?: EventChecklistVendor[]
   vendorProfileId: string | null
   userVendorContactId: string | null
   userVendorContact: UserVendorContact | null
@@ -164,6 +179,14 @@ export interface EventViewer {
   userId?: string | null
 }
 
+export interface EventStats {
+  spentTotal: number
+  checklistDone: number
+  checklistTotal: number
+  scheduleCount: number
+  confirmedGuestCount: number
+}
+
 export interface Event {
   id: string
   title: string
@@ -180,9 +203,10 @@ export interface Event {
   parentId?: string | null
   sortOrder?: number
   createdAt: string
-  budgetItems: EventBudgetItem[]
-  checklist: EventChecklistItem[]
+  budgetItems?: EventBudgetItem[]
+  checklist?: EventChecklistItem[]
   schedule?: EventScheduleItem[]
+  stats?: EventStats
   viewer?: EventViewer
   parent?: { id: string; title: string } | null
   children?: EventJourneyStop[]
@@ -202,9 +226,14 @@ export interface UserChecklist {
   eventChecklistId: string | null
   event: { id: string; title: string } | null
   assigneeUserId?: string
-  source?: 'MINE' | 'ASSIGNED'
+  source?: 'MINE' | 'ASSIGNED' | 'EVENT'
   createdAt: string
   updatedAt: string
+}
+
+export interface UserChecklistPage {
+  items: UserChecklist[]
+  nextCursor: string | null
 }
 
 export interface EventJourneyStop {

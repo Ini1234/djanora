@@ -3,7 +3,7 @@ import { createClerkClient } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { EventSurface, UserRole, Tribe } from '@prisma/client'
-import { EventAccessService } from '../events/event-access.service'
+import { ALL_SURFACES, EventAccessService } from '../events/event-access.service'
 
 interface UpsertUserDto {
   clerkId: string
@@ -178,7 +178,7 @@ export class UsersService {
   private async requireUser(clerkId: string) {
     const user = await this.prisma.user.findUnique({
       where: { clerkId },
-      select: { id: true },
+      select: { id: true, email: true },
     })
     if (!user) throw new NotFoundException('User not found')
     return user
@@ -217,30 +217,49 @@ export class UsersService {
     }
   }
 
-  async listChecklists(clerkId: string) {
-    const user = await this.requireUser(clerkId)
-    const rows = await this.prisma.userChecklist.findMany({
-      where: { userId: user.id },
-      include: { event: { select: { id: true, title: true } } },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-    })
-    const mine = rows.map((row) => ({ ...this.projectChecklist(row), source: 'MINE' as const }))
-    const linked = new Set(rows.map((row) => row.eventChecklistId).filter(Boolean))
+  private pageLimit(limit: number | undefined, fallback: number) {
+    if (!Number.isFinite(limit)) return fallback
+    return Math.min(Math.max(Math.trunc(limit!), 1), 50)
+  }
 
+  private paginateChecklist<T extends { id: string }>(items: T[], limit: number, cursor?: string) {
+    let start = 0
+    if (cursor) {
+      const idx = items.findIndex((item) => item.id === cursor)
+      if (idx === -1) throw new BadRequestException('Invalid cursor')
+      start = idx + 1
+    }
+    const slice = items.slice(start, start + limit + 1)
+    const hasMore = slice.length > limit
+    const page = hasMore ? slice.slice(0, limit) : slice
+    return { items: page, nextCursor: hasMore ? page[page.length - 1].id : null }
+  }
+
+  private compareDue(
+    a: { dueDate: string | null; isCompleted?: boolean; id: string },
+    b: { dueDate: string | null; isCompleted?: boolean; id: string },
+  ) {
+    if (Boolean(a.isCompleted) !== Boolean(b.isCompleted)) return a.isCompleted ? 1 : -1
+    if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate)
+    if (a.dueDate && !b.dueDate) return -1
+    if (!a.dueDate && b.dueDate) return 1
+    return a.id.localeCompare(b.id)
+  }
+
+  private async visibleAssigned(clerkId: string, userId: string, linked: Set<string>) {
     const assigned = await this.prisma.eventChecklist.findMany({
       where: {
-        assigneeUserId: user.id,
-        id: { notIn: [...linked] as string[] },
+        assigneeUserId: userId,
+        ...(linked.size ? { id: { notIn: [...linked] } } : {}),
         event: { deletedAt: null },
       },
       include: {
-        event: { select: { id: true, title: true, parentId: true, userId: true } },
+        event: { select: { id: true, title: true } },
         concealments: { select: { eventMemberId: true } },
       },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     })
 
-    const visibleAssigned: Array<
+    const visible: Array<
       ReturnType<UsersService['projectChecklist']> & {
         assigneeUserId: string
         source: 'ASSIGNED'
@@ -257,7 +276,7 @@ export class UsersService {
         canSee = false
       }
       if (!canSee) continue
-      visibleAssigned.push({
+      visible.push({
         id: row.id,
         title: row.title,
         isCompleted: row.isCompleted,
@@ -265,19 +284,163 @@ export class UsersService {
         eventId: row.eventId,
         eventChecklistId: row.id,
         event: { id: row.event.id, title: row.event.title },
-        assigneeUserId: user.id,
+        assigneeUserId: userId,
         source: 'ASSIGNED' as const,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
       })
     }
+    return visible
+  }
 
-    return [...mine, ...visibleAssigned].sort((a, b) => {
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
-      if (a.dueDate) return -1
-      if (b.dueDate) return 1
-      return b.createdAt.localeCompare(a.createdAt)
+  private async visibleDueEventItems(user: { id: string; email: string }, hideIds: Set<string>) {
+    const [hosted, memberships, grants] = await Promise.all([
+      this.prisma.event.findMany({
+        where: { userId: user.id, deletedAt: null },
+        select: { id: true, title: true },
+      }),
+      this.prisma.eventMember.findMany({
+        where: { userId: user.id, acceptedAt: { not: null }, event: { deletedAt: null } },
+        select: {
+          id: true,
+          eventId: true,
+          surfaces: true,
+          event: { select: { id: true, title: true } },
+        },
+      }),
+      this.prisma.eventSubGrant.findMany({
+        where: {
+          member: {
+            acceptedAt: { not: null },
+            OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
+            event: { deletedAt: null },
+          },
+          event: { deletedAt: null },
+        },
+        select: {
+          eventId: true,
+          surfaces: true,
+          event: { select: { id: true, title: true } },
+          member: { select: { id: true } },
+        },
+      }),
+    ])
+
+    const accessByEvent = new Map<
+      string,
+      { title: string; isHost: boolean; memberId?: string; surfaces: EventSurface[] }
+    >()
+    for (const event of hosted) {
+      accessByEvent.set(event.id, { title: event.title, isHost: true, surfaces: ALL_SURFACES })
+    }
+    for (const member of memberships) {
+      if (accessByEvent.has(member.eventId)) continue
+      accessByEvent.set(member.eventId, {
+        title: member.event.title,
+        isHost: false,
+        memberId: member.id,
+        surfaces: member.surfaces,
+      })
+    }
+    for (const grant of grants) {
+      if (accessByEvent.has(grant.eventId)) continue
+      accessByEvent.set(grant.eventId, {
+        title: grant.event.title,
+        isHost: false,
+        memberId: grant.member.id,
+        surfaces: grant.surfaces,
+      })
+    }
+
+    const eventIds = [...accessByEvent.entries()]
+      .filter(([, access]) => access.isHost || access.surfaces.includes(EventSurface.CHECKLIST))
+      .map(([id]) => id)
+    if (eventIds.length === 0) return []
+
+    const rows = await this.prisma.eventChecklist.findMany({
+      where: {
+        eventId: { in: eventIds },
+        isCompleted: false,
+        dueDate: { not: null },
+        ...(hideIds.size ? { id: { notIn: [...hideIds] } } : {}),
+      },
+      include: {
+        event: { select: { id: true, title: true } },
+        concealments: { select: { eventMemberId: true } },
+      },
     })
+
+    return rows.flatMap((row) => {
+      const access = accessByEvent.get(row.eventId)
+      if (!access) return []
+      if (
+        !access.isHost &&
+        access.memberId &&
+        row.concealments.some((conceal) => conceal.eventMemberId === access.memberId)
+      ) {
+        return []
+      }
+      const assigned = row.assigneeUserId === user.id
+      return [
+        {
+          id: row.id,
+          title: row.title,
+          isCompleted: row.isCompleted,
+          dueDate: row.dueDate?.toISOString() ?? null,
+          eventId: row.eventId,
+          eventChecklistId: row.id,
+          event: { id: row.event.id, title: row.event.title },
+          assigneeUserId: row.assigneeUserId ?? undefined,
+          source: assigned ? ('ASSIGNED' as const) : ('EVENT' as const),
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        },
+      ]
+    })
+  }
+
+  async listDueChecklists(clerkId: string, opts: { limit?: number; cursor?: string } = {}) {
+    const user = await this.requireUser(clerkId)
+    const limit = this.pageLimit(opts.limit, 8)
+
+    const rows = await this.prisma.userChecklist.findMany({
+      where: {
+        userId: user.id,
+        isCompleted: false,
+        dueDate: { not: null },
+      },
+      include: { event: { select: { id: true, title: true } } },
+    })
+    const mine = rows.map((row) => ({ ...this.projectChecklist(row), source: 'MINE' as const }))
+    const hideIds = new Set(
+      [
+        ...rows.map((row) => row.eventChecklistId),
+        ...(
+          await this.prisma.userChecklist.findMany({
+            where: { userId: user.id, isCompleted: true, eventChecklistId: { not: null } },
+            select: { eventChecklistId: true },
+          })
+        ).map((row) => row.eventChecklistId),
+      ].filter((id): id is string => !!id),
+    )
+
+    const eventItems = await this.visibleDueEventItems(user, hideIds)
+    const items = [...mine, ...eventItems].sort((a, b) => this.compareDue(a, b))
+    return this.paginateChecklist(items, limit, opts.cursor)
+  }
+
+  async listChecklists(clerkId: string, opts: { limit?: number; cursor?: string } = {}) {
+    const user = await this.requireUser(clerkId)
+    const limit = this.pageLimit(opts.limit, 20)
+    const rows = await this.prisma.userChecklist.findMany({
+      where: { userId: user.id },
+      include: { event: { select: { id: true, title: true } } },
+    })
+    const mine = rows.map((row) => ({ ...this.projectChecklist(row), source: 'MINE' as const }))
+    const linked = new Set(rows.map((row) => row.eventChecklistId).filter(Boolean) as string[])
+    const assigned = await this.visibleAssigned(clerkId, user.id, linked)
+    const items = [...mine, ...assigned].sort((a, b) => this.compareDue(a, b))
+    return this.paginateChecklist(items, limit, opts.cursor)
   }
 
   async createChecklist(

@@ -2,7 +2,13 @@ import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@n
 import { GuestsService } from './guests.service'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
-import { CreateGuestDto, UpdateGuestDto, SendInviteDto, BulkSendInviteDto } from './dto/guests.dto'
+import {
+  CreateGuestDto,
+  UpdateGuestDto,
+  SendInviteDto,
+  BulkSendInviteDto,
+  ImportGuestsDto,
+} from './dto/guests.dto'
 
 interface ClerkPayload {
   sub: string
@@ -25,6 +31,15 @@ export class GuestsController {
     @Body() dto: CreateGuestDto,
   ) {
     return this.guestsService.addGuest(user.sub, eventId, dto)
+  }
+
+  @Post('import')
+  importGuests(
+    @CurrentUser() user: ClerkPayload,
+    @Param('eventId') eventId: string,
+    @Body() dto: ImportGuestsDto,
+  ) {
+    return this.guestsService.importGuests(user.sub, eventId, dto)
   }
 
   @Patch(':guestId')

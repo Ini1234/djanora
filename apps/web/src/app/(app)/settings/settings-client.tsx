@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import dynamic from 'next/dynamic'
 import { LogOut, Mail } from 'lucide-react'
 import { CONTACT_EMAIL, CONTACT_MAILTO } from '@/lib/contact'
 import { proxyClient } from '@/lib/proxy-client'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { signOutToHome } from '@/lib/client-sign-out'
+import { PersonalChecklist } from '@/components/dashboard/personal-checklist'
 import type { UserMe } from '@/lib/api.types'
 
 const SettingsSecurity = dynamic(
@@ -29,6 +30,11 @@ export function SettingsClient({ user }: { user: UserMe }) {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
+
+  useEffect(() => {
+    if (window.location.hash !== '#checklist') return
+    document.getElementById('checklist')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
   const fieldStyle = {
     background: 'var(--input-bg)',
@@ -140,6 +146,22 @@ export function SettingsClient({ user }: { user: UserMe }) {
         >
           {pending ? 'Saving…' : 'Save profile'}
         </button>
+      </section>
+
+      <section
+        id="checklist"
+        className="space-y-4 rounded-2xl p-5"
+        style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
+      >
+        <div>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            Checklist
+          </h2>
+          <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
+            All of your tasks, including completed ones.
+          </p>
+        </div>
+        <PersonalChecklist variant="all" />
       </section>
 
       <section

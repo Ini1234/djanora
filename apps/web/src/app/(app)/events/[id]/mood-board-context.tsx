@@ -54,6 +54,7 @@ interface MoodBoardContextValue {
   entriesByBudgetId: Map<string, MoodBoardEntry[]>
   entriesByScheduleId: Map<string, MoodBoardEntry[]>
   reload: () => Promise<void>
+  ensureLoaded: () => void
   removeEntry: (inspirationItemId: string) => Promise<void>
 }
 
@@ -61,10 +62,11 @@ const MoodBoardContext = createContext<MoodBoardContextValue | null>(null)
 
 export function MoodBoardProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const [entries, setEntries] = useState<MoodBoardEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const loadedRef = useRef(false)
 
   const reload = useCallback(async () => {
+    setLoading(true)
     try {
       const { data } = await proxyClient.get<MoodBoardEntry[]>(`/inspiration/mood-board/${eventId}`)
       setEntries(Array.isArray(data) ? data : [])
@@ -75,10 +77,10 @@ export function MoodBoardProvider({ eventId, children }: { eventId: string; chil
     }
   }, [eventId])
 
-  useEffect(() => {
+  const ensureLoaded = useCallback(() => {
     if (loadedRef.current) return
     loadedRef.current = true
-    reload()
+    void reload()
   }, [reload])
 
   const removeEntry = useCallback(
@@ -129,6 +131,7 @@ export function MoodBoardProvider({ eventId, children }: { eventId: string; chil
       entriesByBudgetId,
       entriesByScheduleId,
       reload,
+      ensureLoaded,
       removeEntry,
     }),
     [
@@ -138,6 +141,7 @@ export function MoodBoardProvider({ eventId, children }: { eventId: string; chil
       entriesByBudgetId,
       entriesByScheduleId,
       reload,
+      ensureLoaded,
       removeEntry,
     ],
   )
@@ -148,5 +152,8 @@ export function MoodBoardProvider({ eventId, children }: { eventId: string; chil
 export function useMoodBoardLinks() {
   const ctx = useContext(MoodBoardContext)
   if (!ctx) throw new Error('useMoodBoardLinks must be used within MoodBoardProvider')
+  useEffect(() => {
+    ctx.ensureLoaded()
+  }, [ctx])
   return ctx
 }

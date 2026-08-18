@@ -10,8 +10,12 @@ import { BlobStorageService } from '../uploads/blob-storage.service'
 import { EventActivityAction, EventSurface, VendorCategory } from '@prisma/client'
 import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './dto/children.dto'
 import { CreateEventDto } from './dto/create-event.dto'
-import { CreateChecklistItemDto, UpdateChecklistItemDto } from './dto/checklist.dto'
-import { CreateBudgetItemDto, UpdateBudgetItemDto } from './dto/budget.dto'
+import {
+  CreateChecklistItemDto,
+  UpdateChecklistItemDto,
+  ChecklistVendorInputDto,
+} from './dto/checklist.dto'
+import { CreateBudgetItemDto, UpdateBudgetItemDto, ImportBudgetDto } from './dto/budget.dto'
 import { UpdateEventDto } from './dto/update-event.dto'
 import { CreateScheduleItemDto, UpdateScheduleItemDto } from './dto/schedule.dto'
 import {
@@ -74,24 +78,54 @@ const DEFAULT_BUDGET_SPLIT: Record<VendorCategory, number> = {
   OTHER: 0.02,
 }
 
-const EVENT_DETAIL_INCLUDE = {
-  budgetItems: {
-    orderBy: { category: 'asc' as const },
-    include: { receipts: { orderBy: { createdAt: 'asc' as const } } },
-  },
-  checklist: {
-    orderBy: { sortOrder: 'asc' as const },
-    include: {
-      assignee: { select: { id: true, firstName: true, lastName: true } },
-      concealments: { select: { eventMemberId: true } },
-    },
-  },
-  schedule: {
-    orderBy: [{ startTime: 'asc' as const }, { sortOrder: 'asc' as const }],
-    include: SCHEDULE_INCLUDE,
-  },
-  inquiries: { select: { id: true, status: true, vendorProfileId: true } },
+const DEFAULT_BUDGET_ITEM_LABELS: Record<VendorCategory, string> = {
+  CATERER: 'Catering',
+  PHOTOGRAPHER: 'Photography',
+  VIDEOGRAPHER: 'Videography',
+  DECORATOR: 'Decor & flowers',
+  DJ: 'DJ set',
+  LIVE_BAND: 'Live performance',
+  MAKEUP_ARTIST: 'Hair & makeup',
+  MC: 'Hosting',
+  WEDDING_PLANNER: 'Planning',
+  FASHION_STYLIST: 'Attire',
+  OTHER: 'Miscellaneous',
 }
+
+function defaultBudgetItems(total: number) {
+  return Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
+    category: category as VendorCategory,
+    label: DEFAULT_BUDGET_ITEM_LABELS[category as VendorCategory],
+    allocatedAmount: Math.round(total * ratio),
+    spentAmount: 0,
+  }))
+}
+
+const CHECKLIST_VENDOR_INCLUDE = {
+  orderBy: { sortOrder: 'asc' as const },
+  include: {
+    userVendorContact: true,
+    vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } },
+  },
+} as const
+
+const CHECKLIST_ITEM_INCLUDE = {
+  vendors: CHECKLIST_VENDOR_INCLUDE,
+  assignee: { select: { id: true, firstName: true, lastName: true } },
+} as const
+
+const EVENT_SHELL_INCLUDE = {
+  parent: { select: { id: true, title: true } },
+} as const
+
+const BUDGET_ITEM_INCLUDE = {
+  receipts: { orderBy: { createdAt: 'asc' as const } },
+  userVendorContact: true,
+} as const
+
+const LIST_EVENT_INCLUDE = {
+  parent: { select: { id: true, title: true } },
+} as const
 
 function recencyMs(
   event: { id: string; createdAt: Date; updatedAt?: Date },
@@ -122,9 +156,129 @@ export class EventsService {
     void this.activity.log({ eventId, actorId, action, surface, summary, subjectType, subjectId })
   }
 
+  private vendorsFromDto(dto: {
+    vendors?: ChecklistVendorInputDto[]
+    vendorProfileId?: string | null
+    userVendorContactId?: string | null
+    needsVendor?: boolean
+  }): ChecklistVendorInputDto[] | undefined {
+    if (dto.needsVendor === false) return []
+    if (dto.vendors !== undefined) return dto.vendors
+    if (dto.vendorProfileId !== undefined || dto.userVendorContactId !== undefined) {
+      if (!dto.vendorProfileId && !dto.userVendorContactId) return []
+      return [
+        {
+          vendorProfileId: dto.vendorProfileId ?? null,
+          userVendorContactId: dto.userVendorContactId ?? null,
+        },
+      ]
+    }
+    return undefined
+  }
+
+  private async replaceChecklistVendors(
+    checklistId: string,
+    userId: string,
+    vendors: ChecklistVendorInputDto[],
+  ) {
+    const cleaned: {
+      vendorProfileId: string | null
+      userVendorContactId: string | null
+      name: string | null
+      sortOrder: number
+    }[] = []
+    const seen = new Set<string>()
+
+    for (const vendor of vendors) {
+      let vendorProfileId: string | null = null
+      let userVendorContactId: string | null = null
+      let name = vendor.name?.trim() || null
+
+      if (vendor.vendorProfileId) {
+        const profile = await this.prisma.vendorProfile.findUnique({
+          where: { id: vendor.vendorProfileId },
+          select: { id: true, businessName: true },
+        })
+        if (!profile) continue
+        vendorProfileId = profile.id
+        name = profile.businessName
+      } else if (vendor.userVendorContactId) {
+        const contact = await this.prisma.userVendorContact.findFirst({
+          where: { id: vendor.userVendorContactId, userId },
+          select: { id: true, name: true },
+        })
+        if (!contact) continue
+        userVendorContactId = contact.id
+        name = contact.name
+      }
+
+      if (!vendorProfileId && !userVendorContactId && !name) continue
+      const key = vendorProfileId
+        ? `p:${vendorProfileId}`
+        : userVendorContactId
+          ? `c:${userVendorContactId}`
+          : `n:${name!.toLowerCase()}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      cleaned.push({ vendorProfileId, userVendorContactId, name, sortOrder: cleaned.length })
+    }
+
+    await this.prisma.eventChecklistVendor.deleteMany({ where: { checklistId } })
+    if (cleaned.length === 0) return
+    await this.prisma.eventChecklistVendor.createMany({
+      data: cleaned.map((row) => ({ checklistId, ...row })),
+    })
+  }
+
+  private toChecklistItemDto<
+    T extends {
+      vendors?: {
+        id: string
+        vendorProfileId: string | null
+        userVendorContactId: string | null
+        name: string | null
+        sortOrder: number
+        vendorProfile: {
+          id: string
+          businessName: string
+          isVerified: boolean
+          slug: string
+        } | null
+        userVendorContact: unknown
+      }[]
+      concealments?: { eventMemberId: string }[]
+    },
+  >(row: T, hiddenFromMemberIds: string[] = []) {
+    const { concealments: _concealments, vendors = [], ...rest } = row
+    const mapped = vendors.map((vendor) => ({
+      id: vendor.id,
+      vendorProfileId: vendor.vendorProfileId,
+      userVendorContactId: vendor.userVendorContactId,
+      name:
+        vendor.vendorProfile?.businessName ??
+        (vendor.userVendorContact as { name?: string } | null)?.name ??
+        vendor.name,
+      vendorProfile: vendor.vendorProfile,
+      userVendorContact: vendor.userVendorContact,
+    }))
+    const first = mapped[0] ?? null
+    return {
+      ...rest,
+      vendors: mapped,
+      vendorProfileId: first?.vendorProfileId ?? null,
+      userVendorContactId: first?.userVendorContactId ?? null,
+      vendorProfile: first?.vendorProfile ?? null,
+      userVendorContact: first?.userVendorContact ?? null,
+      hiddenFromMemberIds,
+    }
+  }
+
   async create(clerkId: string, dto: CreateEventDto) {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
+
+    const seedBudget = dto.includeDefaultBudget === true
+    const seedChecklist = dto.includeDefaultChecklist === true
 
     const event = await this.prisma.event.create({
       data: {
@@ -137,16 +291,16 @@ export class EventsService {
         estimatedDate: dto.estimatedDate ? new Date(dto.estimatedDate) : null,
         guestCount: dto.guestCount ?? null,
         location: dto.location ?? 'Ottawa, Ontario, Canada',
-        budgetItems: {
-          create: Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
-            category: category as VendorCategory,
-            allocatedAmount: Math.round(dto.totalBudget * ratio),
-            spentAmount: 0,
-          })),
-        },
-        checklist: {
-          create: this.getDefaultChecklist(dto.tribes),
-        },
+        ...(seedBudget && {
+          budgetItems: {
+            create: defaultBudgetItems(dto.totalBudget),
+          },
+        }),
+        ...(seedChecklist && {
+          checklist: {
+            create: this.getDefaultChecklist(dto.tribes),
+          },
+        }),
       },
       include: {
         budgetItems: true,
@@ -165,12 +319,19 @@ export class EventsService {
     const access = await this.access.require(clerkId, eventId)
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, deletedAt: null },
-      include: EVENT_DETAIL_INCLUDE,
+      include: EVENT_SHELL_INCLUDE,
     })
     if (!event) return event
     void this.activity.recordOpen(access.user.id, eventId)
-    const tree = await this.projectTree(access)
-    return { ...this.projectEvent(event, access, assignedToMe), ...tree }
+    const [tree, stats] = await Promise.all([
+      this.projectTree(access),
+      this.eventStats(eventId, access, assignedToMe),
+    ])
+    return {
+      ...this.projectShell(event, access),
+      stats,
+      ...tree,
+    }
   }
 
   async updateEvent(clerkId: string, eventId: string, dto: UpdateEventDto) {
@@ -300,11 +461,10 @@ export class EventsService {
           currency: parent.currency,
           sortOrder: (last?.sortOrder ?? 0) + 1,
           budgetItems: {
-            create: Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
-              category: category as VendorCategory,
-              allocatedAmount: Math.round(envelope * ratio),
-              spentAmount: 0,
-            })),
+            create: defaultBudgetItems(envelope),
+          },
+          checklist: {
+            create: this.getDefaultChecklist(dto.tribes),
           },
         },
       })
@@ -411,20 +571,7 @@ export class EventsService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
 
-    const listInclude = {
-      parent: { select: { id: true, title: true } },
-      budgetItems: { include: { receipts: true, userVendorContact: true } },
-      checklist: {
-        include: {
-          userVendorContact: true,
-          vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } },
-        },
-      },
-      schedule: {
-        orderBy: [{ startTime: 'asc' as const }, { sortOrder: 'asc' as const }],
-        include: SCHEDULE_INCLUDE,
-      },
-    }
+    const listInclude = LIST_EVENT_INCLUDE
 
     const [hosted, memberships, grants] = await Promise.all([
       this.prisma.event.findMany({
@@ -454,7 +601,7 @@ export class EventsService {
 
     const hostedIds = new Set(hosted.map((e) => e.id))
     const hostedProjected = hosted.map((event) =>
-      this.projectEvent(event, {
+      this.projectShell(event, {
         user,
         event,
         isHost: true,
@@ -467,7 +614,7 @@ export class EventsService {
       .filter((m) => !seen.has(m.eventId))
       .map((m) => {
         seen.add(m.eventId)
-        return this.projectEvent(m.event, {
+        return this.projectShell(m.event, {
           user,
           event: m.event,
           isHost: false,
@@ -479,7 +626,7 @@ export class EventsService {
     const grantProjected = grants
       .filter((g) => !seen.has(g.eventId))
       .map((g) =>
-        this.projectEvent(g.event, {
+        this.projectShell(g.event, {
           user,
           event: g.event,
           isHost: false,
@@ -499,7 +646,6 @@ export class EventsService {
       select: { eventId: true, seenAt: true },
     })
     const openedAt = new Map(opened.map((row) => [row.eventId, row.seenAt.getTime()]))
-
     return combined.sort((a, b) => recencyMs(b, openedAt) - recencyMs(a, openedAt))
   }
 
@@ -508,11 +654,12 @@ export class EventsService {
   async listBudget(clerkId: string, eventId: string) {
     await this.access.require(clerkId, eventId, { surface: EventSurface.BUDGET, action: 'view' })
 
-    return this.prisma.eventBudgetItem.findMany({
+    const items = await this.prisma.eventBudgetItem.findMany({
       where: { eventId },
       orderBy: { category: 'asc' },
-      select: { id: true, label: true, vendorName: true, category: true },
+      include: BUDGET_ITEM_INCLUDE,
     })
+    return rewriteReceiptUrls(eventId, items)
   }
 
   async addBudgetItem(clerkId: string, eventId: string, dto: CreateBudgetItemDto) {
@@ -568,6 +715,62 @@ export class EventsService {
       created.id,
     )
     return created
+  }
+
+  async importBudgetItems(clerkId: string, eventId: string, dto: ImportBudgetDto) {
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'edit',
+    })
+    const existing = await this.prisma.eventBudgetItem.findMany({
+      where: { eventId },
+      select: { category: true, label: true, vendorName: true },
+    })
+    const seen = new Set(
+      existing.map(
+        (row) =>
+          `${row.category}|${(row.label ?? '').trim().toLowerCase()}|${(row.vendorName ?? '').trim().toLowerCase()}`,
+      ),
+    )
+    const toCreate: {
+      eventId: string
+      category: VendorCategory
+      label: string | null
+      vendorName: string | null
+      notes: string | null
+      allocatedAmount: number
+      spentAmount: number
+    }[] = []
+    let skipped = 0
+    for (const item of dto.items) {
+      const key = `${item.category}|${(item.label ?? '').trim().toLowerCase()}|${(item.vendorName ?? '').trim().toLowerCase()}`
+      if (seen.has(key)) {
+        skipped += 1
+        continue
+      }
+      seen.add(key)
+      toCreate.push({
+        eventId,
+        category: item.category,
+        label: item.label ?? null,
+        vendorName: item.vendorName ?? null,
+        notes: item.notes ?? null,
+        allocatedAmount: item.allocatedAmount,
+        spentAmount: item.spentAmount ?? 0,
+      })
+    }
+    if (toCreate.length > 0) {
+      await this.prisma.eventBudgetItem.createMany({ data: toCreate })
+      this.track(
+        eventId,
+        user.id,
+        EventActivityAction.CREATED,
+        EventSurface.BUDGET,
+        `Imported ${toCreate.length} budget item${toCreate.length === 1 ? '' : 's'}`,
+      )
+    }
+    const items = await this.listBudget(clerkId, eventId)
+    return { created: toCreate.length, skipped, items }
   }
 
   async updateBudgetItem(
@@ -769,13 +972,19 @@ export class EventsService {
       },
       orderBy: { sortOrder: 'asc' },
       include: {
+        ...CHECKLIST_ITEM_INCLUDE,
         concealments: { select: { eventMemberId: true } },
       },
     })
 
     return rows
       .filter((row) => this.access.canSeeChecklistRow(access, row.concealments))
-      .map((row) => ({ id: row.id, title: row.title }))
+      .map((row) =>
+        this.toChecklistItemDto(
+          row,
+          access.isHost ? row.concealments.map((c) => c.eventMemberId) : [],
+        ),
+      )
   }
 
   async addChecklistItem(clerkId: string, eventId: string, dto: CreateChecklistItemDto) {
@@ -789,24 +998,8 @@ export class EventsService {
       orderBy: { sortOrder: 'desc' },
     })
 
-    // Validate vendor FKs — only link if they actually exist
-    const safeVendorProfileId = dto.vendorProfileId
-      ? ((
-          await this.prisma.vendorProfile.findUnique({
-            where: { id: dto.vendorProfileId },
-            select: { id: true },
-          })
-        )?.id ?? null)
-      : null
-
-    const safeContactId = dto.userVendorContactId
-      ? ((
-          await this.prisma.userVendorContact.findFirst({
-            where: { id: dto.userVendorContactId, userId: user.id },
-            select: { id: true },
-          })
-        )?.id ?? null)
-      : null
+    const assigneeUserId = dto.assigneeUserId || null
+    if (assigneeUserId) await this.assertAssignee(eventId, assigneeUserId)
 
     const created = await this.prisma.eventChecklist.create({
       data: {
@@ -818,15 +1011,17 @@ export class EventsService {
         notifyBySms: dto.notifyBySms ?? false,
         needsVendor: dto.needsVendor ?? false,
         vendorCategory: dto.vendorCategory ?? null,
-        vendorProfileId: safeVendorProfileId,
-        userVendorContactId: safeContactId,
+        assigneeUserId,
         sortOrder: (last?.sortOrder ?? 0) + 1,
       },
-      include: {
-        userVendorContact: true,
-        vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } },
-      },
+      include: CHECKLIST_ITEM_INCLUDE,
     })
+
+    const vendors = this.vendorsFromDto(dto) ?? []
+    if (vendors.length > 0) {
+      await this.replaceChecklistVendors(created.id, user.id, vendors)
+    }
+
     this.track(
       eventId,
       user.id,
@@ -836,7 +1031,12 @@ export class EventsService {
       'CHECKLIST_ITEM',
       created.id,
     )
-    return created
+
+    const row = await this.prisma.eventChecklist.findUniqueOrThrow({
+      where: { id: created.id },
+      include: CHECKLIST_ITEM_INCLUDE,
+    })
+    return this.toChecklistItemDto(row)
   }
 
   async updateChecklistItem(
@@ -877,45 +1077,6 @@ export class EventsService {
             )?.assigneeUserId ?? null)
       await this.assertAssignee(eventId, assignee, dto.hiddenFromMemberIds, itemId)
     }
-    let safeVendorProfileId: string | null | undefined = undefined
-    if (dto.vendorProfileId !== undefined) {
-      safeVendorProfileId = dto.vendorProfileId
-        ? ((
-            await this.prisma.vendorProfile.findUnique({
-              where: { id: dto.vendorProfileId },
-              select: { id: true },
-            })
-          )?.id ?? null)
-        : null
-    }
-
-    let safeContactId: string | null | undefined = undefined
-    if (dto.userVendorContactId !== undefined) {
-      safeContactId = dto.userVendorContactId
-        ? ((
-            await this.prisma.userVendorContact.findFirst({
-              where: { id: dto.userVendorContactId, userId: user.id },
-              select: { id: true },
-            })
-          )?.id ?? null)
-        : null
-    }
-
-    // Linking one clears the other
-    const vendorProfileUpdate =
-      safeVendorProfileId !== undefined
-        ? {
-            vendorProfileId: safeVendorProfileId,
-            ...(safeVendorProfileId !== null ? { userVendorContactId: null } : {}),
-          }
-        : {}
-    const contactUpdate =
-      safeContactId !== undefined
-        ? {
-            userVendorContactId: safeContactId,
-            ...(safeContactId !== null ? { vendorProfileId: null } : {}),
-          }
-        : {}
 
     const updated = await this.prisma.eventChecklist.update({
       where: { id: itemId },
@@ -931,15 +1092,15 @@ export class EventsService {
         ...(dto.notifyBySms !== undefined && { notifyBySms: dto.notifyBySms }),
         ...(dto.needsVendor !== undefined && { needsVendor: dto.needsVendor }),
         ...(dto.vendorCategory !== undefined && { vendorCategory: dto.vendorCategory }),
-        ...vendorProfileUpdate,
-        ...contactUpdate,
         ...(dto.assigneeUserId !== undefined && { assigneeUserId: dto.assigneeUserId }),
       },
-      include: {
-        userVendorContact: true,
-        vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } },
-      },
+      include: CHECKLIST_ITEM_INCLUDE,
     })
+
+    const vendors = this.vendorsFromDto(dto)
+    if (vendors !== undefined) {
+      await this.replaceChecklistVendors(itemId, user.id, vendors)
+    }
     if (dto.hiddenFromMemberIds !== undefined) {
       await this.prisma.eventChecklistConcealment.deleteMany({ where: { checklistId: itemId } })
       if (dto.hiddenFromMemberIds.length > 0) {
@@ -976,7 +1137,17 @@ export class EventsService {
       'CHECKLIST_ITEM',
       updated.id,
     )
-    return updated
+    const row = await this.prisma.eventChecklist.findFirst({
+      where: { id: itemId, eventId },
+      include: {
+        ...CHECKLIST_ITEM_INCLUDE,
+        concealments: { select: { eventMemberId: true } },
+      },
+    })
+    return this.toChecklistItemDto(
+      row!,
+      access.isHost ? (row?.concealments ?? []).map((c) => c.eventMemberId) : [],
+    )
   }
 
   async deleteChecklistItem(clerkId: string, eventId: string, itemId: string) {
@@ -1163,6 +1334,53 @@ export class EventsService {
     }
   }
 
+  private projectShell<T extends { totalBudget: number }>(event: T, access: EventAccess) {
+    return {
+      ...event,
+      totalBudget: this.access.canSee(access, EventSurface.BUDGET) ? event.totalBudget : 0,
+      viewer: viewerDto(access),
+    }
+  }
+
+  private async eventStats(eventId: string, access: EventAccess, assignedToMe = false) {
+    const showBudget = this.access.canSee(access, EventSurface.BUDGET)
+    const showChecklist = this.access.canSee(access, EventSurface.CHECKLIST)
+    const showSchedule = this.access.canSee(access, EventSurface.SCHEDULE)
+    const showGuests = access.isHost || this.access.canSee(access, EventSurface.GUESTS)
+    const checklistWhere = {
+      eventId,
+      ...(assignedToMe ? { assigneeUserId: access.user.id } : {}),
+    }
+
+    const [spent, checklistDone, checklistTotal, scheduleCount, confirmedGuestCount] =
+      await Promise.all([
+        showBudget
+          ? this.prisma.eventBudgetItem.aggregate({
+              where: { eventId },
+              _sum: { spentAmount: true },
+            })
+          : Promise.resolve({ _sum: { spentAmount: null as number | null } }),
+        showChecklist
+          ? this.prisma.eventChecklist.count({ where: { ...checklistWhere, isCompleted: true } })
+          : Promise.resolve(0),
+        showChecklist
+          ? this.prisma.eventChecklist.count({ where: checklistWhere })
+          : Promise.resolve(0),
+        showSchedule
+          ? this.prisma.eventScheduleItem.count({ where: { eventId } })
+          : Promise.resolve(0),
+        showGuests ? this.prisma.guest.count({ where: { eventId } }) : Promise.resolve(0),
+      ])
+
+    return {
+      spentTotal: spent._sum.spentAmount ?? 0,
+      checklistDone,
+      checklistTotal,
+      scheduleCount,
+      confirmedGuestCount,
+    }
+  }
+
   private projectEvent<
     T extends {
       totalBudget: number
@@ -1199,13 +1417,12 @@ export class EventsService {
     if (assignedToMe) {
       checklist = checklist.filter((row) => row.assigneeUserId === access.user.id)
     }
-    const projectedChecklist = checklist.map((row) => {
-      const { concealments, ...rest } = row
-      return {
-        ...rest,
-        hiddenFromMemberIds: access.isHost ? (concealments ?? []).map((c) => c.eventMemberId) : [],
-      }
-    })
+    const projectedChecklist = checklist.map((row) =>
+      this.toChecklistItemDto(
+        row,
+        access.isHost ? (row.concealments ?? []).map((c) => c.eventMemberId) : [],
+      ),
+    )
     return {
       ...event,
       totalBudget: showBudget ? event.totalBudget : 0,
@@ -1298,13 +1515,17 @@ export class EventsService {
   }
 
   async listSchedule(clerkId: string, eventId: string) {
-    await this.access.require(clerkId, eventId, { surface: EventSurface.SCHEDULE, action: 'view' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.SCHEDULE,
+      action: 'view',
+    })
 
-    return this.prisma.eventScheduleItem.findMany({
+    const rows = await this.prisma.eventScheduleItem.findMany({
       where: { eventId },
       orderBy: [{ startTime: 'asc' }, { sortOrder: 'asc' }],
-      select: { id: true, title: true, date: true, startTime: true, endTime: true },
+      include: SCHEDULE_INCLUDE,
     })
+    return rows.map((item) => this.toScheduleDto(item, access))
   }
 
   async addScheduleItem(clerkId: string, eventId: string, dto: CreateScheduleItemDto) {

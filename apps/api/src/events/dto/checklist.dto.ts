@@ -1,12 +1,33 @@
+import { Type } from 'class-transformer'
 import {
   IsString,
   IsBoolean,
   IsOptional,
   IsDateString,
   MinLength,
+  MaxLength,
   IsArray,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator'
+
+export class ChecklistVendorInputDto {
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  vendorProfileId?: string | null
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  userVendorContactId?: string | null
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(120)
+  name?: string | null
+}
 
 export class CreateChecklistItemDto {
   @IsString()
@@ -44,6 +65,17 @@ export class CreateChecklistItemDto {
   @IsOptional()
   @IsString()
   userVendorContactId?: string
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChecklistVendorInputDto)
+  vendors?: ChecklistVendorInputDto[]
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  assigneeUserId?: string | null
 }
 
 export class UpdateChecklistItemDto {
@@ -87,6 +119,12 @@ export class UpdateChecklistItemDto {
   @IsOptional()
   @IsString()
   userVendorContactId?: string | null
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChecklistVendorInputDto)
+  vendors?: ChecklistVendorInputDto[]
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)

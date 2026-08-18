@@ -584,10 +584,10 @@ function StepAbout({
           })}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="city" className="text-brand-200 mb-2 block text-sm font-medium">
-            City
+            Where do you live?
           </label>
           <input
             id="city"
@@ -604,7 +604,7 @@ function StepAbout({
             htmlFor="countryOfOrigin"
             className="text-brand-200 mb-2 block text-sm font-medium"
           >
-            Country of origin
+            What&apos;s your nationality or heritage?
           </label>
           <input
             id="countryOfOrigin"

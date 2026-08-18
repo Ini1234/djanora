@@ -13,8 +13,8 @@ import {
   Pencil,
   Check,
   Plus,
-  SlidersHorizontal,
   ChevronDown,
+  ChevronRight,
   Store,
   ChevronUp,
   Search,
@@ -28,28 +28,47 @@ import {
   FileText,
   AlarmClock,
   Sparkles,
+  UserRound,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
+import { useLazyGet } from '@/lib/use-lazy-get'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
-import type { EventChecklistItem, UserVendorContact } from '@/lib/api.types'
+import type { EventChecklistItem, EventChecklistVendor, UserVendorContact } from '@/lib/api.types'
 import { useMoodBoardLinks } from './mood-board-context'
 import { useEventAccess } from './event-access-context'
 import { EventItemComments } from './event-item-comments'
 
 interface Props {
   eventId: string
-  initialItems: EventChecklistItem[]
+  initialItems?: EventChecklistItem[]
   focusItemId?: string
   onItemsChange?: (items: EventChecklistItem[]) => void
+  onCollapse?: () => void
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SortKey =
-  'default' | 'due-asc' | 'due-desc' | 'todo-first' | 'done-first' | 'overdue-first' | 'alpha'
+  | 'default'
+  | 'due-asc'
+  | 'due-desc'
+  | 'assignee-asc'
+  | 'assignee-desc'
+  | 'todo-first'
+  | 'done-first'
+  | 'overdue-first'
+  | 'alpha'
 type FilterKey = 'all' | 'todo' | 'done' | 'overdue' | 'has-date' | 'mine'
+type GroupKey = 'none' | 'due' | 'person'
+
+type VendorDraft = {
+  name: string
+  vendorProfileId: string | null
+  userVendorContactId: string | null
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,9 +126,142 @@ function applySortFilter(
   else if (sort === 'todo-first') r.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted))
   else if (sort === 'done-first') r.sort((a, b) => Number(b.isCompleted) - Number(a.isCompleted))
   else if (sort === 'alpha') r.sort((a, b) => a.title.localeCompare(b.title))
-  else r.sort((a, b) => a.sortOrder - b.sortOrder)
+  else if (sort === 'assignee-asc' || sort === 'assignee-desc') {
+    r.sort((a, b) => {
+      const an = a.assignee ? personName(a.assignee) : ''
+      const bn = b.assignee ? personName(b.assignee) : ''
+      if (!an && bn) return 1
+      if (an && !bn) return -1
+      const cmp = an.localeCompare(bn)
+      return sort === 'assignee-desc' ? -cmp : cmp
+    })
+  } else r.sort((a, b) => a.sortOrder - b.sortOrder)
 
   return r
+}
+
+function dueBucket(item: EventChecklistItem): 'overdue' | 'this-week' | 'later' | 'none' | 'done' {
+  if (item.isCompleted) return 'done'
+  if (!item.dueDate) return 'none'
+  if (isOverdue(item.dueDate, item.isCompleted)) return 'overdue'
+  if (isDueSoon(item.dueDate, item.isCompleted)) return 'this-week'
+  return 'later'
+}
+
+function groupItems(
+  items: EventChecklistItem[],
+  group: GroupKey,
+  labels: {
+    overdue: string
+    thisWeek: string
+    later: string
+    noDate: string
+    done: string
+    unassigned: string
+  },
+): { key: string; label: string | null; items: EventChecklistItem[] }[] {
+  if (group === 'none') return [{ key: 'all', label: null, items }]
+
+  if (group === 'due') {
+    const order = ['overdue', 'this-week', 'later', 'none', 'done'] as const
+    const names = {
+      overdue: labels.overdue,
+      'this-week': labels.thisWeek,
+      later: labels.later,
+      none: labels.noDate,
+      done: labels.done,
+    }
+    return order
+      .map((key) => ({
+        key,
+        label: names[key],
+        items: items.filter((item) => dueBucket(item) === key),
+      }))
+      .filter((section) => section.items.length > 0)
+  }
+
+  const map = new Map<string, { label: string; items: EventChecklistItem[] }>()
+  for (const item of items) {
+    const key = item.assigneeUserId || 'unassigned'
+    const label = item.assignee ? personName(item.assignee) : labels.unassigned
+    const bucket = map.get(key)
+    if (bucket) bucket.items.push(item)
+    else map.set(key, { label, items: [item] })
+  }
+  return [...map.entries()]
+    .sort(([aKey, a], [bKey, b]) => {
+      if (aKey === 'unassigned') return 1
+      if (bKey === 'unassigned') return -1
+      return a.label.localeCompare(b.label)
+    })
+    .map(([key, section]) => ({ key, label: section.label, items: section.items }))
+}
+
+function vendorDrafts(item: EventChecklistItem): VendorDraft[] {
+  if (item.vendors && item.vendors.length > 0) {
+    return item.vendors
+      .map(vendorToDraft)
+      .filter((row) => row.name || row.vendorProfileId || row.userVendorContactId)
+  }
+  const name = item.vendorProfile?.businessName ?? item.userVendorContact?.name ?? ''
+  if (!name && !item.vendorProfileId && !item.userVendorContactId) return []
+  return [
+    {
+      name,
+      vendorProfileId: item.vendorProfileId,
+      userVendorContactId: item.userVendorContactId,
+    },
+  ]
+}
+
+function vendorToDraft(vendor: EventChecklistVendor): VendorDraft {
+  return {
+    name: vendor.vendorProfile?.businessName ?? vendor.userVendorContact?.name ?? vendor.name ?? '',
+    vendorProfileId: vendor.vendorProfileId,
+    userVendorContactId: vendor.userVendorContactId,
+  }
+}
+
+function vendorPayload(needsVendor: boolean, vendors: VendorDraft[]) {
+  if (!needsVendor) {
+    return {
+      vendors: [] as {
+        vendorProfileId: string | null
+        userVendorContactId: string | null
+        name: string | null
+      }[],
+    }
+  }
+  return {
+    vendors: vendors
+      .filter((row) => row.vendorProfileId || row.userVendorContactId || row.name.trim())
+      .map((row) => ({
+        vendorProfileId: row.vendorProfileId,
+        userVendorContactId: row.userVendorContactId,
+        name: row.name.trim() || null,
+      })),
+  }
+}
+
+function vendorDisplayName(vendor: EventChecklistVendor | VendorDraft) {
+  if ('vendorProfile' in vendor) {
+    return vendor.vendorProfile?.businessName ?? vendor.userVendorContact?.name ?? vendor.name ?? ''
+  }
+  return vendor.name
+}
+
+function vendorCellLabel(item: EventChecklistItem, tCat: (key: string) => string): string {
+  const names = vendorDrafts(item)
+    .map((row) => row.name)
+    .filter(Boolean)
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]}, ${names[1]}`
+  if (names.length > 2) return `${names[0]} +${names.length - 1}`
+  if (item.needsVendor && item.vendorCategory && item.vendorCategory !== 'OTHER') {
+    return getVendorCategoryLabel(item.vendorCategory, tCat)
+  }
+  if (item.needsVendor) return 'Needed'
+  return '—'
 }
 
 // ─── Linked Inspirations mini-section ────────────────────────────────────────
@@ -166,6 +318,59 @@ function LinkedInspirations({ checklistItemId }: { checklistItemId: string }) {
   )
 }
 
+type AssignablePerson = {
+  id: string
+  firstName: string | null
+  lastName: string | null
+  email: string
+}
+
+function personName(person: { firstName: string | null; lastName: string | null; email?: string }) {
+  return [person.firstName, person.lastName].filter(Boolean).join(' ') || person.email || 'Someone'
+}
+
+function useAssignablePeople(eventId: string) {
+  const [people, setPeople] = useState<AssignablePerson[]>([])
+  useEffect(() => {
+    proxyClient
+      .get<AssignablePerson[]>(`/events/${eventId}/members/mentionable`, {
+        params: { surface: 'CHECKLIST', includeSelf: true },
+      })
+      .then(({ data }) => setPeople(Array.isArray(data) ? data : []))
+      .catch(() => setPeople([]))
+  }, [eventId])
+  return people
+}
+
+function AssigneeSelect({
+  value,
+  onChange,
+  people,
+}: {
+  value: string
+  onChange: (id: string) => void
+  people: AssignablePerson[]
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <UserRound size={11} className="text-muted shrink-0" />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Assign to"
+        className="text-foreground border-border bg-background w-full border-b py-1 text-xs focus:outline-none"
+      >
+        <option value="">Unassigned</option>
+        {people.map((person) => (
+          <option key={person.id} value={person.id}>
+            {personName(person)}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 // ─── Item Detail Drawer ───────────────────────────────────────────────────────
 
 function ItemDrawer({
@@ -183,6 +388,7 @@ function ItemDrawer({
 }) {
   const tCat = useTranslations('vendorCategories')
   const { canEdit } = useEventAccess()
+  const people = useAssignablePeople(eventId)
   const [isPending, startTransition] = useTransition()
   const [isEditing, setIsEditing] = useState(false)
 
@@ -195,21 +401,12 @@ function ItemDrawer({
   const [notifySms, setNotifySms] = useState(item.notifyBySms)
   const [needsVendor, setNeedsVendor] = useState(item.needsVendor ?? false)
   const [vendorCategory, setVendorCategory] = useState(item.vendorCategory ?? '')
-  const [vendorName, setVendorName] = useState(
-    item.vendorProfile?.businessName ?? item.userVendorContact?.name ?? '',
-  )
-  const [vendorProfileId, setVendorProfileId] = useState<string | null>(
-    item.vendorProfileId ?? null,
-  )
-  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(
-    item.userVendorContactId ?? null,
-  )
+  const [vendors, setVendors] = useState<VendorDraft[]>(() => vendorDrafts(item))
+  const [assigneeUserId, setAssigneeUserId] = useState(item.assigneeUserId ?? '')
 
   // ── Derived view values ──────────────────────────────────────────────────
   const [liveItem, setLiveItem] = useState(item)
-  const vendorDisplayName = liveItem.vendorProfile?.businessName ?? liveItem.userVendorContact?.name
-  const isContact = !!liveItem.userVendorContact
-  const isRegistered = !!liveItem.vendorProfile
+  const liveVendors = liveItem.vendors?.length ? liveItem.vendors : vendorDrafts(liveItem)
 
   // Reset edit state from latest item when entering edit mode
   const enterEdit = useCallback(() => {
@@ -219,9 +416,8 @@ function ItemDrawer({
     setNotifySms(liveItem.notifyBySms)
     setNeedsVendor(liveItem.needsVendor ?? false)
     setVendorCategory(liveItem.vendorCategory ?? '')
-    setVendorName(liveItem.vendorProfile?.businessName ?? liveItem.userVendorContact?.name ?? '')
-    setVendorProfileId(liveItem.vendorProfileId ?? null)
-    setUserVendorContactId(liveItem.userVendorContactId ?? null)
+    setVendors(vendorDrafts(liveItem))
+    setAssigneeUserId(liveItem.assigneeUserId ?? '')
     setIsEditing(true)
   }, [liveItem])
 
@@ -229,22 +425,26 @@ function ItemDrawer({
     if (!canEdit('CHECKLIST')) return
     const t = title.trim()
     if (!t) return
-    const { data: updated } = await proxyClient.patch<EventChecklistItem>(
-      `/events/${eventId}/checklist/${liveItem.id}`,
-      {
-        title: t,
-        dueDate: dueDate || null,
-        notifyByEmail: notifyEmail,
-        notifyBySms: notifySms,
-        needsVendor,
-        vendorCategory: needsVendor ? vendorCategory || null : null,
-        vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-        userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
-      },
-    )
-    setLiveItem(updated)
-    onSaved(updated)
-    setIsEditing(false)
+    try {
+      const { data: updated } = await proxyClient.patch<EventChecklistItem>(
+        `/events/${eventId}/checklist/${liveItem.id}`,
+        {
+          title: t,
+          dueDate: dueDate || null,
+          notifyByEmail: notifyEmail,
+          notifyBySms: notifySms,
+          needsVendor,
+          vendorCategory: needsVendor ? vendorCategory || null : null,
+          ...vendorPayload(needsVendor, vendors),
+          assigneeUserId: assigneeUserId || null,
+        },
+      )
+      setLiveItem(updated)
+      onSaved(updated)
+      setIsEditing(false)
+    } catch {
+      // Keep the editor open so the user can retry.
+    }
   }
 
   // close on Escape — in edit mode Escape cancels edit, otherwise closes drawer
@@ -367,6 +567,17 @@ function ItemDrawer({
           {isEditing ? (
             /* ── Edit form ──────────────────────────────────────────────── */
             <div className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
+                  Assigned to
+                </p>
+                <AssigneeSelect
+                  value={assigneeUserId}
+                  onChange={setAssigneeUserId}
+                  people={people}
+                />
+              </div>
+
               {/* Due date */}
               <div className="space-y-1">
                 <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
@@ -436,35 +647,37 @@ function ItemDrawer({
               <VendorSection
                 needsVendor={needsVendor}
                 vendorCategory={vendorCategory}
-                vendorName={vendorName}
-                vendorProfileId={vendorProfileId}
-                userVendorContactId={userVendorContactId}
+                vendors={vendors}
                 onToggle={() => {
                   const next = !needsVendor
                   setNeedsVendor(next)
                   if (!next) {
                     setVendorCategory('')
-                    setVendorName('')
-                    setVendorProfileId(null)
-                    setUserVendorContactId(null)
+                    setVendors([])
                   }
                 }}
-                onCategoryChange={setVendorCategory}
-                onVendorSelect={(name, profileId, contactId) => {
-                  setVendorName(name)
-                  setVendorProfileId(profileId)
-                  setUserVendorContactId(contactId)
+                onCategoryChange={(cat) => {
+                  setVendorCategory(cat)
+                  setVendors([])
                 }}
-                onVendorClear={() => {
-                  setVendorName('')
-                  setVendorProfileId(null)
-                  setUserVendorContactId(null)
-                }}
+                onVendorsChange={setVendors}
               />
             </div>
           ) : (
             /* ── View mode ──────────────────────────────────────────────── */
             <>
+              {liveItem.assignee && (
+                <section className="space-y-2">
+                  <p className="text-muted text-[10px] font-semibold tracking-wider uppercase">
+                    Assigned to
+                  </p>
+                  <div className="flex items-center gap-2.5">
+                    <UserRound size={13} className="text-muted shrink-0" />
+                    <span className="text-foreground text-sm">{personName(liveItem.assignee)}</span>
+                  </div>
+                </section>
+              )}
+
               {/* Due date & reminders */}
               {(liveItem.dueDate || liveItem.notifyByEmail || liveItem.notifyBySms) && (
                 <section className="space-y-2">
@@ -545,96 +758,119 @@ function ItemDrawer({
                     </div>
                   )}
 
-                  {vendorDisplayName && (
-                    <div className="border-gold-500/20 bg-gold-500/5 space-y-2.5 rounded-xl border p-3">
-                      <div className="flex items-start gap-2">
-                        <div className="bg-gold-500/10 border-gold-500/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
-                          {isContact ? (
-                            <BookUser size={14} className="text-foreground" />
-                          ) : (
-                            <Store size={14} className="text-foreground" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-foreground truncate text-sm font-medium">
-                              {vendorDisplayName}
-                            </p>
-                            {isRegistered && liveItem.vendorProfile?.isVerified && (
-                              <BadgeCheck size={12} className="text-foreground shrink-0" />
+                  {liveVendors.length > 0 && (
+                    <div className="space-y-2">
+                      {liveVendors.map((vendor, index) => {
+                        const contact =
+                          'userVendorContact' in vendor ? vendor.userVendorContact : null
+                        const profile = 'vendorProfile' in vendor ? vendor.vendorProfile : null
+                        const isContact = !!vendor.userVendorContactId || !!contact
+                        const isRegistered = !!vendor.vendorProfileId || !!profile
+                        const name = vendorDisplayName(vendor)
+                        return (
+                          <div
+                            key={
+                              'id' in vendor && vendor.id
+                                ? vendor.id
+                                : `${vendor.vendorProfileId ?? vendor.userVendorContactId ?? name}-${index}`
+                            }
+                            className="border-gold-500/20 bg-gold-500/5 space-y-2.5 rounded-xl border p-3"
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className="bg-gold-500/10 border-gold-500/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
+                                {isContact ? (
+                                  <BookUser size={14} className="text-foreground" />
+                                ) : (
+                                  <Store size={14} className="text-foreground" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-foreground truncate text-sm font-medium">
+                                    {name || 'Vendor'}
+                                  </p>
+                                  {isRegistered && profile?.isVerified && (
+                                    <BadgeCheck size={12} className="text-foreground shrink-0" />
+                                  )}
+                                </div>
+                                <p className="text-muted mt-0.5 text-[10px]">
+                                  {isRegistered
+                                    ? 'Registered vendor'
+                                    : isContact
+                                      ? 'Saved contact'
+                                      : 'Custom vendor'}
+                                </p>
+                              </div>
+                              {isRegistered && profile?.slug && (
+                                <Link
+                                  href={`/vendors/${profile.slug}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-muted hover:text-foreground hover:bg-foreground/5 shrink-0 rounded-lg p-1.5 transition-colors"
+                                  aria-label="View vendor profile"
+                                >
+                                  <ExternalLink size={12} />
+                                </Link>
+                              )}
+                            </div>
+
+                            {isContact && contact && (
+                              <div className="border-border space-y-1.5 border-t pt-1">
+                                {contact.email && (
+                                  <a
+                                    href={`mailto:${contact.email}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
+                                  >
+                                    <Mail
+                                      size={11}
+                                      className="text-muted group-hover:text-foreground shrink-0"
+                                    />
+                                    {contact.email}
+                                  </a>
+                                )}
+                                {contact.phone && (
+                                  <a
+                                    href={`tel:${contact.phone}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
+                                  >
+                                    <Phone
+                                      size={11}
+                                      className="text-muted group-hover:text-foreground shrink-0"
+                                    />
+                                    {contact.phone}
+                                  </a>
+                                )}
+                                {contact.website && (
+                                  <a
+                                    href={contact.website}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-muted hover:text-foreground group flex items-center gap-2 truncate text-xs transition-colors"
+                                  >
+                                    <Globe
+                                      size={11}
+                                      className="text-muted group-hover:text-foreground shrink-0"
+                                    />
+                                    {contact.website}
+                                  </a>
+                                )}
+                                {contact.notes && (
+                                  <div className="text-muted flex items-start gap-2 text-xs">
+                                    <FileText size={11} className="text-muted mt-0.5 shrink-0" />
+                                    <p className="leading-relaxed">{contact.notes}</p>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-                          <p className="text-muted mt-0.5 text-[10px]">
-                            {isRegistered ? 'Registered vendor' : 'Saved contact'}
-                          </p>
-                        </div>
-                        {isRegistered && liveItem.vendorProfile?.slug && (
-                          <Link
-                            href={`/vendors/${liveItem.vendorProfile.slug}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-muted hover:text-foreground hover:bg-foreground/5 shrink-0 rounded-lg p-1.5 transition-colors"
-                            aria-label="View vendor profile"
-                          >
-                            <ExternalLink size={12} />
-                          </Link>
-                        )}
-                      </div>
-
-                      {isContact && liveItem.userVendorContact && (
-                        <div className="border-border space-y-1.5 border-t pt-1">
-                          {liveItem.userVendorContact.email && (
-                            <a
-                              href={`mailto:${liveItem.userVendorContact.email}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
-                            >
-                              <Mail
-                                size={11}
-                                className="text-muted group-hover:text-foreground shrink-0"
-                              />
-                              {liveItem.userVendorContact.email}
-                            </a>
-                          )}
-                          {liveItem.userVendorContact.phone && (
-                            <a
-                              href={`tel:${liveItem.userVendorContact.phone}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-muted hover:text-foreground group flex items-center gap-2 text-xs transition-colors"
-                            >
-                              <Phone
-                                size={11}
-                                className="text-muted group-hover:text-foreground shrink-0"
-                              />
-                              {liveItem.userVendorContact.phone}
-                            </a>
-                          )}
-                          {liveItem.userVendorContact.website && (
-                            <a
-                              href={liveItem.userVendorContact.website}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-muted hover:text-foreground group flex items-center gap-2 truncate text-xs transition-colors"
-                            >
-                              <Globe
-                                size={11}
-                                className="text-muted group-hover:text-foreground shrink-0"
-                              />
-                              {liveItem.userVendorContact.website}
-                            </a>
-                          )}
-                          {liveItem.userVendorContact.notes && (
-                            <div className="text-muted flex items-start gap-2 text-xs">
-                              <FileText size={11} className="text-muted mt-0.5 shrink-0" />
-                              <p className="leading-relaxed">{liveItem.userVendorContact.notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        )
+                      })}
                     </div>
                   )}
 
-                  {!vendorDisplayName &&
+                  {liveVendors.length === 0 &&
                     liveItem.vendorCategory &&
                     liveItem.vendorCategory !== 'OTHER' && (
                       <Link
@@ -689,26 +925,26 @@ interface VendorOption {
   avatarUrl: string | null
 }
 
+function vendorDraftKey(vendor: VendorDraft) {
+  if (vendor.vendorProfileId) return `p:${vendor.vendorProfileId}`
+  if (vendor.userVendorContactId) return `c:${vendor.userVendorContactId}`
+  return `n:${vendor.name.trim().toLowerCase()}`
+}
+
 function VendorSection({
   needsVendor,
   vendorCategory,
-  vendorName,
-  vendorProfileId,
-  userVendorContactId,
+  vendors,
   onToggle,
   onCategoryChange,
-  onVendorSelect,
-  onVendorClear,
+  onVendorsChange,
 }: {
   needsVendor: boolean
   vendorCategory: string
-  vendorName: string
-  vendorProfileId: string | null
-  userVendorContactId: string | null
+  vendors: VendorDraft[]
   onToggle: () => void
   onCategoryChange: (v: string) => void
-  onVendorSelect: (name: string, profileId: string | null, contactId: string | null) => void
-  onVendorClear: () => void
+  onVendorsChange: (vendors: VendorDraft[]) => void
 }) {
   const tCat = useTranslations('vendorCategories')
   const [registeredVendors, setRegisteredVendors] = useState<VendorOption[]>([])
@@ -716,6 +952,7 @@ function VendorSection({
   const [vendorSearch, setVendorSearch] = useState('')
   const [loadingVendors, setLoadingVendors] = useState(false)
   const [customMode, setCustomMode] = useState(false)
+  const [adding, setAdding] = useState(false)
 
   const fetchVendorData = useCallback(async (cat: string) => {
     if (!cat) return
@@ -745,21 +982,41 @@ function VendorSection({
     }
   }, [needsVendor, vendorCategory, fetchVendorData])
 
-  const filteredVendors = registeredVendors.filter((v) =>
-    v.businessName.toLowerCase().includes(vendorSearch.toLowerCase()),
+  const selectedKeys = new Set(vendors.map(vendorDraftKey))
+  const selectedProfileIds = new Set(
+    vendors.map((vendor) => vendor.vendorProfileId).filter((id): id is string => !!id),
   )
-  const filteredContacts = myContacts.filter((c) =>
-    c.name.toLowerCase().includes(vendorSearch.toLowerCase()),
+  const selectedContactIds = new Set(
+    vendors.map((vendor) => vendor.userVendorContactId).filter((id): id is string => !!id),
   )
+
+  const filteredVendors = registeredVendors.filter(
+    (v) =>
+      !selectedProfileIds.has(v.id) &&
+      v.businessName.toLowerCase().includes(vendorSearch.toLowerCase()),
+  )
+  const filteredContacts = myContacts.filter(
+    (c) =>
+      !selectedContactIds.has(c.id) && c.name.toLowerCase().includes(vendorSearch.toLowerCase()),
+  )
+
+  const addVendor = (draft: VendorDraft) => {
+    if (!draft.vendorProfileId && !draft.userVendorContactId && !draft.name.trim()) return
+    if (selectedKeys.has(vendorDraftKey(draft))) return
+    onVendorsChange([...vendors, draft])
+    setVendorSearch('')
+    setCustomMode(false)
+    setAdding(false)
+  }
 
   const handleCategoryChange = (cat: string) => {
     onCategoryChange(cat)
-    onVendorClear()
     setVendorSearch('')
     setCustomMode(false)
+    setAdding(false)
   }
 
-  const pickerOpen = needsVendor && vendorCategory && !vendorName
+  const pickerOpen = needsVendor && !!vendorCategory && (vendors.length === 0 || adding)
 
   return (
     <div className="space-y-1.5">
@@ -774,11 +1031,14 @@ function VendorSection({
             : 'text-muted hover:text-foreground border-border hover:border-border',
         )}
       >
+        <ChevronRight
+          size={14}
+          className={cn('text-muted shrink-0 transition-transform', needsVendor && 'rotate-90')}
+        />
         <Store size={11} className={needsVendor ? 'text-foreground' : 'text-muted'} />
         <span className="flex-1 text-left">
           {needsVendor ? 'Needs a vendor / service' : 'Needs a vendor or service?'}
         </span>
-        {needsVendor ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
       </button>
 
       {needsVendor && (
@@ -800,40 +1060,72 @@ function VendorSection({
             </select>
           </div>
 
-          {/* Selected vendor chip */}
-          {vendorName && (
-            <div className="bg-gold-500/10 border-gold-500/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5">
-              {userVendorContactId ? (
-                <BookUser size={11} className="text-foreground shrink-0" />
-              ) : (
-                <Store size={11} className="text-foreground shrink-0" />
+          {vendors.length > 0 && (
+            <div className="space-y-1">
+              {vendors.map((vendor, index) => (
+                <div
+                  key={vendorDraftKey(vendor) || `${vendor.name}-${index}`}
+                  className="bg-gold-500/10 border-gold-500/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5"
+                >
+                  {vendor.userVendorContactId ? (
+                    <BookUser size={11} className="text-foreground shrink-0" />
+                  ) : (
+                    <Store size={11} className="text-foreground shrink-0" />
+                  )}
+                  <span className="text-foreground flex-1 truncate text-xs">{vendor.name}</span>
+                  {vendor.vendorProfileId && (
+                    <BadgeCheck
+                      size={10}
+                      className="text-foreground shrink-0"
+                      aria-label="Registered vendor"
+                    />
+                  )}
+                  {vendor.userVendorContactId && (
+                    <span className="text-muted text-[9px]">saved</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onVendorsChange(vendors.filter((_, i) => i !== index))}
+                    className="text-muted transition-colors hover:text-red-400"
+                    aria-label={`Remove ${vendor.name || 'vendor'}`}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+              {!pickerOpen && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdding(true)
+                    setVendorSearch('')
+                    setCustomMode(false)
+                  }}
+                  className="text-muted hover:text-foreground flex items-center gap-1 text-[11px] transition-colors"
+                >
+                  <Plus size={10} /> Add another vendor
+                </button>
               )}
-              <span className="text-foreground flex-1 truncate text-xs">{vendorName}</span>
-              {vendorProfileId && (
-                <BadgeCheck
-                  size={10}
-                  className="text-foreground shrink-0"
-                  aria-label="Registered vendor"
-                />
-              )}
-              {userVendorContactId && <span className="text-muted text-[9px]">saved</span>}
-              <button
-                type="button"
-                onClick={() => {
-                  onVendorClear()
-                  setVendorSearch('')
-                  setCustomMode(false)
-                }}
-                className="text-muted transition-colors hover:text-red-400"
-              >
-                <X size={10} />
-              </button>
             </div>
           )}
 
-          {/* Vendor picker — shown when category is set and no vendor selected yet */}
+          {/* Vendor picker — shown when category is set and no vendor selected yet, or adding another */}
           {pickerOpen && vendorCategory && (
             <div className="border-border bg-card overflow-hidden rounded-xl border text-xs">
+              {adding && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdding(false)
+                    setVendorSearch('')
+                    setCustomMode(false)
+                  }}
+                  className="text-muted hover:text-foreground border-border flex w-full items-center justify-between border-b px-2.5 py-1.5 transition-colors"
+                >
+                  <span>Add another vendor</span>
+                  <X size={10} />
+                </button>
+              )}
               {loadingVendors ? (
                 <div className="text-muted flex items-center justify-center gap-1.5 py-4">
                   <Loader2 size={11} className="animate-spin" /> Loading…
@@ -851,7 +1143,13 @@ function VendorSection({
                           <li key={c.id}>
                             <button
                               type="button"
-                              onClick={() => onVendorSelect(c.name, null, c.id)}
+                              onClick={() =>
+                                addVendor({
+                                  name: c.name,
+                                  vendorProfileId: null,
+                                  userVendorContactId: c.id,
+                                })
+                              }
                               className="group hover:bg-foreground/5 flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
                             >
                               <BookUser size={10} className="text-muted shrink-0" />
@@ -893,7 +1191,13 @@ function VendorSection({
                           <li key={v.id}>
                             <button
                               type="button"
-                              onClick={() => onVendorSelect(v.businessName, v.id, null)}
+                              onClick={() =>
+                                addVendor({
+                                  name: v.businessName,
+                                  vendorProfileId: v.id,
+                                  userVendorContactId: null,
+                                })
+                              }
                               className="group hover:bg-foreground/5 flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
                             >
                               <div className="bg-foreground/5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
@@ -959,8 +1263,12 @@ function VendorSection({
                           onChange={(e) => setVendorSearch(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && vendorSearch.trim()) {
-                              onVendorSelect(vendorSearch.trim(), null, null)
-                              setVendorSearch('')
+                              e.preventDefault()
+                              addVendor({
+                                name: vendorSearch.trim(),
+                                vendorProfileId: null,
+                                userVendorContactId: null,
+                              })
                             }
                           }}
                           placeholder="Type vendor name and press Enter"
@@ -969,10 +1277,13 @@ function VendorSection({
                         {vendorSearch.trim() && (
                           <button
                             type="button"
-                            onClick={() => {
-                              onVendorSelect(vendorSearch.trim(), null, null)
-                              setVendorSearch('')
-                            }}
+                            onClick={() =>
+                              addVendor({
+                                name: vendorSearch.trim(),
+                                vendorProfileId: null,
+                                userVendorContactId: null,
+                              })
+                            }
                             className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
                           >
                             Add
@@ -1040,194 +1351,6 @@ function ReminderRow({
   )
 }
 
-// ─── Edit form (inline) ───────────────────────────────────────────────────────
-
-function EditRow({
-  item,
-  eventId,
-  onSaved,
-  onCancel,
-}: {
-  item: EventChecklistItem
-  eventId: string
-  onSaved: (updated: EventChecklistItem) => void
-  onCancel: () => void
-}) {
-  const [isPending, startTransition] = useTransition()
-  const { canEdit } = useEventAccess()
-  const [title, setTitle] = useState(item.title)
-  const [dueDate, setDueDate] = useState(
-    item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
-  )
-  const [notifyEmail, setNotifyEmail] = useState(item.notifyByEmail)
-  const [notifySms, setNotifySms] = useState(item.notifyBySms)
-  const [needsVendor, setNeedsVendor] = useState(item.needsVendor ?? false)
-  const [vendorCategory, setVendorCategory] = useState(item.vendorCategory ?? '')
-  // display-only — derived from FK at init, updated when user picks a new vendor
-  const [vendorName, setVendorName] = useState(
-    item.vendorProfile?.businessName ?? item.userVendorContact?.name ?? '',
-  )
-  const [vendorProfileId, setVendorProfileId] = useState<string | null>(
-    item.vendorProfileId ?? null,
-  )
-  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(
-    item.userVendorContactId ?? null,
-  )
-  const [assigneeUserId, setAssigneeUserId] = useState(item.assigneeUserId ?? '')
-  const [assignees, setAssignees] = useState<
-    { id: string; firstName: string | null; lastName: string | null; email: string }[]
-  >([])
-  const ref = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    ref.current?.focus()
-  }, [])
-  useEffect(() => {
-    proxyClient
-      .get<{ id: string; firstName: string | null; lastName: string | null; email: string }[]>(
-        `/events/${eventId}/members/mentionable`,
-        { params: { surface: 'CHECKLIST' } },
-      )
-      .then(({ data }) => setAssignees(Array.isArray(data) ? data : []))
-      .catch(() => setAssignees([]))
-  }, [eventId])
-
-  async function save() {
-    if (!canEdit('CHECKLIST')) return
-    const t = title.trim()
-    if (!t) return
-    try {
-      const { data: updated } = await proxyClient.patch<EventChecklistItem>(
-        `/events/${eventId}/checklist/${item.id}`,
-        {
-          title: t,
-          dueDate: dueDate || null,
-          notifyByEmail: notifyEmail,
-          notifyBySms: notifySms,
-          needsVendor,
-          vendorCategory: needsVendor ? vendorCategory || null : null,
-          vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-          userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
-          assigneeUserId: assigneeUserId || null,
-        },
-      )
-      onSaved(updated)
-    } catch {
-      // Keep the editor open so the user can retry.
-    }
-  }
-
-  return (
-    <div className="border-border bg-foreground/5 mx-0.5 mb-1 space-y-2.5 rounded-xl border p-3">
-      <input
-        ref={ref}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            startTransition(save)
-          }
-          if (e.key === 'Escape') onCancel()
-        }}
-        className="placeholder:text-muted focus:border-gold-500/40 border-border text-foreground w-full border-b bg-transparent pb-1.5 text-sm transition-colors focus:outline-none"
-        placeholder="Task title"
-      />
-
-      <select
-        value={assigneeUserId}
-        onChange={(e) => setAssigneeUserId(e.target.value)}
-        className="text-foreground border-border w-full border-b bg-transparent py-1 text-xs"
-      >
-        <option value="">Unassigned</option>
-        {assignees.map((person) => (
-          <option key={person.id} value={person.id}>
-            {[person.firstName, person.lastName].filter(Boolean).join(' ') || person.email}
-          </option>
-        ))}
-      </select>
-
-      <div className="flex items-center gap-2">
-        <CalendarDays size={11} className="text-muted shrink-0" />
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="text-muted focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-xs transition-colors focus:outline-none"
-        />
-        {dueDate && (
-          <button
-            type="button"
-            onClick={() => {
-              setDueDate('')
-              setNotifyEmail(false)
-              setNotifySms(false)
-            }}
-            className="text-muted transition-colors hover:text-red-400"
-          >
-            <X size={10} />
-          </button>
-        )}
-      </div>
-
-      <ReminderRow
-        dueDate={dueDate}
-        notifyEmail={notifyEmail}
-        notifySms={notifySms}
-        onToggleEmail={() => setNotifyEmail((v) => !v)}
-        onToggleSms={() => setNotifySms((v) => !v)}
-      />
-
-      <VendorSection
-        needsVendor={needsVendor}
-        vendorCategory={vendorCategory}
-        vendorName={vendorName}
-        vendorProfileId={vendorProfileId}
-        userVendorContactId={userVendorContactId}
-        onToggle={() => {
-          const next = !needsVendor
-          setNeedsVendor(next)
-          if (!next) {
-            setVendorCategory('')
-            setVendorName('')
-            setVendorProfileId(null)
-            setUserVendorContactId(null)
-          }
-        }}
-        onCategoryChange={setVendorCategory}
-        onVendorSelect={(name, profileId, contactId) => {
-          setVendorName(name)
-          setVendorProfileId(profileId)
-          setUserVendorContactId(contactId)
-        }}
-        onVendorClear={() => {
-          setVendorName('')
-          setVendorProfileId(null)
-          setUserVendorContactId(null)
-        }}
-      />
-
-      <div className="flex items-center gap-2 pt-0.5">
-        <button
-          type="button"
-          onClick={() => startTransition(save)}
-          disabled={!title.trim() || isPending}
-          className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-muted hover:text-foreground border-border rounded-lg border px-2.5 py-1 text-xs transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ─── Add row ──────────────────────────────────────────────────────────────────
 
 function AddRow({
@@ -1247,10 +1370,10 @@ function AddRow({
   const [notifySms, setNotifySms] = useState(false)
   const [needsVendor, setNeedsVendor] = useState(false)
   const [vendorCategory, setVendorCategory] = useState('')
-  const [vendorName, setVendorName] = useState('')
-  const [vendorProfileId, setVendorProfileId] = useState<string | null>(null)
-  const [userVendorContactId, setUserVendorContactId] = useState<string | null>(null)
+  const [vendors, setVendors] = useState<VendorDraft[]>([])
+  const [assigneeUserId, setAssigneeUserId] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const people = useAssignablePeople(eventId)
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -1262,6 +1385,9 @@ function AddRow({
     const t = title.trim()
     if (!t) return
     const tempId = `tmp-${Date.now()}`
+    const assignee = people.find((p) => p.id === assigneeUserId) ?? null
+    const payload = vendorPayload(needsVendor, vendors)
+    const first = payload.vendors[0]
     const optimistic: EventChecklistItem = {
       id: tempId,
       title: t,
@@ -1272,13 +1398,33 @@ function AddRow({
       notifyBySms: notifySms,
       needsVendor,
       vendorCategory: needsVendor ? vendorCategory || null : null,
-      vendorProfileId: null,
-      userVendorContactId: null,
+      vendors: payload.vendors.map((row) => ({
+        vendorProfileId: row.vendorProfileId,
+        userVendorContactId: row.userVendorContactId,
+        name: row.name,
+        vendorProfile: null,
+        userVendorContact: null,
+      })),
+      vendorProfileId: first?.vendorProfileId ?? null,
+      userVendorContactId: first?.userVendorContactId ?? null,
       userVendorContact: null,
       vendorProfile: null,
+      assigneeUserId: assignee?.id ?? null,
+      assignee: assignee
+        ? { id: assignee.id, firstName: assignee.firstName, lastName: assignee.lastName }
+        : null,
     }
     onAdded(optimistic)
-    onClose()
+    setTitle('')
+    setDueDate('')
+    setNotifyEmail(false)
+    setNotifySms(false)
+    setNeedsVendor(false)
+    setVendorCategory('')
+    setVendors([])
+    setAssigneeUserId('')
+    setExpanded(false)
+    requestAnimationFrame(() => ref.current?.focus())
     try {
       const { data: created } = await proxyClient.post<EventChecklistItem>(
         `/events/${eventId}/checklist`,
@@ -1289,8 +1435,8 @@ function AddRow({
           notifyBySms: notifySms,
           needsVendor,
           vendorCategory: needsVendor ? vendorCategory || null : null,
-          vendorProfileId: needsVendor ? (vendorProfileId ?? null) : null,
-          userVendorContactId: needsVendor ? (userVendorContactId ?? null) : null,
+          ...payload,
+          ...(assigneeUserId && { assigneeUserId }),
         },
       )
       onAdded(created)
@@ -1305,8 +1451,9 @@ function AddRow({
     notifySms,
     needsVendor,
     vendorCategory,
-    vendorProfileId,
-    userVendorContactId,
+    vendors,
+    assigneeUserId,
+    people,
     canEdit,
   ])
 
@@ -1330,6 +1477,8 @@ function AddRow({
 
       {expanded && (
         <>
+          <AssigneeSelect value={assigneeUserId} onChange={setAssigneeUserId} people={people} />
+
           <div className="flex items-center gap-2">
             <CalendarDays size={11} className="text-muted shrink-0" />
             <span className="text-muted w-12 shrink-0 text-[10px]">Due date</span>
@@ -1366,30 +1515,20 @@ function AddRow({
           <VendorSection
             needsVendor={needsVendor}
             vendorCategory={vendorCategory}
-            vendorName={vendorName}
-            vendorProfileId={vendorProfileId}
-            userVendorContactId={userVendorContactId}
+            vendors={vendors}
             onToggle={() => {
               const next = !needsVendor
               setNeedsVendor(next)
               if (!next) {
                 setVendorCategory('')
-                setVendorName('')
-                setVendorProfileId(null)
-                setUserVendorContactId(null)
+                setVendors([])
               }
             }}
-            onCategoryChange={setVendorCategory}
-            onVendorSelect={(name, profileId, contactId) => {
-              setVendorName(name)
-              setVendorProfileId(profileId)
-              setUserVendorContactId(contactId)
+            onCategoryChange={(cat) => {
+              setVendorCategory(cat)
+              setVendors([])
             }}
-            onVendorClear={() => {
-              setVendorName('')
-              setVendorProfileId(null)
-              setUserVendorContactId(null)
-            }}
+            onVendorsChange={setVendors}
           />
         </>
       )}
@@ -1416,22 +1555,72 @@ function AddRow({
   )
 }
 
+function SortTh({
+  label,
+  active,
+  desc,
+  onClick,
+  className,
+}: {
+  label: string
+  active: boolean
+  desc?: boolean
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    <th
+      className={cn(
+        'px-2 py-2 text-left text-[10px] font-semibold tracking-wider uppercase',
+        className,
+      )}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'inline-flex items-center gap-1',
+          active ? 'text-foreground' : 'text-muted hover:text-foreground',
+        )}
+      >
+        {label}
+        {active && (desc ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+      </button>
+    </th>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsChange }: Props) {
+export function ChecklistSection({
+  eventId,
+  initialItems,
+  focusItemId,
+  onItemsChange,
+  onCollapse,
+}: Props) {
   const tCl = useTranslations('checklist')
   const tCat = useTranslations('vendorCategories')
   const { canEdit, viewer } = useEventAccess()
-  const [items, setItems] = useState<EventChecklistItem[]>(initialItems)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const people = useAssignablePeople(eventId)
+  const fetched = useLazyGet<EventChecklistItem[]>(
+    initialItems ? null : `/events/${eventId}/checklist`,
+  )
+  const [items, setItems] = useState<EventChecklistItem[]>(initialItems ?? [])
   const [openItemId, setOpenItemId] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
-  const [sortBy, setSortBy] = useState<SortKey>('default')
+  const [sortBy, setSortBy] = useState<SortKey>('due-asc')
   const [filterBy, setFilterBy] = useState<FilterKey>('all')
-  const [showSortMenu, setShowSortMenu] = useState(false)
+  const [groupBy, setGroupBy] = useState<GroupKey>('due')
   const skipNotify = useRef(true)
   const onItemsChangeRef = useRef(onItemsChange)
   onItemsChangeRef.current = onItemsChange
+
+  useEffect(() => {
+    if (fetched.data) setItems(Array.isArray(fetched.data) ? fetched.data : [])
+  }, [fetched.data])
+
+  const loading = !initialItems && fetched.loading && items.length === 0
 
   useEffect(() => {
     if (skipNotify.current) {
@@ -1450,14 +1639,10 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     { value: 'mine', label: 'Assigned to me' },
   ]
 
-  const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-    { value: 'default', label: tCl('sort.default') },
-    { value: 'due-asc', label: tCl('sort.dueAsc') },
-    { value: 'due-desc', label: tCl('sort.dueDesc') },
-    { value: 'overdue-first', label: tCl('sort.overdueFirst') },
-    { value: 'todo-first', label: tCl('sort.todoFirst') },
-    { value: 'done-first', label: tCl('sort.doneFirst') },
-    { value: 'alpha', label: tCl('sort.alpha') },
+  const GROUP_OPTIONS: { value: GroupKey; label: string }[] = [
+    { value: 'due', label: tCl('group.due') },
+    { value: 'person', label: tCl('group.person') },
+    { value: 'none', label: tCl('group.none') },
   ]
 
   const total = items.length
@@ -1468,6 +1653,19 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
   const displayed = useMemo(
     () => applySortFilter(items, sortBy, filterBy, viewer.userId),
     [items, sortBy, filterBy, viewer.userId],
+  )
+
+  const grouped = useMemo(
+    () =>
+      groupItems(displayed, groupBy, {
+        overdue: tCl('groups.overdue'),
+        thisWeek: tCl('groups.thisWeek'),
+        later: tCl('groups.later'),
+        noDate: tCl('groups.noDate'),
+        done: tCl('groups.done'),
+        unassigned: tCl('groups.unassigned'),
+      }),
+    [displayed, groupBy, tCl],
   )
 
   useEffect(() => {
@@ -1508,6 +1706,24 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
     }
   }
 
+  async function patchItem(
+    item: EventChecklistItem,
+    dto: Record<string, unknown>,
+    optimistic: Partial<EventChecklistItem>,
+  ) {
+    if (!canEdit('CHECKLIST')) return
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...optimistic } : i)))
+    try {
+      const { data } = await proxyClient.patch<EventChecklistItem>(
+        `/events/${eventId}/checklist/${item.id}`,
+        dto,
+      )
+      setItems((prev) => prev.map((i) => (i.id === item.id ? data : i)))
+    } catch {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
+    }
+  }
+
   // ── Optimistic add ────────────────────────────────────────────────────────
   function handleAdded(item: EventChecklistItem) {
     if (item.id.startsWith('REMOVE-')) {
@@ -1529,7 +1745,19 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-foreground text-sm font-semibold">Checklist</h2>
+          <div className="flex items-center gap-2">
+            {onCollapse && (
+              <button
+                type="button"
+                onClick={onCollapse}
+                className="text-muted hover:text-foreground -ml-1 rounded-md p-1"
+                aria-label="Collapse"
+              >
+                <ChevronRight size={14} className="rotate-90" />
+              </button>
+            )}
+            <h2 className="text-foreground text-sm font-semibold">Checklist</h2>
+          </div>
           <div className="flex items-center gap-2">
             {overdueCount > 0 && (
               <span className="rounded-full border border-red-500/20 bg-red-500/12 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
@@ -1548,9 +1776,8 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
         </div>
       </div>
 
-      {/* ── Filter + Sort bar ───────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2">
-        {/* Filter pills */}
+      {/* ── Filter + group ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex flex-1 scrollbar-none items-center gap-1 overflow-x-auto">
           {FILTER_OPTIONS.map((opt) => {
             const count =
@@ -1562,7 +1789,11 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                     ? doneCount
                     : opt.value === 'overdue'
                       ? overdueCount
-                      : items.filter((i) => !!i.dueDate).length
+                      : opt.value === 'mine'
+                        ? items.filter(
+                            (i) => i.assigneeUserId && i.assigneeUserId === viewer.userId,
+                          ).length
+                        : items.filter((i) => !!i.dueDate).length
             if (opt.value !== 'all' && count === 0) return null
             const active = filterBy === opt.value
             return (
@@ -1584,165 +1815,188 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
             )
           })}
         </div>
-
-        {/* Sort button */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setShowSortMenu((v) => !v)}
-            className={cn(
-              'flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] transition-colors',
-              sortBy !== 'default'
-                ? 'bg-gold-600/12 border-gold-500/25 text-foreground'
-                : 'text-muted hover:text-foreground border-border hover:border-border',
-            )}
-          >
-            <SlidersHorizontal size={10} />
-            Sort
-            <ChevronDown
-              size={9}
-              className={cn('transition-transform', showSortMenu && 'rotate-180')}
-            />
-          </button>
-
-          {showSortMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-              <div className="popover absolute top-full right-0 z-20 mt-1.5 w-44 overflow-hidden rounded-xl py-1.5">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      setSortBy(opt.value)
-                      setShowSortMenu(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors',
-                      sortBy === opt.value
-                        ? 'text-foreground bg-gold-600/8'
-                        : 'text-muted hover:bg-foreground/5 hover:text-foreground',
-                    )}
-                  >
-                    {opt.label}
-                    {sortBy === opt.value && (
-                      <Check size={10} className="text-foreground shrink-0" />
-                    )}
-                  </button>
-                ))}
-                {sortBy !== 'default' && (
-                  <>
-                    <div className="border-border my-1 border-t" />
-                    <button
-                      onClick={() => {
-                        setSortBy('default')
-                        setShowSortMenu(false)
-                      }}
-                      className="text-muted w-full px-3 py-1.5 text-left text-xs transition-colors hover:text-red-400"
-                    >
-                      Reset sort
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+        <div className="flex shrink-0 items-center gap-1">
+          {GROUP_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setGroupBy(opt.value)}
+              className={cn(
+                'rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap transition-all',
+                groupBy === opt.value
+                  ? 'border-border bg-foreground/5 text-foreground'
+                  : 'text-muted hover:text-foreground border-transparent',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
-
-        {(sortBy !== 'default' || filterBy !== 'all') && (
-          <button
-            onClick={() => {
-              setSortBy('default')
-              setFilterBy('all')
-            }}
-            className="text-muted flex shrink-0 items-center gap-0.5 text-[10px] transition-colors hover:text-red-400"
-          >
-            <X size={9} />
-          </button>
-        )}
       </div>
 
-      {/* ── Item list ───────────────────────────────────────────────────────── */}
-      <div className="-mx-1 max-h-[340px] space-y-0.5 overflow-y-auto px-1">
-        {displayed.length === 0 && !showAdd && (
+      {/* ── Table ───────────────────────────────────────────────────────────── */}
+      <div className="-mx-1 overflow-x-auto">
+        {loading ? (
+          <TableSkeleton rows={6} cols={4} />
+        ) : displayed.length === 0 && !showAdd ? (
           <p className="text-muted py-8 text-center text-xs">
             {total === 0 ? 'No tasks yet.' : 'Nothing matches this filter.'}
           </p>
-        )}
-
-        {displayed.map((item) =>
-          editingId === item.id ? (
-            <EditRow
-              key={item.id}
-              item={item}
-              eventId={eventId}
-              onSaved={(updated) => {
-                setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)))
-                setEditingId(null)
-              }}
-              onCancel={() => setEditingId(null)}
-            />
-          ) : (
-            <div
-              key={item.id}
-              id={`checklist-item-${item.id}`}
-              className={cn(
-                'group hover:bg-foreground/5 flex cursor-pointer items-start gap-2.5 rounded-lg px-1.5 py-2 transition-colors',
-                item.isCompleted && 'opacity-45',
-                item.id === focusItemId && 'bg-gold-500/10',
-              )}
-              onClick={() => setOpenItemId(item.id)}
-            >
-              {/* Checkbox */}
-              {canEdit('CHECKLIST') ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggle(item)
-                  }}
-                  className="text-muted hover:text-foreground mt-0.5 shrink-0 transition-colors"
-                  aria-label={item.isCompleted ? 'Mark incomplete' : 'Mark complete'}
-                >
-                  {item.isCompleted ? (
-                    <CheckCircle2 size={15} className="text-foreground" />
-                  ) : (
-                    <Circle size={15} />
-                  )}
-                </button>
-              ) : (
-                <span className="text-muted mt-0.5 shrink-0" aria-hidden>
-                  {item.isCompleted ? (
-                    <CheckCircle2 size={15} className="text-foreground" />
-                  ) : (
-                    <Circle size={15} />
-                  )}
-                </span>
-              )}
-
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-                <p
-                  className={cn(
-                    'text-sm leading-snug',
-                    item.isCompleted ? 'text-muted line-through' : 'text-foreground',
-                  )}
-                >
-                  {item.title}
-                  {item.assignee && (
-                    <span className="text-gold-500 ml-2 text-[10px] font-normal no-underline">
-                      {[item.assignee.firstName, item.assignee.lastName]
-                        .filter(Boolean)
-                        .join(' ') || 'Assigned'}
-                    </span>
-                  )}
-                </p>
-
-                {/* Metadata row */}
-                {(item.dueDate || item.notifyByEmail || item.notifyBySms || item.needsVendor) &&
-                  !item.isCompleted && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {item.dueDate && (
+        ) : (
+          <table className="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr className="border-border border-b">
+                <th className="w-8 px-2 py-2" aria-hidden />
+                <SortTh
+                  label="Task"
+                  active={sortBy === 'alpha'}
+                  onClick={() => setSortBy(sortBy === 'alpha' ? 'due-asc' : 'alpha')}
+                />
+                <SortTh
+                  label="Assigned"
+                  active={sortBy === 'assignee-asc' || sortBy === 'assignee-desc'}
+                  desc={sortBy === 'assignee-desc'}
+                  onClick={() =>
+                    setSortBy(sortBy === 'assignee-asc' ? 'assignee-desc' : 'assignee-asc')
+                  }
+                />
+                <SortTh
+                  label="Due"
+                  active={sortBy === 'due-asc' || sortBy === 'due-desc'}
+                  desc={sortBy === 'due-desc'}
+                  onClick={() => setSortBy(sortBy === 'due-asc' ? 'due-desc' : 'due-asc')}
+                />
+                <th className="text-muted hidden px-2 py-2 text-left text-[10px] font-semibold tracking-wider uppercase md:table-cell">
+                  Vendor
+                </th>
+                <th className="text-muted hidden px-2 py-2 text-left text-[10px] font-semibold tracking-wider uppercase lg:table-cell">
+                  Remind
+                </th>
+                <th className="w-16 px-2 py-2" aria-hidden />
+              </tr>
+            </thead>
+            {grouped.map((section) => (
+              <tbody key={section.key} className="border-border border-b last:border-b-0">
+                {section.label && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="text-muted bg-foreground/4 px-2 py-1.5 text-[10px] font-semibold tracking-wider uppercase"
+                    >
+                      {section.label}
+                      <span className="ml-1.5 tabular-nums opacity-60">{section.items.length}</span>
+                    </td>
+                  </tr>
+                )}
+                {section.items.map((item) => (
+                  <tr
+                    key={item.id}
+                    id={`checklist-item-${item.id}`}
+                    className={cn(
+                      'group hover:bg-foreground/5 border-border border-t',
+                      item.isCompleted && 'opacity-45',
+                      item.id === focusItemId && 'bg-foreground/5',
+                    )}
+                  >
+                    <td className="px-2 py-2 align-middle">
+                      {canEdit('CHECKLIST') ? (
+                        <button
+                          type="button"
+                          onClick={() => toggle(item)}
+                          className="text-muted hover:text-foreground transition-colors"
+                          aria-label={item.isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                        >
+                          {item.isCompleted ? (
+                            <CheckCircle2 size={15} className="text-foreground" />
+                          ) : (
+                            <Circle size={15} />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-muted" aria-hidden>
+                          {item.isCompleted ? (
+                            <CheckCircle2 size={15} className="text-foreground" />
+                          ) : (
+                            <Circle size={15} />
+                          )}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-middle">
+                      <button
+                        type="button"
+                        onClick={() => setOpenItemId(item.id)}
+                        className={cn(
+                          'text-left text-sm leading-snug',
+                          item.isCompleted ? 'text-muted line-through' : 'text-foreground',
+                        )}
+                      >
+                        {item.title}
+                      </button>
+                    </td>
+                    <td className="px-2 py-2 align-middle" onClick={(e) => e.stopPropagation()}>
+                      {canEdit('CHECKLIST') ? (
+                        <select
+                          value={item.assigneeUserId ?? ''}
+                          aria-label="Assign to"
+                          onChange={(e) => {
+                            const nextId = e.target.value
+                            const person = people.find((p) => p.id === nextId)
+                            void patchItem(
+                              item,
+                              { assigneeUserId: nextId || null },
+                              {
+                                assigneeUserId: nextId || null,
+                                assignee: person
+                                  ? {
+                                      id: person.id,
+                                      firstName: person.firstName,
+                                      lastName: person.lastName,
+                                    }
+                                  : null,
+                              },
+                            )
+                          }}
+                          className="text-foreground border-border bg-background max-w-[140px] truncate border-b py-0.5 text-xs focus:outline-none"
+                        >
+                          <option value="">Unassigned</option>
+                          {people.map((person) => (
+                            <option key={person.id} value={person.id}>
+                              {personName(person)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-muted text-xs">
+                          {item.assignee ? personName(item.assignee) : '—'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-middle">
+                      {canEdit('CHECKLIST') ? (
+                        <input
+                          type="date"
+                          value={
+                            item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : ''
+                          }
+                          aria-label="Due date"
+                          onChange={(e) => {
+                            const next = e.target.value || null
+                            void patchItem(item, { dueDate: next }, { dueDate: next })
+                          }}
+                          className={cn(
+                            'border-border bg-background w-[8.5rem] border-b py-0.5 text-xs tabular-nums focus:outline-none',
+                            isOverdue(item.dueDate, item.isCompleted)
+                              ? 'text-red-400'
+                              : isDueSoon(item.dueDate, item.isCompleted)
+                                ? 'text-amber-400'
+                                : 'text-foreground',
+                          )}
+                        />
+                      ) : (
                         <span
                           className={cn(
-                            'inline-flex items-center gap-1 text-[10px]',
+                            'text-xs tabular-nums',
                             isOverdue(item.dueDate, item.isCompleted)
                               ? 'text-red-400'
                               : isDueSoon(item.dueDate, item.isCompleted)
@@ -1750,90 +2004,47 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
                                 : 'text-muted',
                           )}
                         >
-                          <CalendarDays size={9} />
-                          {isOverdue(item.dueDate, item.isCompleted) && (
-                            <span className="font-medium">Overdue · </span>
-                          )}
-                          {fmtDate(item.dueDate)}
+                          {item.dueDate ? fmtDate(item.dueDate) : '—'}
                         </span>
                       )}
-                      {item.dueDate && (item.notifyByEmail || item.notifyBySms) && (
-                        <span className="text-muted">·</span>
-                      )}
-                      {item.notifyByEmail && (
-                        <span className="text-muted inline-flex items-center gap-0.5 text-[9px]">
-                          <Mail size={8} /> Email
-                        </span>
-                      )}
-                      {item.notifyBySms && (
-                        <span className="text-muted inline-flex items-center gap-0.5 text-[9px]">
-                          <MessageSquare size={8} /> SMS
-                        </span>
-                      )}
-
-                      {/* Vendor badge */}
-                      {item.needsVendor && (
-                        <>
-                          {(item.dueDate || item.notifyByEmail || item.notifyBySms) && (
-                            <span className="text-muted">·</span>
-                          )}
-                          {item.vendorProfile || item.userVendorContact ? (
-                            <span className="border-gold-500/30 bg-gold-500/10 text-foreground inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
-                              {item.userVendorContact ? <BookUser size={8} /> : <Store size={8} />}
-                              {item.vendorProfile?.businessName ?? item.userVendorContact?.name}
-                              {item.vendorProfile?.isVerified && (
-                                <BadgeCheck size={8} className="text-foreground" />
-                              )}
-                            </span>
-                          ) : item.vendorCategory && item.vendorCategory !== 'OTHER' ? (
-                            <span className="border-gold-500/25 bg-gold-500/8 text-foreground inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
-                              <Store size={8} />
-                              {getVendorCategoryLabel(item.vendorCategory!, tCat)}
-                            </span>
-                          ) : (
-                            <span className="text-muted border-border bg-card inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
-                              <Store size={8} />
-                              {item.vendorCategory === 'OTHER'
-                                ? 'Other service needed'
-                                : 'Vendor needed'}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-              </div>
-
-              {/* Actions */}
-              <div className="mt-0.5 flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                {canEdit('CHECKLIST') && (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingId(item.id)
-                        setShowAdd(false)
-                      }}
-                      className="text-muted hover:text-foreground hover:bg-foreground/5 rounded-md p-1 transition-colors"
-                      aria-label="Edit"
-                    >
-                      <Pencil size={11} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteItem(item.id)
-                      }}
-                      className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
-                      aria-label="Delete"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ),
+                    </td>
+                    <td className="text-muted hidden max-w-[140px] truncate px-2 py-2 text-xs md:table-cell">
+                      {vendorCellLabel(item, tCat)}
+                    </td>
+                    <td className="text-muted hidden px-2 py-2 lg:table-cell">
+                      <span className="inline-flex items-center gap-1.5">
+                        {item.notifyByEmail && <Mail size={11} aria-label="Email reminder" />}
+                        {item.notifyBySms && <MessageSquare size={11} aria-label="SMS reminder" />}
+                        {!item.notifyByEmail && !item.notifyBySms && '—'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 align-middle">
+                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setOpenItemId(item.id)}
+                          className="text-muted hover:text-foreground hover:bg-foreground/5 rounded-md p-1 transition-colors"
+                          aria-label="Open task"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                        {canEdit('CHECKLIST') && (
+                          <button
+                            type="button"
+                            onClick={() => deleteItem(item.id)}
+                            className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                            aria-label="Delete"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+          </table>
         )}
       </div>
 
@@ -1843,6 +2054,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
           const openItem = items.find((i) => i.id === openItemId)
           return openItem ? (
             <ItemDrawer
+              key={openItem.id}
               item={openItem}
               eventId={eventId}
               onClose={() => setOpenItemId(null)}
@@ -1861,10 +2073,7 @@ export function ChecklistSection({ eventId, initialItems, focusItemId, onItemsCh
         <AddRow eventId={eventId} onAdded={handleAdded} onClose={() => setShowAdd(false)} />
       ) : canEdit('CHECKLIST') ? (
         <button
-          onClick={() => {
-            setShowAdd(true)
-            setEditingId(null)
-          }}
+          onClick={() => setShowAdd(true)}
           className="text-muted hover:text-foreground group -mt-1 flex items-center gap-2 text-xs transition-colors"
         >
           <span className="border-border group-hover:border-border flex h-5 w-5 items-center justify-center rounded-md border border-dashed transition-colors">
