@@ -17,5 +17,8 @@ export function replaceShallowQuery(pathname: string, patch: Record<string, stri
   const url = qs ? `${pathname}?${qs}` : pathname
   const current = `${window.location.pathname}${window.location.search}`
   if (url === current) return
-  window.history.replaceState(window.history.state, '', url)
+  // Next patches History and reads the URL from the third argument. Passing
+  // the previous `history.state` can leave App Router's internal URL unchanged,
+  // so `useSearchParams()` never updates.
+  window.history.replaceState(null, '', url)
 }

@@ -23,10 +23,10 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="font-display text-brand-800 hover:text-brand-600 flex items-center gap-2 text-xl font-semibold transition-colors"
+          className="font-display hover:text-muted text-foreground flex items-center gap-2 text-xl font-semibold transition-colors"
           aria-label="Djanora — home"
         >
-          <span className="bg-brand-700 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white">
+          <span className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
             D
           </span>
           <span>Djanora</span>
@@ -48,16 +48,10 @@ export function Navbar() {
 
         {/* Auth actions */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/sign-in"
-            className="text-brand-700 hover:text-brand-600 text-sm font-medium transition-colors"
-          >
+          <Link href="/sign-in" className="btn btn-ghost btn-sm">
             Sign in
           </Link>
-          <Link
-            href="/sign-up"
-            className="bg-brand-700 hover:bg-brand-600 rounded-full px-4 py-2 text-sm font-medium text-white transition-colors"
-          >
+          <Link href="/sign-up" className="btn btn-primary btn-sm">
             Get started
           </Link>
         </div>
@@ -98,14 +92,14 @@ export function Navbar() {
           <li className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-2">
             <Link
               href="/sign-in"
-              className="text-brand-700 text-sm font-medium"
+              className="btn btn-ghost btn-sm justify-start"
               onClick={() => setMobileOpen(false)}
             >
               Sign in
             </Link>
             <Link
               href="/sign-up"
-              className="bg-brand-700 rounded-full px-4 py-2 text-center text-sm font-medium text-white transition-colors"
+              className="btn btn-primary btn-sm"
               onClick={() => setMobileOpen(false)}
             >
               Get started

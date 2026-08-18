@@ -303,7 +303,8 @@ const STATUS_TABS: { key: StatusFilterKey; label: string }[] = [
 export default function MessagesPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const selectedId = searchParams.get('inquiry')
+  const urlInquiryId = searchParams.get('inquiry')
+  const [selectedId, setSelectedId] = useState<string | null>(urlInquiryId)
   const eventFilter = parseEventFilter(searchParams.get('event'))
   const statusFilter = parseStatusFilter(searchParams.get('status'))
   const categoryFilter = searchParams.get('category') ?? 'all'
@@ -349,6 +350,18 @@ export default function MessagesPage() {
     [inquiries, statusFilter, eventFilter, categoryFilter, search],
   )
 
+  const selectInquiry = useCallback(
+    (id: string | null) => {
+      setSelectedId(id)
+      replaceParams({ inquiry: id })
+    },
+    [replaceParams],
+  )
+
+  useEffect(() => {
+    setSelectedId(urlInquiryId)
+  }, [urlInquiryId])
+
   useEffect(() => {
     if (loading || inquiries.length === 0) return
     if (selectedId && inquiries.some((item) => item.id === selectedId)) {
@@ -358,12 +371,8 @@ export default function MessagesPage() {
     if (didAutoSelect.current && !selectedId) return
     if (displayed.length === 0) return
     didAutoSelect.current = true
-    replaceParams({ inquiry: displayed[0].id })
-  }, [loading, inquiries, displayed, selectedId, replaceParams])
-
-  function selectInquiry(id: string | null) {
-    replaceParams({ inquiry: id })
-  }
+    selectInquiry(displayed[0].id)
+  }, [loading, inquiries, displayed, selectedId, selectInquiry])
 
   function handleStatusChange(id: string, status: string) {
     queryClient.setQueryData<Inquiry[]>(queryKeys.inquiriesMe, (prev) =>
