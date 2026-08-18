@@ -321,7 +321,9 @@ function PostEditor({
   const fileRef = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState(post.title)
   const [description, setDescription] = useState(post.description)
-  const [category, setCategory] = useState<InspirationCategory>(post.category)
+  const [categories, setCategories] = useState<InspirationCategory[]>(
+    post.categories?.length ? post.categories : [post.category],
+  )
   const [location, setLocation] = useState(post.location ?? '')
   const [from, setFrom] = useState(post.priceRangeFrom?.toString() ?? '')
   const [to, setTo] = useState(post.priceRangeTo?.toString() ?? '')
@@ -338,7 +340,7 @@ function PostEditor({
   useEffect(() => {
     setTitle(post.title)
     setDescription(post.description)
-    setCategory(post.category)
+    setCategories(post.categories?.length ? post.categories : [post.category])
     setLocation(post.location ?? '')
     setFrom(post.priceRangeFrom?.toString() ?? '')
     setTo(post.priceRangeTo?.toString() ?? '')
@@ -361,7 +363,7 @@ function PostEditor({
       const { data } = await proxyClient.patch<VendorPost>(`/vendors/me/posts/${post.id}`, {
         title: title.trim(),
         description,
-        category,
+        categories,
         location: location.trim() || null,
         priceRangeFrom: from ? Number(from) : null,
         priceRangeTo: to ? Number(to) : null,
@@ -388,11 +390,7 @@ function PostEditor({
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const { data } = await proxyClient.post<VendorPost>(
-        `/vendors/me/posts/${post.id}/media`,
-        fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      )
+      const { data } = await proxyClient.post<VendorPost>(`/vendors/me/posts/${post.id}/media`, fd)
       onChange(data)
     } catch (err: unknown) {
       onError(apiError(err, 'Upload failed'))
@@ -521,44 +519,57 @@ function PostEditor({
           />
         </label>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block space-y-1">
-            <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
-              Category
-            </span>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as InspirationCategory)}
-              className="h-9 w-full rounded-xl px-3 text-sm"
-              style={{
-                background: 'var(--input-bg)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-foreground)',
-              }}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
+        <div className="space-y-1">
+          <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
+            Categories
+            <span className="ml-1 font-normal">(select all that apply)</span>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => {
+              const active = categories.includes(c.id)
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() =>
+                    setCategories((prev) => {
+                      if (prev.includes(c.id)) {
+                        return prev.length === 1 ? prev : prev.filter((id) => id !== c.id)
+                      }
+                      return [...prev, c.id]
+                    })
+                  }
+                  className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-sm"
+                  style={{
+                    background: active ? 'var(--color-brand-primary)' : 'var(--input-bg)',
+                    border: `1px solid ${active ? 'var(--color-brand-primary)' : 'var(--color-border)'}`,
+                    color: active ? '#fff' : 'var(--color-foreground)',
+                  }}
+                >
+                  {active && <Check size={12} />}
                   {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
-              Location
-            </span>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="h-9 w-full rounded-xl px-3 text-sm"
-              style={{
-                background: 'var(--input-bg)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-foreground)',
-              }}
-            />
-          </label>
+                </button>
+              )
+            })}
+          </div>
         </div>
+
+        <label className="block space-y-1">
+          <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
+            Location
+          </span>
+          <input
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="h-9 w-full rounded-xl px-3 text-sm"
+            style={{
+              background: 'var(--input-bg)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-foreground)',
+            }}
+          />
+        </label>
 
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block space-y-1">

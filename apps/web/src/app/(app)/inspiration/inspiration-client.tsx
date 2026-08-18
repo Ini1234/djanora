@@ -31,6 +31,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { proxyClient } from '@/lib/proxy-client'
 import { queryKeys } from '@/lib/query-keys'
+import { lookCategories, lookInCategory } from '@/lib/look-categories'
 import { InspirationDetail } from './inspiration-detail'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ interface InspirationItem {
   title: string
   description: string
   category: InspirationCategory
+  categories?: InspirationCategory[]
   tags: string[]
   tagItems?: { slug: string; label: string }[]
   imageUrl: string | null
@@ -164,6 +166,26 @@ const CATEGORY_COLORS: Record<InspirationCategory, { bg: string; text: string }>
     bg: 'color-mix(in srgb, var(--color-muted) 12%, transparent)',
     text: 'var(--color-muted)',
   },
+}
+
+function CategoryBadges({
+  item,
+}: {
+  item: { category: InspirationCategory; categories?: InspirationCategory[] }
+}) {
+  return (
+    <div className="absolute top-3 left-3 flex max-w-[70%] flex-wrap gap-1">
+      {lookCategories(item).map((c) => (
+        <span
+          key={c}
+          className="rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
+          style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}
+        >
+          {c.replaceAll('_', ' ')}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 // ─── Matching vendor types ────────────────────────────────────────────────────
@@ -837,7 +859,7 @@ function InspirationCard({
   onTagClick?: (slug: string) => void
   onOpen: (item: InspirationItem) => void
 }) {
-  const cat = CATEGORY_COLORS[item.category]
+  const cat = CATEGORY_COLORS[lookCategories(item)[0] ?? item.category]
 
   return (
     <div
@@ -869,13 +891,7 @@ function InspirationCard({
             <Sparkles size={32} style={{ color: cat.text }} />
           </div>
         )}
-        {/* Category badge */}
-        <div
-          className="absolute top-3 left-3 rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
-          style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}
-        >
-          {item.category}
-        </div>
+        <CategoryBadges item={item} />
         <div className="absolute top-3 right-3 flex items-center gap-1.5">
           <button
             type="button"
@@ -1042,7 +1058,7 @@ function SavedCard({
   onOpen: (item: InspirationItem) => void
 }) {
   const item = group.inspirationItem
-  const cat = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.OTHER
+  const cat = CATEGORY_COLORS[lookCategories(item)[0] ?? item.category] ?? CATEGORY_COLORS.OTHER
 
   return (
     <div
@@ -1068,12 +1084,7 @@ function SavedCard({
         ) : (
           <Sparkles size={32} style={{ color: cat.text, opacity: 0.4 }} />
         )}
-        <div
-          className="absolute top-3 left-3 rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
-          style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}
-        >
-          {item.category}
-        </div>
+        <CategoryBadges item={item} />
         <button
           type="button"
           onClick={(e) => {
@@ -1432,7 +1443,7 @@ export function InspirationClient({
   const groupedSaved = groupSaved(savedEntries)
   const visibleSaved = groupedSaved.filter((group) => {
     const item = group.inspirationItem
-    if (activeCategory !== 'ALL' && item.category !== activeCategory) return false
+    if (activeCategory !== 'ALL' && !lookInCategory(item, activeCategory)) return false
     if (!q) return true
     return (
       item.title.toLowerCase().includes(q) ||

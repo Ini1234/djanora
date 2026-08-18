@@ -18,6 +18,7 @@ interface LikedLook {
   title: string
   description: string
   category: string
+  categories?: string[]
   tags: string[]
   tagItems?: { slug: string; label: string }[]
   imageUrl: string | null

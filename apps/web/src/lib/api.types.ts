@@ -324,6 +324,7 @@ export interface VendorPost {
   title: string
   description: string
   category: InspirationCategory
+  categories?: InspirationCategory[]
   location: string | null
   priceRangeFrom: number | null
   priceRangeTo: number | null

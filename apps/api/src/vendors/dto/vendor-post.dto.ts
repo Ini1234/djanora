@@ -1,4 +1,5 @@
 import {
+  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNumber,
@@ -22,8 +23,15 @@ export class CreateVendorPostDto {
   @MaxLength(4000)
   description?: string
 
+  @IsOptional()
   @IsEnum(InspirationCategory)
-  category!: InspirationCategory
+  category?: InspirationCategory
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(InspirationCategory, { each: true })
+  categories?: InspirationCategory[]
 
   @IsOptional()
   @IsArray()
@@ -68,11 +76,17 @@ export class UpdateVendorPostDto {
   @IsOptional()
   @IsString()
   @MaxLength(4000)
-  description?: string
+  description?: string | null
 
   @IsOptional()
   @IsEnum(InspirationCategory)
   category?: InspirationCategory
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(InspirationCategory, { each: true })
+  categories?: InspirationCategory[]
 
   @IsOptional()
   @IsArray()
@@ -82,7 +96,7 @@ export class UpdateVendorPostDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  location?: string
+  location?: string | null
 
   @IsOptional()
   @IsNumber()

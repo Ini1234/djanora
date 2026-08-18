@@ -14,6 +14,7 @@ import {
   Receipt,
   Clock,
 } from 'lucide-react'
+import { lookCategories, lookInCategory } from '@/lib/look-categories'
 import { useMoodBoardLinks } from './mood-board-context'
 import { useEventAccess } from './event-access-context'
 import { EventItemComments } from './event-item-comments'
@@ -61,7 +62,7 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
   const filtered =
     activeFilter === 'ALL'
       ? entries
-      : entries.filter((e) => e.inspirationItem.category === activeFilter)
+      : entries.filter((e) => lookInCategory(e.inspirationItem, activeFilter))
 
   useEffect(() => {
     if (!focusEntryId) return
@@ -76,7 +77,9 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
 
   // Count per category (for pill badges)
   const counts = entries.reduce<Record<string, number>>((acc, e) => {
-    acc[e.inspirationItem.category] = (acc[e.inspirationItem.category] ?? 0) + 1
+    for (const cat of lookCategories(e.inspirationItem)) {
+      acc[cat] = (acc[cat] ?? 0) + 1
+    }
     return acc
   }, {})
 
@@ -179,7 +182,8 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((entry) => {
             const item = entry.inspirationItem
-            const cat = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.OTHER
+            const cats = lookCategories(item)
+            const cat = CATEGORY_COLORS[cats[0] ?? item.category] ?? CATEGORY_COLORS.OTHER
 
             return (
               <div
@@ -209,15 +213,20 @@ export function MoodBoardTab({ focusEntryId }: { focusEntryId?: string }) {
                   ) : (
                     <Sparkles size={28} style={{ color: cat.text, opacity: 0.4 }} />
                   )}
-                  <div
-                    className="absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-                    style={{
-                      background: 'rgba(0,0,0,0.5)',
-                      color: '#fff',
-                      backdropFilter: 'blur(4px)',
-                    }}
-                  >
-                    {item.category}
+                  <div className="absolute top-2 left-2 flex max-w-[70%] flex-wrap gap-1">
+                    {cats.map((c) => (
+                      <span
+                        key={c}
+                        className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+                        style={{
+                          background: 'rgba(0,0,0,0.5)',
+                          color: '#fff',
+                          backdropFilter: 'blur(4px)',
+                        }}
+                      >
+                        {c.replaceAll('_', ' ')}
+                      </span>
+                    ))}
                   </div>
                   {canEdit('MOODBOARD') && (
                     <button

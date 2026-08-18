@@ -1,4 +1,6 @@
-import { InspirationMediaType, InspirationVisibility } from '@prisma/client'
+import { BadRequestException } from '@nestjs/common'
+import { InspirationCategory, InspirationMediaType, InspirationVisibility } from '@prisma/client'
+import { rewriteAppUploadUrl } from '../uploads/public-upload-url'
 
 export const MEDIA_PER_POST = 10
 export const POSTS_PER_VENDOR = 50
@@ -31,12 +33,25 @@ export function slugifyTag(label: string) {
     .slice(0, 48)
 }
 
+export function normalizePostCategories(
+  category?: InspirationCategory | null,
+  categories?: InspirationCategory[] | null,
+) {
+  const source = categories?.length ? categories : category ? [category] : []
+  const unique = [...new Set(source)]
+  if (unique.length === 0) {
+    throw new BadRequestException('Pick at least one category')
+  }
+  return { category: unique[0], categories: unique }
+}
+
 export function mapPost<
   T extends {
     id: string
     title: string
     description: string
     category: string
+    categories?: InspirationCategory[]
     tags: string[]
     imageUrl: string | null
     location: string | null
@@ -72,18 +87,22 @@ export function mapPost<
     title: row.title,
     description: row.description,
     category: row.category,
+    categories: row.categories?.length ? row.categories : [row.category],
     location: row.location,
     priceRangeFrom: row.priceRangeFrom,
     priceRangeTo: row.priceRangeTo,
     currency: row.currency,
     costNote: row.costNote ?? null,
     visibility: row.visibility,
-    imageUrl: row.imageUrl,
+    imageUrl: rewriteAppUploadUrl(row.imageUrl),
     isAdminCurated: row.isAdminCurated,
     createdAt: row.createdAt,
     tags: tagItems.map((t) => t.label),
     tagItems,
-    media: row.media,
+    media: row.media.map((m) => ({
+      ...m,
+      url: rewriteAppUploadUrl(m.url) ?? m.url,
+    })),
     vendorProfile: row.vendorProfile,
   }
 }
