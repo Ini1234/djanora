@@ -1,67 +1,118 @@
 @import 'tailwindcss';
 
 @theme inline {
-  /* Brand palette — warm stone neutral + gold */
-  --color-brand-900: #1c1917;
-  --color-brand-800: #292524;
-  --color-brand-700: #3c3733;
-  --color-brand-600: #57534e;
-  --color-brand-500: #79716c;
-  --color-brand-400: #a8a29e;
-  --color-brand-300: #d6d3d1;
-  --color-brand-200: #e7e5e4;
-  --color-brand-100: #f5f4f4;
-  --color-brand-50: #fafaf9;
+  /* Brand scale — cool zinc, not warm stone */
+  --color-brand-900: #18181b;
+  --color-brand-800: #27272a;
+  --color-brand-700: #3f3f46;
+  --color-brand-600: #52525b;
+  --color-brand-500: #71717a;
+  --color-brand-400: #a1a1aa;
+  --color-brand-300: #d4d4d8;
+  --color-brand-200: #e4e4e7;
+  --color-brand-100: #f4f4f5;
+  --color-brand-50: #fafafa;
 
-  --color-gold-900: #6b4a00;
-  --color-gold-800: #8b6200;
-  --color-gold-700: #a87b10;
-  --color-gold-600: #c9973a;
-  --color-gold-500: #d4a843;
-  --color-gold-400: #e2bf6a;
-  --color-gold-300: #ecd08f;
-  --color-gold-200: #f4e3bb;
-  --color-gold-100: #faf2de;
-  --color-gold-50: #fdf9f0;
+  /* Legacy gold-* classes resolve to the same zinc scale */
+  --color-gold-900: #18181b;
+  --color-gold-800: #27272a;
+  --color-gold-700: #3f3f46;
+  --color-gold-600: #52525b;
+  --color-gold-500: #71717a;
+  --color-gold-400: #a1a1aa;
+  --color-gold-300: #d4d4d8;
+  --color-gold-200: #e4e4e7;
+  --color-gold-100: #f4f4f5;
+  --color-gold-50: #fafafa;
 
   --color-terracotta-600: #b85c2a;
   --color-terracotta-500: #c4622a;
   --color-terracotta-400: #d4784a;
   --color-terracotta-100: #fce9df;
 
-  /* Fonts */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-input: var(--input);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-playfair);
 }
 
-/* ─── Semantic design tokens ────────────────────────────────────────── */
-/* Light mode (default) */
+/* ─── Semantic tokens ───────────────────────────────────────────────── */
 :root {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --muted: #52525b;
+  --border: #e4e4e7;
+  --input: #ffffff;
+  --ring: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --primary-hover: #27272a;
+  --secondary: #ffffff;
+  --secondary-foreground: #18181b;
+  --inverse: #18181b;
+  --inverse-foreground: #fafafa;
+  --inverse-muted: #a1a1aa;
+  --destructive: #dc2626;
+  --success: #16a34a;
+
   --nav-bg: #ffffff;
-  --nav-border: #e7e5e4;
-  --page-bg: #f5f4f4;
+  --nav-border: #e4e4e7;
+  --page-bg: #f4f4f5;
   --card-bg: rgba(0, 0, 0, 0.035);
   --card-bg-hover: rgba(0, 0, 0, 0.065);
   --card-border: rgba(0, 0, 0, 0.11);
-  --input-bg: rgba(0, 0, 0, 0.045);
+  --input-bg: #ffffff;
   --overlay-bg: rgba(255, 255, 255, 0.8);
   --scrollbar: rgba(0, 0, 0, 0.2) transparent;
 
-  --color-background: #fafaf9;
-  --color-foreground: #1c1917;
-  --color-muted: #57534e; /* was #79716c — bumped for 6.8:1 contrast */
-  --color-border: #d6d3d1; /* was #e7e5e4 — slightly darker to be visible */
-  --color-card: #ffffff;
-  --color-text-primary: #1c1917;
-  --color-text-secondary: #57534e;
-  --color-brand-primary: #8b6200; /* gold-800 — 5.2:1 on white */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-text-primary: var(--foreground);
+  --color-text-secondary: var(--muted);
+  --color-brand-primary: var(--primary);
 }
 
-/* Dark mode */
 .dark {
-  --nav-bg: #1c1917;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --muted: #a1a1aa;
+  --border: #27272a;
+  --input: #18181b;
+  --ring: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --primary-hover: #e4e4e7;
+  --secondary: transparent;
+  --secondary-foreground: #fafafa;
+  --inverse: #18181b;
+  --inverse-foreground: #fafafa;
+  --inverse-muted: #a1a1aa;
+  --destructive: #f87171;
+  --success: #4ade80;
+
+  --nav-bg: #09090b;
   --nav-border: rgba(255, 255, 255, 0.08);
-  --page-bg: rgba(41, 37, 36, 0.5);
+  --page-bg: #18181b;
   --card-bg: rgba(255, 255, 255, 0.04);
   --card-bg-hover: rgba(255, 255, 255, 0.06);
   --card-border: rgba(255, 255, 255, 0.1);
@@ -69,46 +120,165 @@
   --overlay-bg: rgba(0, 0, 0, 0.6);
   --scrollbar: rgba(255, 255, 255, 0.15) transparent;
 
-  --color-background: #1c1917;
-  --color-foreground: #e7e5e4;
-  --color-muted: #a8a29e;
-  --color-border: #3c3733;
-  --color-card: #292524;
-  --color-text-primary: #e7e5e4;
-  --color-text-secondary: #a8a29e;
-  --color-brand-primary: #c9973a;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-text-primary: var(--foreground);
+  --color-text-secondary: var(--muted);
+  --color-brand-primary: var(--primary);
 }
 
-/* ─── Global overrides for light mode ───────────────────────────────── */
-/* Flip the dark-mode opacity-white patterns so interior components      */
-/* look correct without touching each file.                              */
+/* ─── Standard elements (light + dark via tokens) ───────────────────── */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
 
-/* Text — invert the scale so low numbers = dark (readable) on light bg  */
-/* brand-100 in dark = near-white; in light mode it must stay very dark  */
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-sm {
+    height: 2.25rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-md {
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn-lg {
+    height: 3.5rem;
+    padding: 0 2rem;
+    font-size: 1rem;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-secondary {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    border-color: var(--border);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--foreground);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--foreground);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    color: var(--foreground);
+  }
+
+  .input {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 0.875rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: var(--foreground);
+    font-size: 0.9375rem;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .input::placeholder {
+    color: var(--muted);
+  }
+
+  .input:focus-visible {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+  }
+
+  .panel-inverse {
+    background: var(--inverse);
+    color: var(--inverse-foreground);
+  }
+
+  .panel-inverse .muted,
+  .text-inverse-muted {
+    color: var(--inverse-muted);
+  }
+}
+
+/* ─── Interior light-mode remaps (app screens written for dark utilities) */
 :root:not(.dark) [class~='text-white'] {
-  color: var(--color-foreground) !important;
+  color: var(--foreground) !important;
 }
-/* These values satisfy WCAG 2.2 AA (4.5:1) on #fafaf9 background:       */
-:root:not(.dark) [class~='text-brand-100'] {
-  color: #1c1917 !important;
-} /* 17.4:1 */
-:root:not(.dark) [class~='text-brand-200'] {
-  color: #292524 !important;
-} /* 14.6:1 */
-:root:not(.dark) [class~='text-brand-300'] {
-  color: #3c3733 !important;
-} /* 10.1:1 */
-:root:not(.dark) [class~='text-brand-400'] {
-  color: #57534e !important;
-} /*  6.8:1 */
-:root:not(.dark) [class~='text-brand-500'] {
-  color: #6b6560 !important;
-} /*  5.2:1 — passes AA */
-:root:not(.dark) [class~='text-brand-600'] {
-  color: #57534e !important;
-} /*  6.8:1 — was #d6d3d1 (1.2:1!) */
 
-/* Card/surface backgrounds — stronger so they're visible in light mode */
+:root:not(.dark) [class~='text-brand-100'] {
+  color: #18181b !important;
+}
+:root:not(.dark) [class~='text-brand-200'] {
+  color: #27272a !important;
+}
+:root:not(.dark) [class~='text-brand-300'] {
+  color: #3f3f46 !important;
+}
+:root:not(.dark) [class~='text-brand-400'] {
+  color: #52525b !important;
+}
+:root:not(.dark) [class~='text-brand-500'] {
+  color: #52525b !important;
+}
+:root:not(.dark) [class~='text-brand-600'] {
+  color: #52525b !important;
+}
+
 :root:not(.dark) [class~='bg-white\/3'] {
   background-color: rgba(0, 0, 0, 0.03) !important;
 }
@@ -125,7 +295,6 @@
   background-color: rgba(0, 0, 0, 0.09) !important;
 }
 
-/* Hover variants */
 :root:not(.dark) [class~='hover:bg-white\/4']:hover {
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
@@ -136,7 +305,6 @@
   background-color: rgba(0, 0, 0, 0.09) !important;
 }
 
-/* Borders — bumped opacity so dividers are visible in light mode */
 :root:not(.dark) [class~='border-white\/6'] {
   border-color: rgba(0, 0, 0, 0.09) !important;
 }
@@ -159,12 +327,10 @@
   border-color: rgba(0, 0, 0, 0.16) !important;
 }
 
-/* Dividers */
 :root:not(.dark) [class~='border-b'][class~='border-white\/6'] {
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Translucent brand backgrounds */
 :root:not(.dark) [class~='bg-brand-700\/30'] {
   background-color: rgba(0, 0, 0, 0.07) !important;
 }
@@ -188,42 +354,82 @@
   border-color: rgba(0, 0, 0, 0.16) !important;
 }
 
-/* White/50 and White/60 opacity text — ensure readable in light mode */
 :root:not(.dark) [class~='text-white\/50'] {
-  color: rgba(28, 25, 23, 0.55) !important;
+  color: rgba(24, 24, 27, 0.55) !important;
 }
 :root:not(.dark) [class~='text-white\/60'] {
-  color: rgba(28, 25, 23, 0.65) !important;
+  color: rgba(24, 24, 27, 0.65) !important;
 }
 :root:not(.dark) [class~='text-white\/70'] {
-  color: rgba(28, 25, 23, 0.75) !important;
+  color: rgba(24, 24, 27, 0.75) !important;
 }
 :root:not(.dark) [class~='text-white\/80'] {
-  color: rgba(28, 25, 23, 0.85) !important;
+  color: rgba(24, 24, 27, 0.85) !important;
 }
 
-/* Gold text — remap to dark-gold in light mode                          */
-/* gold-600 (#c9973a) on #fafaf9 is only 2.5:1 — fails WCAG AA          */
-/* gold-800 (#8b6200) → 5.2:1  gold-900 (#6b4a00) → 7.7:1              */
-:root:not(.dark) [class~='text-gold-300'] {
-  color: #6b4a00 !important;
-} /* 7.7:1 ✓ */
+:root:not(.dark) [class~='text-gold-300'],
 :root:not(.dark) [class~='text-gold-400'] {
-  color: #6b4a00 !important;
-} /* 7.7:1 ✓ */
-:root:not(.dark) [class~='text-gold-500'] {
-  color: #8b6200 !important;
-} /* 5.2:1 ✓ */
+  color: #3f3f46 !important;
+}
+:root:not(.dark) [class~='text-gold-500'],
 :root:not(.dark) [class~='text-gold-600'] {
-  color: #8b6200 !important;
-} /* 5.2:1 ✓ */
+  color: #18181b !important;
+}
 :root:not(.dark) [class~='text-gold-700'] {
-  color: #6b4a00 !important;
-} /* 7.7:1 ✓ */
+  color: #18181b !important;
+}
 
-/* bg-black/4 class used in hover states */
 :root:not(.dark) [class~='hover:bg-black\/4']:hover {
   background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Inverse-panel exceptions must win over the text-white remap above */
+:root:not(.dark)
+  :is(
+    [class~='bg-brand-700'],
+    [class~='bg-brand-800'],
+    [class~='bg-brand-900'],
+    [class~='bg-gold-600'],
+    [class~='bg-gold-500'],
+    [class~='bg-gold-700']
+  )[class~='text-white'] {
+  color: #ffffff !important;
+}
+
+:root:not(.dark)
+  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
+  [class~='text-white'] {
+  color: #fafafa !important;
+}
+
+:root:not(.dark)
+  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
+  :is(
+    [class~='text-brand-200'],
+    [class~='text-brand-300'],
+    [class~='text-brand-400'],
+    [class~='text-brand-500']
+  ) {
+  color: #a1a1aa !important;
+}
+
+.btn-primary {
+  color: var(--primary-foreground) !important;
+}
+
+.panel-inverse,
+.panel-inverse [class~='text-white'] {
+  color: var(--inverse-foreground) !important;
+}
+
+.panel-inverse
+  :is(
+    [class~='text-brand-200'],
+    [class~='text-brand-300'],
+    [class~='text-brand-400'],
+    [class~='text-brand-500']
+  ) {
+  color: var(--inverse-muted) !important;
 }
 
 /* ─── Base ─────────────────────────────────────────────────────────── */
@@ -233,27 +439,25 @@ html {
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Adire-inspired decorative pattern */
+::selection {
+  background: var(--foreground);
+  color: var(--background);
+}
+
 .pattern-adire {
   background-image: radial-gradient(circle at 1px 1px, var(--color-brand-400) 1px, transparent 0);
   background-size: 24px 24px;
 }
 
-/* Focus ring */
 :focus-visible {
-  outline: 2px solid var(--color-gold-600);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Darken focus ring in light mode so it's visible against white surfaces */
-:root:not(.dark) :focus-visible {
-  outline-color: #8b6200; /* gold-800, 5.2:1 on white ✓ */
 }

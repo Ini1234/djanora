@@ -24,30 +24,28 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-brand-900 text-brand-200" aria-label="Site footer">
+    <footer className="panel-inverse" aria-label="Site footer">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-12 grid grid-cols-2 gap-8 md:grid-cols-5">
-          {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="font-display mb-4 flex items-center gap-2 text-xl font-semibold text-white"
+              className="font-display mb-4 flex items-center gap-2 text-xl font-semibold"
               aria-label="Djanora — home"
             >
-              <span className="bg-gold-600 text-brand-900 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+              <span className="bg-inverse-foreground text-inverse flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
                 D
               </span>
               <span>Djanora</span>
             </Link>
-            <p className="text-brand-300 text-sm leading-relaxed">
+            <p className="text-inverse-muted text-sm leading-relaxed">
               Plan your event with confidence.
             </p>
           </div>
 
-          {/* Links */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h3 className="text-brand-400 mb-4 text-xs font-semibold tracking-widest uppercase">
+              <h3 className="text-inverse-muted mb-4 text-xs font-semibold tracking-widest uppercase">
                 {category}
               </h3>
               <ul className="flex flex-col gap-2" role="list">
@@ -56,14 +54,14 @@ export function Footer() {
                     {link.href.startsWith('mailto:') ? (
                       <a
                         href={link.href}
-                        className="text-brand-300 text-sm transition-colors hover:text-white"
+                        className="text-inverse-muted hover:text-inverse-foreground text-sm transition-colors"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-brand-300 text-sm transition-colors hover:text-white"
+                        className="text-inverse-muted hover:text-inverse-foreground text-sm transition-colors"
                       >
                         {link.label}
                       </Link>
@@ -75,15 +73,15 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="border-brand-800 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
-          <p className="text-brand-400 text-xs">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+          <p className="text-inverse-muted text-xs">
             &copy; {new Date().getFullYear()} Djanora. Ottawa, Ontario, Canada.
           </p>
-          <p className="text-brand-500 text-xs">
+          <p className="text-inverse-muted text-xs">
             Questions?{' '}
             <a
               href={CONTACT_MAILTO}
-              className="hover:text-brand-300 underline-offset-2 hover:underline"
+              className="hover:text-inverse-foreground underline-offset-2 hover:underline"
             >
               {CONTACT_EMAIL}
             </a>

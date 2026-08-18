@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { isSessionCookieName, jwtExpiryDate, mintFromSessionJwt } from '@/lib/clerk-token'
+import { isSessionCookieName, mintFromSessionJwt } from '@/lib/clerk-token'
 
 // '/' is public — the root page itself handles the landing vs signed-in home split
 const isPublicRoute = createRouteMatcher([
@@ -35,11 +35,14 @@ export default clerkMiddleware(async (auth, request) => {
     const minted = sessionCookie?.value ? await mintFromSessionJwt(sessionCookie.value) : null
     if (minted && sessionCookie) {
       const res = NextResponse.next()
+      // JWT exp is ~60s. Cookie must last for Clerk's session (~7 days),
+      // not the token, or the browser drops __session while the user is
+      // still signed in.
       res.cookies.set(sessionCookie.name, minted, {
         path: '/',
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
-        expires: jwtExpiryDate(minted),
+        maxAge: 60 * 60 * 24 * 7,
       })
       return res
     }

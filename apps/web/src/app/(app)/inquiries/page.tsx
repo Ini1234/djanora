@@ -402,7 +402,8 @@ const STATUS_TABS: { key: StatusFilterKey; label: string }[] = [
 export default function InquiriesPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const selectedId = searchParams.get('inquiry')
+  const urlInquiryId = searchParams.get('inquiry')
+  const [selectedId, setSelectedId] = useState<string | null>(urlInquiryId)
   const eventFilter = parseEventFilter(searchParams.get('event'))
   const statusFilter = parseStatusFilter(searchParams.get('status'))
   const whenFilter = parseWhenFilter(searchParams.get('when'))
@@ -443,6 +444,18 @@ export default function InquiriesPage() {
     [inquiries, statusFilter, eventFilter, whenFilter, sort, search],
   )
 
+  const selectInquiry = useCallback(
+    (id: string | null) => {
+      setSelectedId(id)
+      replaceParams({ inquiry: id })
+    },
+    [replaceParams],
+  )
+
+  useEffect(() => {
+    setSelectedId(urlInquiryId)
+  }, [urlInquiryId])
+
   useEffect(() => {
     if (loading || inquiries.length === 0) return
     if (selectedId && inquiries.some((item) => item.id === selectedId)) {
@@ -452,12 +465,8 @@ export default function InquiriesPage() {
     if (didAutoSelect.current && !selectedId) return
     if (displayed.length === 0) return
     didAutoSelect.current = true
-    replaceParams({ inquiry: displayed[0].id })
-  }, [loading, inquiries, displayed, selectedId, replaceParams])
-
-  function selectInquiry(id: string | null) {
-    replaceParams({ inquiry: id })
-  }
+    selectInquiry(displayed[0].id)
+  }, [loading, inquiries, displayed, selectedId, selectInquiry])
 
   function handleStatusChange(id: string, status: Inquiry['status']) {
     queryClient.setQueryData<Inquiry[]>(queryKeys.inquiriesVendor, (prev) =>

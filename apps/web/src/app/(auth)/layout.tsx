@@ -7,27 +7,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider appearance={clerkAppearance} afterSignOutUrl="/">
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left — brand panel */}
-        <div className="bg-brand-900 relative hidden flex-col justify-between overflow-hidden p-12 lg:flex">
-          {/* Dot pattern */}
+        <div className="panel-inverse relative hidden flex-col justify-between overflow-hidden p-12 lg:flex">
           <div className="pattern-adire absolute inset-0 opacity-10" aria-hidden="true" />
-
-          {/* Gold gradient blob */}
-          <div
-            className="bg-gold-600/20 absolute -top-32 -right-32 h-96 w-96 rounded-full blur-3xl"
-            aria-hidden="true"
-          />
-          <div
-            className="bg-brand-600/30 absolute -bottom-32 -left-32 h-96 w-96 rounded-full blur-3xl"
-            aria-hidden="true"
-          />
 
           <div className="relative">
             <Link
               href="/"
-              className="font-display flex items-center gap-2 text-xl font-semibold text-white"
+              className="font-display flex items-center gap-2 text-xl font-semibold"
               aria-label="Djanora — go to homepage"
             >
-              <span className="bg-gold-600 text-brand-900 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+              <span className="bg-primary-foreground text-primary flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
                 D
               </span>
               <span>Djanora</span>
@@ -36,18 +25,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           <div className="relative space-y-6">
             <blockquote>
-              <p className="font-display text-3xl leading-snug font-semibold text-white">
+              <p className="font-display text-3xl leading-snug font-semibold">
                 &ldquo;Your event. Your plan. Your way.&rdquo;
               </p>
             </blockquote>
-            <div className="flex items-center gap-3">
-              <div className="bg-gold-600/30 text-gold-300 flex h-10 w-10 items-center justify-center rounded-full text-lg">
-                🎊
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Djanora</p>
-                <p className="text-brand-300 text-xs">Ottawa, Ontario — event planning</p>
-              </div>
+            <div>
+              <p className="text-sm font-medium">Djanora</p>
+              <p className="text-inverse-muted text-xs">Ottawa, Ontario — event planning</p>
             </div>
           </div>
 
@@ -58,8 +42,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               { value: 'Guests', label: 'Keep everyone in sync' },
             ].map((item) => (
               <div key={item.value}>
-                <p className="text-lg font-semibold text-white">{item.value}</p>
-                <p className="text-brand-400 text-xs">{item.label}</p>
+                <p className="text-lg font-semibold">{item.value}</p>
+                <p className="text-inverse-muted text-xs">{item.label}</p>
               </div>
             ))}
           </div>
@@ -71,10 +55,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="mb-8 lg:hidden">
             <Link
               href="/"
-              className="font-display text-brand-800 flex items-center gap-2 text-xl font-semibold"
+              className="font-display text-foreground flex items-center gap-2 text-xl font-semibold"
               aria-label="Djanora — go to homepage"
             >
-              <span className="bg-brand-700 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white">
+              <span className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
                 D
               </span>
               <span>Djanora</span>

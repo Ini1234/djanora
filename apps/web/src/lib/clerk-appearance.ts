@@ -1,9 +1,9 @@
 export const clerkAppearance = {
   variables: {
-    colorPrimary: '#c9973a',
+    colorPrimary: '#18181b',
     colorBackground: '#ffffff',
-    colorForeground: '#1c1917',
-    colorNeutral: '#79716c',
+    colorForeground: '#18181b',
+    colorNeutral: '#71717a',
     colorDanger: '#dc2626',
     colorSuccess: '#16a34a',
     borderRadius: '0.75rem',
@@ -13,24 +13,24 @@ export const clerkAppearance = {
   elements: {
     card: {
       boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.06)',
-      border: '1px solid #e7e5e4',
+      border: '1px solid #e4e4e7',
       borderRadius: '1.25rem',
     },
     headerTitle: {
       fontFamily: 'var(--font-playfair), Georgia, serif',
       fontSize: '1.5rem',
       fontWeight: '600',
-      color: '#1c1917',
+      color: '#18181b',
     },
-    headerSubtitle: { color: '#79716c', fontSize: '0.875rem' },
+    headerSubtitle: { color: '#52525b', fontSize: '0.875rem' },
     formButtonPrimary: {
-      backgroundColor: '#c9973a',
+      backgroundColor: '#18181b',
       borderRadius: '9999px',
       fontSize: '0.9375rem',
       fontWeight: '500',
     },
-    footerActionLink: { color: '#c9973a', fontWeight: '500' },
-    formFieldInput: { borderRadius: '0.75rem', borderColor: '#e7e5e4' },
-    socialButtonsBlockButton: { borderRadius: '9999px', borderColor: '#e7e5e4' },
+    footerActionLink: { color: '#18181b', fontWeight: '500' },
+    formFieldInput: { borderRadius: '0.75rem', borderColor: '#e4e4e7' },
+    socialButtonsBlockButton: { borderRadius: '9999px', borderColor: '#e4e4e7' },
   },
 } as const
