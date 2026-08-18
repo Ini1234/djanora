@@ -5,6 +5,7 @@ import {
   ArrayMinSize,
   IsInt,
   IsOptional,
+  IsBoolean,
   IsDateString,
   Min,
   Max,
@@ -31,8 +32,16 @@ export class CreateEventDto {
   themes: WeddingTheme[]
 
   @IsInt()
-  @Min(1000)
+  @Min(0)
   totalBudget: number
+
+  @IsOptional()
+  @IsBoolean()
+  includeDefaultBudget?: boolean
+
+  @IsOptional()
+  @IsBoolean()
+  includeDefaultChecklist?: boolean
 
   @IsOptional()
   @IsDateString()

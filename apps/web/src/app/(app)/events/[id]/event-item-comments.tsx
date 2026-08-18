@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, Loader2, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react'
+import { ChevronRight, Loader2, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { useEventAccess } from './event-access-context'
 import { useSse } from '@/contexts/sse-context'
@@ -190,10 +190,9 @@ export function EventItemComments({
         className="mb-2 flex w-full items-center gap-1.5 rounded-md text-left hover:opacity-80"
         style={{ color: 'var(--color-muted)' }}
       >
-        <ChevronDown
-          size={12}
-          className="shrink-0 transition-transform duration-150"
-          style={{ transform: open ? undefined : 'rotate(-90deg)' }}
+        <ChevronRight
+          size={14}
+          className={`shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
         />
         <MessageSquare size={10} />
         <span className="text-[10px] font-semibold tracking-wider uppercase">

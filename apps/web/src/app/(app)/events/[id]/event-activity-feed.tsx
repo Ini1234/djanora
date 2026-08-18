@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { History } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronRight, History, Loader2 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { useSse } from '@/contexts/sse-context'
+
+const PAGE_SIZE = 20
 
 interface ActivityRow {
   id: string
@@ -12,6 +14,11 @@ interface ActivityRow {
   summary: string
   createdAt: string
   actor: { id: string; firstName: string | null; lastName: string | null }
+}
+
+interface ActivityPage {
+  items: ActivityRow[]
+  nextCursor: string | null
 }
 
 function timeAgo(dateStr: string) {
@@ -28,19 +35,86 @@ function actorName(actor: ActivityRow['actor']) {
 
 export function EventActivityFeed({ eventId }: { eventId: string }) {
   const { on } = useSse()
+  const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<ActivityRow[]>([])
-  const [loading, setLoading] = useState(true)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const loadedRef = useRef(false)
+  const fetchGen = useRef(0)
+
+  loadedRef.current = loaded
 
   useEffect(() => {
-    proxyClient
-      .get<ActivityRow[]>(`/events/${eventId}/activity`)
-      .then(({ data }) => setRows(Array.isArray(data) ? data : []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false))
+    fetchGen.current += 1
+    setOpen(false)
+    setRows([])
+    setNextCursor(null)
+    setLoaded(false)
+    setLoading(false)
+    setLoadingMore(false)
   }, [eventId])
+
+  async function fetchPage(cursor?: string) {
+    const { data } = await proxyClient.get<ActivityPage>(`/events/${eventId}/activity`, {
+      params: { limit: PAGE_SIZE, ...(cursor ? { cursor } : {}) },
+    })
+    return {
+      items: Array.isArray(data?.items) ? data.items : [],
+      nextCursor: data?.nextCursor ?? null,
+    }
+  }
+
+  async function loadFirstPage() {
+    const gen = ++fetchGen.current
+    setLoading(true)
+    try {
+      const page = await fetchPage()
+      if (gen !== fetchGen.current) return
+      setRows(page.items)
+      setNextCursor(page.nextCursor)
+      setLoaded(true)
+    } catch {
+      if (gen !== fetchGen.current) return
+      setRows([])
+      setNextCursor(null)
+      setLoaded(true)
+    } finally {
+      if (gen === fetchGen.current) setLoading(false)
+    }
+  }
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return
+    const gen = fetchGen.current
+    setLoadingMore(true)
+    try {
+      const page = await fetchPage(nextCursor)
+      if (gen !== fetchGen.current) return
+      setRows((prev) => {
+        const seen = new Set(prev.map((r) => r.id))
+        return [...prev, ...page.items.filter((row) => !seen.has(row.id))]
+      })
+      setNextCursor(page.nextCursor)
+    } catch {
+      /* keep the current page; user can retry Load more */
+    } finally {
+      if (gen === fetchGen.current) setLoadingMore(false)
+    }
+  }
+
+  function toggle() {
+    setOpen((wasOpen) => {
+      const next = !wasOpen
+      if (next && !loaded && !loading) void loadFirstPage()
+      return next
+    })
+  }
 
   useEffect(() => {
     return on((event) => {
+      if (!loadedRef.current) return
       if (event.type !== 'event_activity' || !event.activity) return
       if (event.activity.eventId !== eventId) return
       const incoming = event.activity
@@ -56,39 +130,62 @@ export function EventActivityFeed({ eventId }: { eventId: string }) {
             actor: incoming.actor,
           },
           ...prev,
-        ].slice(0, 40)
+        ]
       })
     })
   }, [on, eventId])
 
-  if (loading || rows.length === 0) return null
-
   return (
-    <section
-      className="overflow-hidden rounded-2xl"
-      style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
-    >
-      <div
-        className="flex items-center gap-2 border-b px-5 py-3"
-        style={{ borderColor: 'var(--color-border)' }}
+    <section className="card overflow-hidden">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-5 py-3 text-left"
       >
-        <History size={14} style={{ color: 'var(--color-brand-primary)' }} />
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-          Activity
-        </h2>
-      </div>
-      <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-        {rows.slice(0, 20).map((row) => (
-          <li key={row.id} className="px-5 py-2.5">
-            <p className="text-xs" style={{ color: 'var(--color-text-primary)' }}>
-              {row.summary}
-            </p>
-            <p className="mt-0.5 text-[11px]" style={{ color: 'var(--color-muted)' }}>
-              {actorName(row.actor)} · {timeAgo(row.createdAt)}
-            </p>
-          </li>
-        ))}
-      </ul>
+        <ChevronRight
+          size={14}
+          className={`text-muted shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+        />
+        <History size={14} className="text-muted" />
+        <h2 className="text-foreground text-sm font-semibold">Activity</h2>
+      </button>
+      {open && (
+        <div className="border-border border-t">
+          {loading ? (
+            <div className="flex items-center justify-center px-5 py-6">
+              <Loader2 size={16} className="text-muted animate-spin" />
+            </div>
+          ) : rows.length === 0 ? (
+            <p className="text-muted px-5 py-4 text-xs">No activity yet</p>
+          ) : (
+            <>
+              <ul className="divide-border divide-y">
+                {rows.map((row) => (
+                  <li key={row.id} className="px-5 py-2.5">
+                    <p className="text-foreground text-xs">{row.summary}</p>
+                    <p className="text-muted mt-0.5 text-[11px]">
+                      {actorName(row.actor)} · {timeAgo(row.createdAt)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              {nextCursor && (
+                <div className="border-border border-t px-5 py-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadMore()}
+                    disabled={loadingMore}
+                    className="btn btn-ghost btn-sm w-full"
+                  >
+                    {loadingMore ? 'Loading…' : 'Load more'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </section>
   )
 }

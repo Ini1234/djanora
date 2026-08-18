@@ -1,56 +1,28 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, Calendar, ChevronRight, Circle } from 'lucide-react'
+import { Bell, Calendar, ChevronRight, Plus, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
 import { useSse } from '@/contexts/sse-context'
 import { notificationHref } from '@/lib/notification-href'
 import { PersonalChecklist } from '@/components/dashboard/personal-checklist'
-import type { Event, EventChecklistItem, InAppNotification } from '@/lib/api.types'
+import type { Event, InAppNotification } from '@/lib/api.types'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 import { splitByTiming } from '@/lib/event-timing'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface DashboardHomeProps {
   firstName: string
-  events: Event[]
+  events?: Event[]
 }
 
-type DueItem = {
-  eventId: string
-  eventTitle: string
-  item: EventChecklistItem
-  overdue: boolean
-  dueLabel: string
-  dueTime: number
-}
-
-const DUE_CAP = 8
 const ACTIVITY_CAP = 5
 
 function startOfToday() {
   return new Date(new Date().toDateString()).getTime()
-}
-
-function isOverdue(dateStr: string | null, done: boolean) {
-  if (!dateStr || done) return false
-  return new Date(dateStr).getTime() < startOfToday()
-}
-
-function isDueSoon(dateStr: string | null, done: boolean) {
-  if (!dateStr || done) return false
-  const diff = (new Date(dateStr).getTime() - startOfToday()) / 86_400_000
-  return diff >= 0 && diff <= 7
-}
-
-function dueLabel(dateStr: string) {
-  const days = Math.round((new Date(dateStr).getTime() - startOfToday()) / 86_400_000)
-  if (days < 0) return 'Overdue'
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Tomorrow'
-  return `In ${days}d`
 }
 
 function daysUntil(dateStr: string) {
@@ -74,70 +46,35 @@ function nextEventCountdown(events: Event[]) {
   return upcoming[0] ?? null
 }
 
-function collectDueItems(events: Event[], completedIds: Set<string>): DueItem[] {
-  const rows: DueItem[] = []
-  for (const event of events) {
-    for (const item of event.checklist ?? []) {
-      if (completedIds.has(item.id) || item.isCompleted || !item.dueDate) continue
-      if (!isOverdue(item.dueDate, false) && !isDueSoon(item.dueDate, false)) continue
-      rows.push({
-        eventId: event.id,
-        eventTitle: event.title,
-        item,
-        overdue: isOverdue(item.dueDate, false),
-        dueLabel: dueLabel(item.dueDate),
-        dueTime: new Date(item.dueDate).getTime(),
-      })
-    }
-  }
-  return rows.sort((a, b) => {
-    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1
-    return a.dueTime - b.dueTime
-  })
-}
-
-export function DashboardHome({ firstName, events }: DashboardHomeProps) {
+export function DashboardHome({ firstName, events: initialEvents }: DashboardHomeProps) {
   const router = useRouter()
   const t = useTranslations('dashboard')
   const { notifications, markNotificationRead } = useSse()
-  const [completedIds, setCompletedIds] = useState<Set<string>>(() => new Set())
-  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set())
+  const [events, setEvents] = useState<Event[]>(initialEvents ?? [])
+  const [eventsLoading, setEventsLoading] = useState(!initialEvents)
 
-  const dueItems = useMemo(() => collectDueItems(events, completedIds), [events, completedIds])
-  const visibleDue = dueItems.slice(0, DUE_CAP)
-  const overflow = dueItems.slice(DUE_CAP)
-  const overflowEventTitles = [...new Set(overflow.map((row) => row.eventTitle))]
-  const overflowHref =
-    overflow.length === 0
-      ? null
-      : overflow.every((row) => row.eventId === overflow[0].eventId)
-        ? `/events/${overflow[0].eventId}?tab=checklist`
-        : '/events'
+  useEffect(() => {
+    if (initialEvents) return
+    let cancelled = false
+    proxyClient
+      .get<Event[]>('/events')
+      .then(({ data }) => {
+        if (!cancelled) setEvents(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!cancelled) setEvents([])
+      })
+      .finally(() => {
+        if (!cancelled) setEventsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [initialEvents])
 
   const unread = notifications.filter((n) => !n.isRead).slice(0, ACTIVITY_CAP)
   const next = nextEventCountdown(events)
   const { upcoming, past } = useMemo(() => splitByTiming(events), [events])
-
-  async function completeItem(eventId: string, itemId: string) {
-    if (pendingIds.has(itemId) || completedIds.has(itemId)) return
-    setCompletedIds((prev) => new Set(prev).add(itemId))
-    setPendingIds((prev) => new Set(prev).add(itemId))
-    try {
-      await proxyClient.patch(`/events/${eventId}/checklist/${itemId}`, { isCompleted: true })
-    } catch {
-      setCompletedIds((prev) => {
-        const nextIds = new Set(prev)
-        nextIds.delete(itemId)
-        return nextIds
-      })
-    } finally {
-      setPendingIds((prev) => {
-        const nextIds = new Set(prev)
-        nextIds.delete(itemId)
-        return nextIds
-      })
-    }
-  }
 
   function openNotification(n: InAppNotification) {
     if (!n.isRead) void markNotificationRead(n.id)
@@ -161,27 +98,58 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
             </p>
           )}
         </div>
-        {next && (
-          <Link
-            href={`/events/${next.event.id}`}
-            className="shrink-0 text-right text-sm transition-opacity hover:opacity-80"
-            style={{ color: 'var(--color-muted)' }}
-          >
-            <span className="block text-[11px] tracking-wider uppercase">Next</span>
-            <span className="font-medium" style={{ color: 'var(--color-foreground)' }}>
-              {next.days === 0 ? 'Today' : next.days === 1 ? 'Tomorrow' : `${next.days}d`}
-              <span className="font-normal" style={{ color: 'var(--color-muted)' }}>
-                {' '}
-                · {next.event.title}
+        <div className="flex shrink-0 items-center gap-3">
+          {next && (
+            <Link
+              href={`/events/${next.event.id}`}
+              className="text-right text-sm transition-opacity hover:opacity-80"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              <span className="block text-[11px] tracking-wider uppercase">Next</span>
+              <span className="font-medium" style={{ color: 'var(--color-foreground)' }}>
+                {next.days === 0 ? 'Today' : next.days === 1 ? 'Tomorrow' : `${next.days}d`}
+                <span className="font-normal" style={{ color: 'var(--color-muted)' }}>
+                  {' '}
+                  · {next.event.title}
+                </span>
               </span>
-            </span>
+            </Link>
+          )}
+          <Link href="/events/new" className="btn btn-primary btn-sm">
+            <Plus size={14} /> New event
           </Link>
-        )}
+        </div>
       </header>
 
-      <PersonalChecklist events={events} />
+      {eventsLoading && (
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      )}
 
-      {events.length > 0 && (
+      {!eventsLoading && events.length === 0 && (
+        <section className="card overflow-hidden p-8 text-center sm:p-10">
+          <div className="bg-foreground/5 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl">
+            <Sparkles size={24} className="text-foreground" />
+          </div>
+          <h2 className="font-display text-foreground text-2xl font-semibold">
+            Plan your first event
+          </h2>
+          <p className="muted mx-auto mt-2 max-w-md text-sm leading-relaxed">
+            Budget, vendors, guests, and a checklist in one place. Start a plan in a few minutes —
+            you can add the details as you go.
+          </p>
+          <Link href="/events/new" className="btn btn-primary btn-md mt-6">
+            <Plus size={16} /> Create your first event
+          </Link>
+        </section>
+      )}
+
+      <PersonalChecklist events={events} variant="due" />
+
+      {!eventsLoading && events.length > 0 && (
         <div className="space-y-8">
           {upcoming.length > 0 && (
             <section>
@@ -333,128 +301,53 @@ export function DashboardHome({ firstName, events }: DashboardHomeProps) {
         </div>
       )}
 
-      {(visibleDue.length > 0 || unread.length > 0) && (
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-          {visibleDue.length > 0 && (
-            <section>
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  Due
-                </h2>
-                <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
-                  {dueItems.length}
-                </span>
-              </div>
-              <ul className="space-y-1">
-                {visibleDue.map((row) => (
-                  <li key={row.item.id} className="flex items-start gap-2.5 py-1.5">
-                    <button
-                      type="button"
-                      disabled={pendingIds.has(row.item.id)}
-                      onClick={() => void completeItem(row.eventId, row.item.id)}
-                      className="mt-0.5 shrink-0 disabled:opacity-40"
-                      aria-label={`Mark “${row.item.title}” complete`}
-                    >
-                      <Circle
-                        size={16}
-                        className={pendingIds.has(row.item.id) ? 'animate-pulse' : undefined}
-                        style={{ color: 'var(--color-muted)' }}
-                      />
-                    </button>
+      {unread.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+              Activity
+            </h2>
+            <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              {unread.length} unread
+            </span>
+          </div>
+          <ul>
+            {unread.map((n) => (
+              <li key={n.id}>
+                <button
+                  type="button"
+                  onClick={() => openNotification(n)}
+                  className="w-full py-2 text-left transition-opacity hover:opacity-80"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Bell
+                      size={13}
+                      className="mt-0.5 shrink-0"
+                      style={{ color: 'var(--color-muted)' }}
+                    />
                     <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/events/${row.eventId}?tab=checklist&item=${row.item.id}`}
-                        className="block truncate text-sm font-medium hover:opacity-80"
+                      <p
+                        className="truncate text-sm font-medium"
                         style={{ color: 'var(--color-foreground)' }}
                       >
-                        {row.item.title}
-                      </Link>
+                        {n.title}
+                      </p>
                       <p
-                        className="mt-0.5 truncate text-xs"
+                        className="mt-0.5 line-clamp-2 text-xs"
                         style={{ color: 'var(--color-muted)' }}
                       >
-                        {row.eventTitle}
+                        {n.body}
+                      </p>
+                      <p className="mt-1 text-[10px]" style={{ color: 'var(--color-muted)' }}>
+                        {timeAgo(n.createdAt)}
                       </p>
                     </div>
-                    <span
-                      className="mt-0.5 shrink-0 text-[11px] font-medium"
-                      style={{
-                        color: row.overdue
-                          ? '#b91c1c'
-                          : row.dueLabel === 'Today'
-                            ? '#a87b10'
-                            : 'var(--color-muted)',
-                      }}
-                    >
-                      {row.dueLabel}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {overflowHref && overflow.length > 0 && (
-                <Link
-                  href={overflowHref}
-                  className="mt-2 inline-flex items-center gap-1 text-xs hover:opacity-70"
-                  style={{ color: 'var(--color-muted)' }}
-                >
-                  {overflowEventTitles.length === 1
-                    ? `View all on ${overflowEventTitles[0]}`
-                    : `${overflow.length} more`}
-                  <ChevronRight size={12} />
-                </Link>
-              )}
-            </section>
-          )}
-
-          {unread.length > 0 && (
-            <section>
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  Activity
-                </h2>
-                <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
-                  {unread.length} unread
-                </span>
-              </div>
-              <ul>
-                {unread.map((n) => (
-                  <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => openNotification(n)}
-                      className="w-full py-2 text-left transition-opacity hover:opacity-80"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <Bell
-                          size={13}
-                          className="mt-0.5 shrink-0"
-                          style={{ color: 'var(--color-muted)' }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="truncate text-sm font-medium"
-                            style={{ color: 'var(--color-foreground)' }}
-                          >
-                            {n.title}
-                          </p>
-                          <p
-                            className="mt-0.5 line-clamp-2 text-xs"
-                            style={{ color: 'var(--color-muted)' }}
-                          >
-                            {n.body}
-                          </p>
-                          <p className="mt-1 text-[10px]" style={{ color: 'var(--color-muted)' }}>
-                            {timeAgo(n.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   )

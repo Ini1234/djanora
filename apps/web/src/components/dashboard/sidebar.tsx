@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
   House,
@@ -132,14 +131,12 @@ export function Sidebar({
               aria-current={active ? 'page' : undefined}
             >
               {active && (
-                <motion.div
-                  layoutId="active-nav"
+                <span
                   className="absolute inset-0 rounded-xl"
                   style={{
                     background: 'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)',
                     border: '1.5px solid var(--color-brand-primary)',
                   }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                 />
               )}
               <item.icon

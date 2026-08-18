@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
+import { useState, useTransition, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Loader2,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Store,
   Search,
@@ -30,8 +31,18 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { getErrorMessage } from '@/lib/errors'
 import { proxyClient } from '@/lib/proxy-client'
+import { useLazyGet } from '@/lib/use-lazy-get'
+import { TableSkeleton } from '@/components/ui/skeleton'
+import { DataPortMenu } from '@/components/data-port-menu'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
 import type { EventBudgetItem, BudgetReceipt, UserVendorContact } from '@/lib/api.types'
+import {
+  BUDGET_HEADERS,
+  budgetExportRows,
+  capImportRows,
+  parseBudgetTable,
+} from '@/lib/data-port-maps'
+import { fileBase } from '@/lib/sheet-io'
 import { useMoodBoardLinks } from './mood-board-context'
 import { useEventAccess } from './event-access-context'
 import { EventItemComments } from './event-item-comments'
@@ -63,9 +74,11 @@ function existingInquiryId(err: unknown): string | null {
 
 interface BudgetSectionProps {
   eventId: string
-  initialItems: EventBudgetItem[]
+  eventTitle?: string
+  initialItems?: EventBudgetItem[]
   totalBudget: number
   focusItemId?: string
+  onCollapse?: () => void
 }
 
 // ─── Edit / Add modal ─────────────────────────────────────────────────────────
@@ -952,231 +965,443 @@ function ContactModal({
   )
 }
 
+function money(n: number) {
+  return `CA$${n.toLocaleString('en-CA')}`
+}
+
+const DEFAULT_BUDGET_ITEM_NAMES: Record<string, string> = {
+  CATERER: 'Catering',
+  PHOTOGRAPHER: 'Photography',
+  VIDEOGRAPHER: 'Videography',
+  DECORATOR: 'Decor & flowers',
+  DJ: 'DJ set',
+  LIVE_BAND: 'Live performance',
+  MAKEUP_ARTIST: 'Hair & makeup',
+  MC: 'Hosting',
+  WEDDING_PLANNER: 'Planning',
+  FASHION_STYLIST: 'Attire',
+  OTHER: 'Miscellaneous',
+}
+
+function itemLabel(
+  item: EventBudgetItem,
+  tCat: (key: string) => string,
+  tBudget?: { (key: string): string; has: (key: string) => boolean },
+) {
+  const defaultKey = `defaults.${item.category}`
+  const custom = item.label?.trim()
+  if (custom && custom !== DEFAULT_BUDGET_ITEM_NAMES[item.category]) return custom
+  if (tBudget?.has(defaultKey)) return tBudget(defaultKey)
+  return custom || getVendorCategoryLabel(item.category, tCat)
+}
+
+function remainingOf(item: EventBudgetItem) {
+  return item.allocatedAmount - item.spentAmount
+}
+
+function statusBucket(item: EventBudgetItem): 'over' | 'in-progress' | 'not-started' {
+  if (item.spentAmount > item.allocatedAmount) return 'over'
+  if (item.spentAmount === 0) return 'not-started'
+  return 'in-progress'
+}
+
+type BudgetSortKey =
+  | 'alpha'
+  | 'allocated-asc'
+  | 'allocated-desc'
+  | 'spent-asc'
+  | 'spent-desc'
+  | 'remaining-asc'
+  | 'remaining-desc'
+type BudgetFilterKey = 'all' | 'over' | 'unpaid' | 'vendor'
+type BudgetGroupKey = 'none' | 'category' | 'status'
+
+function applyBudgetSortFilter(
+  items: EventBudgetItem[],
+  sort: BudgetSortKey,
+  filter: BudgetFilterKey,
+  tCat: (key: string) => string,
+  tBudget: { (key: string): string; has: (key: string) => boolean },
+) {
+  let r = [...items]
+  if (filter === 'over') r = r.filter((i) => i.spentAmount > i.allocatedAmount)
+  if (filter === 'unpaid') r = r.filter((i) => i.spentAmount === 0)
+  if (filter === 'vendor') r = r.filter((i) => !!i.vendorName)
+
+  if (sort === 'alpha')
+    r.sort((a, b) => itemLabel(a, tCat, tBudget).localeCompare(itemLabel(b, tCat, tBudget)))
+  else if (sort === 'allocated-asc') r.sort((a, b) => a.allocatedAmount - b.allocatedAmount)
+  else if (sort === 'allocated-desc') r.sort((a, b) => b.allocatedAmount - a.allocatedAmount)
+  else if (sort === 'spent-asc') r.sort((a, b) => a.spentAmount - b.spentAmount)
+  else if (sort === 'spent-desc') r.sort((a, b) => b.spentAmount - a.spentAmount)
+  else if (sort === 'remaining-asc') r.sort((a, b) => remainingOf(a) - remainingOf(b))
+  else if (sort === 'remaining-desc') r.sort((a, b) => remainingOf(b) - remainingOf(a))
+
+  return r
+}
+
+function groupBudgetItems(
+  items: EventBudgetItem[],
+  group: BudgetGroupKey,
+  tCat: (key: string) => string,
+  labels: { over: string; inProgress: string; notStarted: string },
+): { key: string; label: string | null; items: EventBudgetItem[] }[] {
+  if (group === 'none') return [{ key: 'all', label: null, items }]
+
+  if (group === 'status') {
+    const order = ['over', 'in-progress', 'not-started'] as const
+    const names = {
+      over: labels.over,
+      'in-progress': labels.inProgress,
+      'not-started': labels.notStarted,
+    }
+    return order
+      .map((key) => ({
+        key,
+        label: names[key],
+        items: items.filter((item) => statusBucket(item) === key),
+      }))
+      .filter((section) => section.items.length > 0)
+  }
+
+  const map = new Map<string, EventBudgetItem[]>()
+  for (const item of items) {
+    const list = map.get(item.category)
+    if (list) list.push(item)
+    else map.set(item.category, [item])
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) =>
+      getVendorCategoryLabel(a, tCat).localeCompare(getVendorCategoryLabel(b, tCat)),
+    )
+    .map(([key, sectionItems]) => ({
+      key,
+      label: getVendorCategoryLabel(key, tCat),
+      items: sectionItems,
+    }))
+}
+
+function SortTh({
+  label,
+  active,
+  desc,
+  onClick,
+  align = 'left',
+  className,
+}: {
+  label: string
+  active: boolean
+  desc?: boolean
+  onClick: () => void
+  align?: 'left' | 'right'
+  className?: string
+}) {
+  return (
+    <th
+      className={cn(
+        'px-2 py-2 text-[10px] font-medium tracking-wide uppercase',
+        align === 'right' ? 'text-right' : 'text-left',
+        className,
+      )}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'inline-flex items-center gap-1',
+          align === 'right' && 'w-full justify-end',
+          active ? 'text-foreground' : 'text-muted hover:text-foreground',
+        )}
+      >
+        {label}
+        {active && (desc ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+      </button>
+    </th>
+  )
+}
+
+function MoneyInput({
+  value,
+  onCommit,
+  ariaLabel,
+  danger,
+}: {
+  value: number
+  onCommit: (n: number) => void
+  ariaLabel: string
+  danger?: boolean
+}) {
+  const [draft, setDraft] = useState(String(value))
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  function commit() {
+    const n = Math.max(0, Math.round(Number(draft)))
+    if (!Number.isFinite(n)) {
+      setDraft(String(value))
+      return
+    }
+    if (n !== value) onCommit(n)
+    else setDraft(String(value))
+  }
+
+  return (
+    <input
+      type="number"
+      min={0}
+      step={1}
+      value={draft}
+      aria-label={ariaLabel}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+      }}
+      className={cn(
+        'hover:border-border focus:border-border w-[6.5rem] border-b border-transparent bg-transparent py-0.5 text-right text-xs tabular-nums transition-colors focus:outline-none',
+        danger ? 'text-red-400' : 'text-foreground',
+      )}
+    />
+  )
+}
+
 // ─── Budget row ───────────────────────────────────────────────────────────────
 
 interface BudgetRowProps {
   item: EventBudgetItem
   eventId: string
+  nested?: boolean
   onEdit: () => void
   onDelete: () => void
   onReceiptUploaded: (r: BudgetReceipt) => void
   onReceiptDeleted: (id: string) => void
+  onPatchAmount: (field: 'allocatedAmount' | 'spentAmount', value: number) => void
   initiallyExpanded?: boolean
+  tCat: (key: string) => string
 }
 
 function BudgetRow({
   item,
   eventId,
+  nested = false,
   onEdit,
   onDelete,
   onReceiptUploaded,
   onReceiptDeleted,
+  onPatchAmount,
   initiallyExpanded = false,
+  tCat,
 }: BudgetRowProps) {
-  const tCat = useTranslations('vendorCategories')
+  const t = useTranslations('budget')
   const { canEdit } = useEventAccess()
   const [expanded, setExpanded] = useState(initiallyExpanded)
   const [showContact, setShowContact] = useState(false)
   const [inquirySent, setInquirySent] = useState(false)
-  const pct = item.allocatedAmount > 0 ? (item.spentAmount / item.allocatedAmount) * 100 : 0
-  const displayLabel = item.label || getVendorCategoryLabel(item.category, tCat)
+  const left = remainingOf(item)
+  const displayLabel = itemLabel(item, tCat, t)
 
   return (
-    <div
-      id={`budget-item-${item.id}`}
-      className="border-border bg-foreground/5 overflow-hidden rounded-xl border"
-      style={
-        initiallyExpanded
-          ? { outline: '1px solid color-mix(in srgb, var(--color-brand-primary) 45%, transparent)' }
-          : undefined
-      }
-    >
-      {/* Main row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Name + vendor */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-foreground truncate text-sm font-medium">{displayLabel}</span>
-            {item.vendorName && (
-              <span className="text-muted hidden truncate text-xs sm:block">
-                · {item.vendorName}
-              </span>
-            )}
-          </div>
-          {/* Progress bar */}
-          <div className="mt-1.5 flex items-center gap-2">
-            <div className="bg-foreground/5 h-1 flex-1 overflow-hidden rounded-full">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  pct >= 100
-                    ? 'bg-red-500'
-                    : pct > 75
-                      ? 'bg-amber-500'
-                      : 'from-gold-600 to-gold-400 bg-gradient-to-r',
-                )}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-            <span className="text-muted shrink-0 text-[10px]">{Math.round(pct)}%</span>
-          </div>
-        </div>
-
-        {/* Amounts */}
-        <div className="shrink-0 text-right">
-          <p className="text-foreground text-sm font-semibold">
-            CA${item.spentAmount.toLocaleString('en-CA')}
-          </p>
-          <p className="text-muted text-[10px]">
-            of CA${item.allocatedAmount.toLocaleString('en-CA')}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1">
+    <>
+      <tr
+        id={`budget-item-${item.id}`}
+        className={cn(
+          'group hover:bg-foreground/[0.03] border-border/60 border-t',
+          initiallyExpanded && 'bg-foreground/5',
+        )}
+      >
+        <td className="px-2 py-2.5 align-middle">
           <button
+            type="button"
             onClick={() => setExpanded((e) => !e)}
-            className="text-muted hover:bg-foreground/5 hover:text-foreground rounded-lg p-1.5 transition-colors"
-            title="Details & receipts"
+            aria-expanded={expanded}
+            className="text-foreground flex items-center gap-2 text-left text-sm"
           >
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            <ChevronRight
+              size={14}
+              className={cn('text-muted shrink-0 transition-transform', expanded && 'rotate-90')}
+            />
+            <span className={cn(nested ? 'pl-4 font-normal' : 'font-medium')}>{displayLabel}</span>
           </button>
+        </td>
+        <td className="text-muted hidden max-w-[160px] truncate px-2 py-2.5 text-xs md:table-cell">
+          {item.vendorName || '—'}
+        </td>
+        <td className="px-2 py-2.5 text-right align-middle">
+          {canEdit('BUDGET') ? (
+            <MoneyInput
+              value={item.allocatedAmount}
+              ariaLabel={t('allocated')}
+              onCommit={(n) => onPatchAmount('allocatedAmount', n)}
+            />
+          ) : (
+            <span className="text-xs tabular-nums">{money(item.allocatedAmount)}</span>
+          )}
+        </td>
+        <td className="px-2 py-2.5 text-right align-middle">
+          {canEdit('BUDGET') ? (
+            <MoneyInput
+              value={item.spentAmount}
+              ariaLabel={t('spent')}
+              danger={item.spentAmount > item.allocatedAmount}
+              onCommit={(n) => onPatchAmount('spentAmount', n)}
+            />
+          ) : (
+            <span
+              className={cn(
+                'text-xs tabular-nums',
+                item.spentAmount > item.allocatedAmount ? 'text-red-400' : 'text-foreground',
+              )}
+            >
+              {money(item.spentAmount)}
+            </span>
+          )}
+        </td>
+        <td className="hidden px-2 py-2.5 text-right align-middle lg:table-cell">
+          <span className={cn('text-xs tabular-nums', left < 0 ? 'text-red-400' : 'text-muted')}>
+            {left < 0 ? `−${money(Math.abs(left))}` : money(left)}
+          </span>
+        </td>
+        <td className="px-2 py-2.5 align-middle">
           {canEdit('BUDGET') && (
-            <>
+            <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
               <button
+                type="button"
                 onClick={onEdit}
-                className="text-muted hover:bg-foreground/5 hover:text-foreground rounded-lg p-1.5 transition-colors"
-                title="Edit"
+                className="text-muted hover:bg-foreground/5 hover:text-foreground rounded-md p-1 transition-colors"
+                aria-label="Edit"
               >
-                <Pencil size={13} />
+                <Pencil size={11} />
               </button>
               <button
+                type="button"
                 onClick={onDelete}
-                className="text-muted rounded-lg p-1.5 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                title="Delete"
+                className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                aria-label="Delete"
               >
-                <Trash2 size={13} />
+                <Trash2 size={11} />
               </button>
-            </>
+            </div>
           )}
-        </div>
-      </div>
-
-      {/* Expanded panel */}
+        </td>
+      </tr>
       {expanded && (
-        <div className="border-border space-y-3 border-t px-4 pt-3 pb-4">
-          {/* Notes */}
-          {item.notes && <p className="text-muted text-xs leading-relaxed">{item.notes}</p>}
+        <tr>
+          <td
+            colSpan={6}
+            className={cn(
+              'bg-foreground/[0.02] border-border border-t pt-3 pb-4',
+              nested ? 'pr-4 pl-12' : 'px-4',
+            )}
+          >
+            <div className="space-y-3">
+              {item.notes && <p className="text-muted text-xs leading-relaxed">{item.notes}</p>}
 
-          {/* Vendor contact — from personal contact book */}
-          {!item.vendorProfileId && item.userVendorContact && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <BookUser size={10} className="text-muted" />
-                <p className="text-muted text-[10px] font-medium tracking-wider uppercase">
-                  Vendor contact
-                </p>
-              </div>
-              {item.userVendorContact.email && (
-                <a
-                  href={`mailto:${item.userVendorContact.email}`}
-                  className="text-muted hover:text-foreground flex items-center gap-2 text-xs transition-colors"
-                >
-                  <Mail size={11} className="text-muted shrink-0" />
-                  {item.userVendorContact.email}
-                </a>
-              )}
-              {item.userVendorContact.phone && (
-                <a
-                  href={`tel:${item.userVendorContact.phone}`}
-                  className="text-muted hover:text-foreground flex items-center gap-2 text-xs transition-colors"
-                >
-                  <Phone size={11} className="text-muted shrink-0" />
-                  {item.userVendorContact.phone}
-                </a>
-              )}
-              {item.userVendorContact.website && (
-                <a
-                  href={item.userVendorContact.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted hover:text-foreground flex items-center gap-2 truncate text-xs transition-colors"
-                >
-                  <Globe size={11} className="text-muted shrink-0" />
-                  {item.userVendorContact.website}
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Contact vendor — only when linked to a registered profile */}
-          {item.vendorProfileId && item.vendorName && (
-            <div className="bg-gold-500/8 border-gold-500/20 flex items-center justify-between rounded-xl border px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Store size={12} className="text-foreground shrink-0" />
-                <span className="text-foreground text-xs font-medium">{item.vendorName}</span>
-                {inquirySent && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-emerald-400">
-                    <Check size={9} /> Inquiry sent
-                  </span>
-                )}
-              </div>
-              {canEdit('VENDORS') && (
-                <button
-                  onClick={() => setShowContact(true)}
-                  disabled={inquirySent}
-                  className="bg-gold-600/20 border-gold-500/30 text-foreground hover:bg-gold-600/35 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <MessageSquare size={11} />
-                  {inquirySent ? 'Inquiry sent' : 'Contact vendor'}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Linked inspirations */}
-          <LinkedBudgetInspirations budgetItemId={item.id} />
-
-          <EventItemComments subjectType="BUDGET_ITEM" subjectId={item.id} />
-
-          {/* Receipts */}
-          <div>
-            <p className="text-muted mb-2 text-[10px] font-medium tracking-wider uppercase">
-              Receipts & attachments
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {item.receipts.map((r) => (
-                <ReceiptThumb
-                  key={r.id}
-                  receipt={r}
-                  eventId={eventId}
-                  onDeleted={onReceiptDeleted}
-                />
-              ))}
-              {item.receipts.length === 0 && (
-                <div className="border-border bg-foreground/5 flex h-12 w-12 items-center justify-center gap-1.5 rounded-lg border border-dashed">
-                  <ImageIcon size={14} className="text-muted" />
+              {!item.vendorProfileId && item.userVendorContact && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <BookUser size={10} className="text-muted" />
+                    <p className="text-muted text-[10px] font-medium tracking-wider uppercase">
+                      Vendor contact
+                    </p>
+                  </div>
+                  {item.userVendorContact.email && (
+                    <a
+                      href={`mailto:${item.userVendorContact.email}`}
+                      className="text-muted hover:text-foreground flex items-center gap-2 text-xs transition-colors"
+                    >
+                      <Mail size={11} className="text-muted shrink-0" />
+                      {item.userVendorContact.email}
+                    </a>
+                  )}
+                  {item.userVendorContact.phone && (
+                    <a
+                      href={`tel:${item.userVendorContact.phone}`}
+                      className="text-muted hover:text-foreground flex items-center gap-2 text-xs transition-colors"
+                    >
+                      <Phone size={11} className="text-muted shrink-0" />
+                      {item.userVendorContact.phone}
+                    </a>
+                  )}
+                  {item.userVendorContact.website && (
+                    <a
+                      href={item.userVendorContact.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted hover:text-foreground flex items-center gap-2 truncate text-xs transition-colors"
+                    >
+                      <Globe size={11} className="text-muted shrink-0" />
+                      {item.userVendorContact.website}
+                    </a>
+                  )}
                 </div>
               )}
-              {canEdit('BUDGET') && (
-                <ReceiptUploader eventId={eventId} item={item} onUploaded={onReceiptUploaded} />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Contact modal — rendered outside the expanded panel so z-index works */}
-      {showContact && item.vendorProfileId && item.vendorName && (
-        <ContactModal
-          eventId={eventId}
-          vendorName={item.vendorName}
-          vendorProfileId={item.vendorProfileId}
-          onClose={() => setShowContact(false)}
-          onSent={() => setInquirySent(true)}
-        />
+              {item.vendorProfileId && item.vendorName && (
+                <div className="border-border bg-foreground/5 flex items-center justify-between rounded-xl border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Store size={12} className="text-foreground shrink-0" />
+                    <span className="text-foreground text-xs font-medium">{item.vendorName}</span>
+                    {inquirySent && (
+                      <span className="flex items-center gap-0.5 text-[10px] text-emerald-400">
+                        <Check size={9} /> {t('inquirySent')}
+                      </span>
+                    )}
+                  </div>
+                  {canEdit('VENDORS') && (
+                    <button
+                      type="button"
+                      onClick={() => setShowContact(true)}
+                      disabled={inquirySent}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <MessageSquare size={11} />
+                      {inquirySent ? t('inquirySent') : t('contactVendor')}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <LinkedBudgetInspirations budgetItemId={item.id} />
+              <EventItemComments subjectType="BUDGET_ITEM" subjectId={item.id} />
+
+              <div>
+                <p className="text-muted mb-2 text-[10px] font-medium tracking-wider uppercase">
+                  {t('receipts')}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {item.receipts.map((r) => (
+                    <ReceiptThumb
+                      key={r.id}
+                      receipt={r}
+                      eventId={eventId}
+                      onDeleted={onReceiptDeleted}
+                    />
+                  ))}
+                  {item.receipts.length === 0 && (
+                    <div className="border-border bg-foreground/5 flex h-12 w-12 items-center justify-center rounded-lg border border-dashed">
+                      <ImageIcon size={14} className="text-muted" />
+                    </div>
+                  )}
+                  {canEdit('BUDGET') && (
+                    <ReceiptUploader eventId={eventId} item={item} onUploaded={onReceiptUploaded} />
+                  )}
+                </div>
+              </div>
+            </div>
+            {showContact && item.vendorProfileId && item.vendorName && (
+              <ContactModal
+                eventId={eventId}
+                vendorName={item.vendorName}
+                vendorProfileId={item.vendorProfileId}
+                onClose={() => setShowContact(false)}
+                onSent={() => setInquirySent(true)}
+              />
+            )}
+          </td>
+        </tr>
       )}
-    </div>
+    </>
   )
 }
 
@@ -1184,25 +1409,92 @@ function BudgetRow({
 
 export function BudgetSection({
   eventId,
+  eventTitle,
   initialItems,
   totalBudget,
   focusItemId,
+  onCollapse,
 }: BudgetSectionProps) {
+  const t = useTranslations('budget')
+  const tCat = useTranslations('vendorCategories')
+  const tPort = useTranslations('dataPort')
   const { canEdit } = useEventAccess()
-  const [items, setItems] = useState<EventBudgetItem[]>(initialItems)
+  const fetched = useLazyGet<EventBudgetItem[]>(initialItems ? null : `/events/${eventId}/budget`)
+  const [items, setItems] = useState<EventBudgetItem[]>(initialItems ?? [])
   const [editingItem, setEditingItem] = useState<EventBudgetItem | null | 'new'>(null)
+  const [sortBy, setSortBy] = useState<BudgetSortKey>('allocated-desc')
+  const [filterBy, setFilterBy] = useState<BudgetFilterKey>('all')
+  const [groupBy, setGroupBy] = useState<BudgetGroupKey>('category')
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
   const [, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (fetched.data) setItems(Array.isArray(fetched.data) ? fetched.data : [])
+  }, [fetched.data])
+
+  const loading = !initialItems && fetched.loading && items.length === 0
 
   const totalSpent = items.reduce((s, i) => s + i.spentAmount, 0)
   const totalAllocated = items.reduce((s, i) => s + i.allocatedAmount, 0)
   const overallPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0
+  const overCount = items.filter((i) => i.spentAmount > i.allocatedAmount).length
+  const unpaidCount = items.filter((i) => i.spentAmount === 0).length
+  const vendorCount = items.filter((i) => !!i.vendorName).length
+
+  const FILTER_OPTIONS: { value: BudgetFilterKey; label: string; count: number }[] = [
+    { value: 'all', label: t('filters.all'), count: items.length },
+    { value: 'over', label: t('filters.over'), count: overCount },
+    { value: 'unpaid', label: t('filters.unpaid'), count: unpaidCount },
+    { value: 'vendor', label: t('filters.vendor'), count: vendorCount },
+  ]
+
+  const GROUP_OPTIONS: { value: BudgetGroupKey; label: string }[] = [
+    { value: 'category', label: t('group.category') },
+    { value: 'status', label: t('group.status') },
+    { value: 'none', label: t('group.none') },
+  ]
+
+  const displayed = useMemo(
+    () => applyBudgetSortFilter(items, sortBy, filterBy, tCat, t),
+    [items, sortBy, filterBy, tCat, t],
+  )
+
+  const grouped = useMemo(
+    () =>
+      groupBudgetItems(displayed, groupBy, tCat, {
+        over: t('groups.over'),
+        inProgress: t('groups.inProgress'),
+        notStarted: t('groups.notStarted'),
+      }),
+    [displayed, groupBy, tCat, t],
+  )
+
+  const labeledKeys = grouped.filter((section) => section.label).map((section) => section.key)
+  const allCollapsed = labeledKeys.length > 0 && labeledKeys.every((key) => collapsed.has(key))
+
+  useEffect(() => {
+    setCollapsed((prev) => (prev.size === 0 ? prev : new Set()))
+  }, [groupBy])
 
   useEffect(() => {
     if (!focusItemId) return
-    document
-      .getElementById(`budget-item-${focusItemId}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [focusItemId])
+    setFilterBy('all')
+    const section = grouped.find((row) => row.items.some((item) => item.id === focusItemId))
+    if (section?.label) {
+      setCollapsed((prev) => {
+        if (!prev.has(section.key)) return prev
+        const next = new Set(prev)
+        next.delete(section.key)
+        return next
+      })
+    }
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(`budget-item-${focusItemId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusItemId, grouped])
 
   const handleSaved = (saved: EventBudgetItem) => {
     setItems((prev) => {
@@ -1241,63 +1533,271 @@ export function BudgetSection({
     )
   }
 
-  return (
-    <div className="card p-5">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-foreground font-semibold">Budget</h2>
-        {canEdit('BUDGET') && (
-          <button onClick={() => setEditingItem('new')} className="btn btn-secondary btn-sm">
-            <Plus size={13} /> Add item
-          </button>
-        )}
-      </div>
+  async function patchAmount(
+    item: EventBudgetItem,
+    field: 'allocatedAmount' | 'spentAmount',
+    value: number,
+  ) {
+    if (!canEdit('BUDGET')) return
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, [field]: value } : i)))
+    try {
+      const { data } = await proxyClient.patch<EventBudgetItem>(
+        `/events/${eventId}/budget/${item.id}`,
+        { [field]: value },
+      )
+      setItems((prev) => prev.map((i) => (i.id === item.id ? data : i)))
+    } catch {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
+    }
+  }
 
-      {/* Overall progress */}
-      <div className="mb-1">
-        <div className="text-muted mb-1.5 flex justify-between text-xs">
-          <span>CA${totalSpent.toLocaleString('en-CA')} spent</span>
-          <span>CA${totalBudget.toLocaleString('en-CA')} total</span>
+  return (
+    <div className="card flex flex-col gap-5 p-5">
+      <div>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            {onCollapse && (
+              <button
+                type="button"
+                onClick={onCollapse}
+                className="text-muted hover:text-foreground mt-0.5 -ml-1 rounded-md p-1"
+                aria-label="Collapse"
+              >
+                <ChevronRight size={14} className="rotate-90" />
+              </button>
+            )}
+            <div>
+              <h2 className="text-foreground text-sm font-semibold">{t('title')}</h2>
+              <p className="text-muted mt-0.5 text-xs tabular-nums">
+                {t('spentOf', { spent: money(totalSpent), total: money(totalBudget) })}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <DataPortMenu
+              fileBase={fileBase(eventTitle ?? 'event', 'budget')}
+              sheetName="Budget"
+              headers={BUDGET_HEADERS}
+              rows={budgetExportRows(items, (key) => getVendorCategoryLabel(key, tCat))}
+              canImport={canEdit('BUDGET')}
+              onImport={async (table) => {
+                const parsed = parseBudgetTable(table)
+                const capped = capImportRows(parsed.items, parsed.issues, tPort('tooManyRows'))
+                if (capped.items.length === 0) {
+                  return {
+                    created: 0,
+                    skipped: 0,
+                    issues: capped.issues.length ? capped.issues : [tPort('emptyFile')],
+                  }
+                }
+                const { data } = await proxyClient.post<{
+                  created: number
+                  skipped: number
+                  items: EventBudgetItem[]
+                }>(`/events/${eventId}/budget/import`, { items: capped.items })
+                setItems(data.items)
+                return { created: data.created, skipped: data.skipped, issues: capped.issues }
+              }}
+            />
+            {canEdit('BUDGET') && (
+              <button
+                type="button"
+                onClick={() => setEditingItem('new')}
+                className="btn btn-secondary btn-sm"
+              >
+                <Plus size={13} /> {t('addItem')}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="bg-foreground/5 mb-1 h-1.5 w-full overflow-hidden rounded-full">
+        <div className="progress">
           <div
             className={cn(
-              'h-full rounded-full transition-all duration-500',
-              overallPct >= 100 ? 'bg-red-500' : 'from-gold-600 to-gold-400 bg-gradient-to-r',
+              'progress-bar transition-all duration-500',
+              overallPct >= 100 && '!bg-red-500',
             )}
             style={{ width: `${Math.min(overallPct, 100)}%` }}
           />
         </div>
         {totalAllocated !== totalBudget && (
-          <p className="text-muted text-[10px]">
-            CA${totalAllocated.toLocaleString('en-CA')} allocated across categories
+          <p className="text-muted mt-1.5 text-[11px]">
+            {t('allocatedAcross', { amount: money(totalAllocated) })}
           </p>
         )}
       </div>
 
-      {/* Items */}
-      <div className="mt-4 max-h-[420px] scrollbar-thin space-y-2 overflow-y-auto pr-1">
-        {items.length === 0 ? (
-          <p className="text-muted py-6 text-center text-sm">
-            No budget items yet — add one above.
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex scrollbar-none items-center gap-0.5 overflow-x-auto">
+          {FILTER_OPTIONS.map((opt) => {
+            if (opt.value !== 'all' && opt.count === 0) return null
+            const active = filterBy === opt.value
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFilterBy(opt.value)}
+                className={cn(
+                  'flex items-center gap-1 rounded-md px-2 py-1 text-[11px] whitespace-nowrap transition-colors',
+                  active
+                    ? opt.value === 'over'
+                      ? 'bg-red-500/10 text-red-300'
+                      : 'bg-foreground/5 text-foreground'
+                    : 'text-muted hover:text-foreground',
+                )}
+              >
+                {opt.label}
+                {opt.value !== 'all' && <span className="text-[10px] opacity-50">{opt.count}</span>}
+              </button>
+            )
+          })}
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          {labeledKeys.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(labeledKeys))}
+              className="text-muted hover:text-foreground text-[11px] transition-colors"
+            >
+              {allCollapsed ? t('expandAll') : t('collapseAll')}
+            </button>
+          )}
+          <label className="text-muted flex items-center gap-1.5 text-[11px]">
+            <span>{t('groupBy')}</span>
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as BudgetGroupKey)}
+              className="text-foreground bg-transparent py-1 text-[11px] outline-none"
+            >
+              {GROUP_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div className="-mx-1 overflow-x-auto">
+        {loading ? (
+          <TableSkeleton rows={6} cols={5} />
+        ) : displayed.length === 0 ? (
+          <p className="text-muted py-8 text-center text-xs">
+            {items.length === 0 ? t('noItems') : t('emptyFilter')}
           </p>
         ) : (
-          items.map((item) => (
-            <BudgetRow
-              key={item.id}
-              item={item}
-              eventId={eventId}
-              initiallyExpanded={item.id === focusItemId}
-              onEdit={() => setEditingItem(item)}
-              onDelete={() => handleDelete(item.id)}
-              onReceiptUploaded={(r) => handleReceiptUploaded(item.id, r)}
-              onReceiptDeleted={(id) => handleReceiptDeleted(item.id, id)}
-            />
-          ))
+          <table className="w-full min-w-[540px] border-collapse text-sm">
+            <thead>
+              <tr className="border-border/70 border-b">
+                <SortTh
+                  label={t('item')}
+                  active={sortBy === 'alpha'}
+                  onClick={() => setSortBy(sortBy === 'alpha' ? 'allocated-desc' : 'alpha')}
+                />
+                <th className="text-muted hidden px-2 py-2 text-left text-[10px] font-medium tracking-wide uppercase md:table-cell">
+                  {t('vendor')}
+                </th>
+                <SortTh
+                  label={t('allocated')}
+                  active={sortBy === 'allocated-asc' || sortBy === 'allocated-desc'}
+                  desc={sortBy === 'allocated-desc'}
+                  align="right"
+                  onClick={() =>
+                    setSortBy(sortBy === 'allocated-desc' ? 'allocated-asc' : 'allocated-desc')
+                  }
+                />
+                <SortTh
+                  label={t('spent')}
+                  active={sortBy === 'spent-asc' || sortBy === 'spent-desc'}
+                  desc={sortBy === 'spent-desc'}
+                  align="right"
+                  onClick={() => setSortBy(sortBy === 'spent-desc' ? 'spent-asc' : 'spent-desc')}
+                />
+                <SortTh
+                  label={t('left')}
+                  active={sortBy === 'remaining-asc' || sortBy === 'remaining-desc'}
+                  desc={sortBy === 'remaining-desc'}
+                  align="right"
+                  className="hidden lg:table-cell"
+                  onClick={() =>
+                    setSortBy(sortBy === 'remaining-asc' ? 'remaining-desc' : 'remaining-asc')
+                  }
+                />
+                <th className="w-14 px-2 py-2" aria-hidden />
+              </tr>
+            </thead>
+            {grouped.map((section) => {
+              const sectionAlloc = section.items.reduce((s, i) => s + i.allocatedAmount, 0)
+              const sectionSpent = section.items.reduce((s, i) => s + i.spentAmount, 0)
+              const isOpen = !section.label || !collapsed.has(section.key)
+              const sectionOver = sectionSpent > sectionAlloc
+              return (
+                <tbody key={section.key}>
+                  {section.label && (
+                    <tr>
+                      <td colSpan={6} className="px-0 pt-3 pb-0">
+                        <button
+                          type="button"
+                          aria-expanded={isOpen}
+                          onClick={() =>
+                            setCollapsed((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(section.key)) next.delete(section.key)
+                              else next.add(section.key)
+                              return next
+                            })
+                          }
+                          className="hover:bg-foreground/[0.03] flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
+                        >
+                          <ChevronRight
+                            size={14}
+                            className={cn(
+                              'text-muted shrink-0 transition-transform',
+                              isOpen && 'rotate-90',
+                            )}
+                          />
+                          <span className="text-foreground min-w-0 truncate text-sm font-medium">
+                            {section.label}
+                          </span>
+                          <span className="text-muted text-[11px] tabular-nums">
+                            {section.items.length}
+                          </span>
+                          <span
+                            className={cn(
+                              'ml-auto shrink-0 text-[11px] tabular-nums',
+                              sectionOver ? 'text-red-400' : 'text-muted',
+                            )}
+                          >
+                            {money(sectionSpent)}
+                            <span className="opacity-50"> / {money(sectionAlloc)}</span>
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {isOpen &&
+                    section.items.map((item) => (
+                      <BudgetRow
+                        key={item.id}
+                        item={item}
+                        eventId={eventId}
+                        nested={!!section.label}
+                        tCat={tCat}
+                        initiallyExpanded={item.id === focusItemId}
+                        onEdit={() => setEditingItem(item)}
+                        onDelete={() => handleDelete(item.id)}
+                        onReceiptUploaded={(r) => handleReceiptUploaded(item.id, r)}
+                        onReceiptDeleted={(id) => handleReceiptDeleted(item.id, id)}
+                        onPatchAmount={(field, value) => patchAmount(item, field, value)}
+                      />
+                    ))}
+                </tbody>
+              )
+            })}
+          </table>
         )}
       </div>
 
-      {/* Modal */}
       {editingItem !== null && (
         <EditModal
           eventId={eventId}

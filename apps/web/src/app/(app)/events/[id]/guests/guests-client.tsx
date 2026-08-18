@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import {
   UserPlus,
   Trash2,
@@ -10,8 +10,7 @@ import {
   X,
   Clock,
   Users,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Edit2,
   Phone,
   CheckCircle2,
@@ -19,16 +18,26 @@ import {
   HelpCircle,
   Search,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
 import { cn } from '@/lib/utils'
 import type { Guest, Event } from '@/lib/api.types'
 import { useEventAccess } from '../event-access-context'
+import { TableSkeleton } from '@/components/ui/skeleton'
+import { DataPortMenu } from '@/components/data-port-menu'
+import {
+  GUEST_HEADERS,
+  capImportRows,
+  guestExportRows,
+  parseGuestTable,
+} from '@/lib/data-port-maps'
+import { fileBase } from '@/lib/sheet-io'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 interface Props {
   eventId: string
-  initialGuests: Guest[]
+  initialGuests?: Guest[]
   event: Pick<Event, 'id' | 'title' | 'estimatedDate' | 'location'>
 }
 
@@ -633,6 +642,15 @@ function BulkInviteBar({
   return (
     <div className="bg-gold-600/8 border-gold-500/25 space-y-3 rounded-xl border p-3">
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-label="Optional personal message"
+          className="text-gold-300 hover:text-gold-200 shrink-0"
+        >
+          <ChevronRight size={14} className={cn('transition-transform', expanded && 'rotate-90')} />
+        </button>
         <span className="text-gold-300 text-sm font-medium">
           {selected.size} guest{selected.size !== 1 ? 's' : ''} selected
         </span>
@@ -659,12 +677,6 @@ function BulkInviteBar({
             )
           })}
         </div>
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="text-brand-400 hover:text-brand-200 ml-auto"
-        >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
       </div>
 
       {expanded && (
@@ -699,13 +711,34 @@ function BulkInviteBar({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export function GuestsClient({ eventId, initialGuests }: Props) {
+export function GuestsClient({ eventId, initialGuests, event }: Props) {
   const { canEdit } = useEventAccess()
-  const [guests, setGuests] = useState<Guest[]>(initialGuests)
+  const tPort = useTranslations('dataPort')
+  const [guests, setGuests] = useState<Guest[]>(initialGuests ?? [])
+  const [loading, setLoading] = useState(!initialGuests)
   const [showAdd, setShowAdd] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+
+  useEffect(() => {
+    if (initialGuests) return
+    let cancelled = false
+    proxyClient
+      .get<Guest[]>(`/events/${eventId}/guests`)
+      .then(({ data }) => {
+        if (!cancelled) setGuests(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!cancelled) setGuests([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [eventId, initialGuests])
 
   // ── Stats ──────────────────────────────────────────────────────────────────
 
@@ -798,6 +831,33 @@ export function GuestsClient({ eventId, initialGuests }: Props) {
           <option value="not_invited">Not invited</option>
         </select>
 
+        <DataPortMenu
+          fileBase={fileBase(event.title, 'guests')}
+          sheetName="Guests"
+          headers={GUEST_HEADERS}
+          rows={guestExportRows(guests)}
+          canImport={canEdit('GUESTS')}
+          triggerClassName="flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-medium text-brand-200 transition-colors hover:bg-white/8"
+          onImport={async (table) => {
+            const parsed = parseGuestTable(table)
+            const capped = capImportRows(parsed.items, parsed.issues, tPort('tooManyRows'))
+            if (capped.items.length === 0) {
+              return {
+                created: 0,
+                skipped: 0,
+                issues: capped.issues.length ? capped.issues : [tPort('emptyFile')],
+              }
+            }
+            const { data } = await proxyClient.post<{
+              created: number
+              skipped: number
+              guests: Guest[]
+            }>(`/events/${eventId}/guests/import`, { guests: capped.items })
+            setGuests(data.guests)
+            return { created: data.created, skipped: data.skipped, issues: capped.issues }
+          }}
+        />
+
         {canEdit('GUESTS') && (
           <button
             onClick={() => setShowAdd((v) => !v)}
@@ -866,7 +926,9 @@ export function GuestsClient({ eventId, initialGuests }: Props) {
         )}
 
         <div className="space-y-2">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <TableSkeleton rows={6} cols={3} />
+          ) : filtered.length === 0 ? (
             <div className="rounded-2xl border border-white/6 bg-white/2 py-12 text-center">
               <Users size={28} className="text-brand-600 mx-auto mb-3" />
               <p className="text-brand-400 text-sm">

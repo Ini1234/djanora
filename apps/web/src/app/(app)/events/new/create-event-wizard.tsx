@@ -306,6 +306,8 @@ interface WizardState {
   guestCount: string
   location: string
   totalBudget: string
+  includeDefaultBudget: boolean
+  includeDefaultChecklist: boolean
 }
 
 const initialState: WizardState = {
@@ -317,6 +319,8 @@ const initialState: WizardState = {
   guestCount: '',
   location: 'Ottawa, Ontario, Canada',
   totalBudget: '',
+  includeDefaultBudget: false,
+  includeDefaultChecklist: false,
 }
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
@@ -593,13 +597,16 @@ function StepDetails({
 function StepBudget({
   state,
   set,
+  toggleSeed,
 }: {
   state: WizardState
   set: (k: keyof WizardState, v: string) => void
+  toggleSeed: (k: 'includeDefaultBudget' | 'includeDefaultChecklist') => void
 }) {
   const tCat = useTranslations('vendorCategories')
-  const raw = parseInt(state.totalBudget, 10) || 0
-  const formatted = raw > 0 ? raw.toLocaleString('en-CA') : ''
+  const raw = parseInt(state.totalBudget, 10)
+  const budget = Number.isFinite(raw) && raw >= 0 ? raw : 0
+  const formatted = Number.isFinite(raw) && raw >= 0 ? raw.toLocaleString('en-CA') : ''
 
   const topCategories = Object.entries(DEFAULT_BUDGET_SPLIT)
     .sort(([, a], [, b]) => b - a)
@@ -609,8 +616,8 @@ function StepBudget({
     <div>
       <h2 className="font-display mb-1 text-2xl font-semibold text-white">Your budget</h2>
       <p className="text-brand-300 mb-6 text-sm">
-        Set your total budget in CAD. We&apos;ll automatically split it across all vendor
-        categories.
+        Set your total budget in CAD. You can start with a starter split and checklist, or build
+        both from scratch.
       </p>
 
       {/* Budget input */}
@@ -627,16 +634,76 @@ function StepBudget({
             type="number"
             value={state.totalBudget}
             onChange={(e) => set('totalBudget', e.target.value)}
-            placeholder="25000"
-            min={1000}
+            placeholder="0"
+            min={0}
             className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 py-3.5 pr-4 pl-12 text-lg font-semibold text-white transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
-        <p className="text-brand-500 mt-1.5 text-xs">Minimum: CA$1,000</p>
+        <p className="text-brand-500 mt-1.5 text-xs">
+          Any amount, including CA$0 if you&apos;re still deciding.
+        </p>
+      </div>
+
+      <div className="mb-6 space-y-2">
+        <button
+          type="button"
+          onClick={() => toggleSeed('includeDefaultBudget')}
+          className={cn(
+            'flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+            state.includeDefaultBudget
+              ? 'border-gold-500/50 bg-gold-500/10'
+              : 'border-white/10 bg-white/4 hover:border-white/20',
+          )}
+        >
+          <span
+            className={cn(
+              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
+              state.includeDefaultBudget ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+            )}
+          >
+            {state.includeDefaultBudget && (
+              <Check size={10} strokeWidth={3} className="text-brand-900" />
+            )}
+          </span>
+          <span>
+            <span className="block text-sm font-medium text-white">Starter budget categories</span>
+            <span className="text-brand-400 mt-0.5 block text-xs">
+              Split this total across catering, photo, décor, and the rest. You can edit every line
+              later.
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleSeed('includeDefaultChecklist')}
+          className={cn(
+            'flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+            state.includeDefaultChecklist
+              ? 'border-gold-500/50 bg-gold-500/10'
+              : 'border-white/10 bg-white/4 hover:border-white/20',
+          )}
+        >
+          <span
+            className={cn(
+              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
+              state.includeDefaultChecklist ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+            )}
+          >
+            {state.includeDefaultChecklist && (
+              <Check size={10} strokeWidth={3} className="text-brand-900" />
+            )}
+          </span>
+          <span>
+            <span className="block text-sm font-medium text-white">Starter checklist</span>
+            <span className="text-brand-400 mt-0.5 block text-xs">
+              Venue, vendors, invitations, plus cultural tasks from the traditions you picked.
+            </span>
+          </span>
+        </button>
       </div>
 
       {/* Budget preview */}
-      {raw >= 1000 && (
+      {state.includeDefaultBudget && budget > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -647,7 +714,7 @@ function StepBudget({
           </p>
           <div className="space-y-2">
             {topCategories.map(([category, ratio]) => {
-              const amount = Math.round(raw * ratio)
+              const amount = Math.round(budget * ratio)
               const width = Math.round(ratio * 100)
               return (
                 <div key={category}>
@@ -711,6 +778,16 @@ function StepReview({ state }: { state: WizardState }) {
     },
     { label: 'Location', value: state.location || 'Ottawa, Ontario, Canada' },
     { label: 'Budget', value: `CA$${budget.toLocaleString('en-CA')}` },
+    {
+      label: 'Starters',
+      value:
+        [
+          state.includeDefaultBudget ? 'Budget categories' : null,
+          state.includeDefaultChecklist ? 'Checklist' : null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || 'None — start blank',
+    },
   ]
 
   return (
@@ -722,7 +799,9 @@ function StepReview({ state }: { state: WizardState }) {
         <div>
           <h2 className="font-display text-2xl font-semibold text-white">Review & create</h2>
           <p className="text-brand-300 text-sm">
-            Everything look right? We&apos;ll generate your checklist automatically.
+            {state.includeDefaultChecklist || state.includeDefaultBudget
+              ? 'We’ll add the starters you chose. You can edit every line after this.'
+              : 'We’ll create a blank event. Add budget lines and tasks whenever you’re ready.'}
           </p>
         </div>
       </div>
@@ -745,8 +824,13 @@ function StepReview({ state }: { state: WizardState }) {
       <div className="mt-4 flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3">
         <Check size={16} className="mt-0.5 shrink-0 text-emerald-400" />
         <p className="text-xs leading-relaxed text-emerald-300">
-          We&apos;ll create a personalised checklist with cultural traditions, auto-split your
-          budget across vendor categories, and make it easy to find vendors in Ottawa.
+          {state.includeDefaultChecklist && state.includeDefaultBudget
+            ? 'We’ll create a personalised checklist with cultural traditions and auto-split your budget across vendor categories.'
+            : state.includeDefaultChecklist
+              ? 'We’ll create a personalised checklist with cultural traditions. Budget categories stay empty until you add them.'
+              : state.includeDefaultBudget
+                ? 'We’ll split your budget across vendor categories. The checklist starts empty.'
+                : 'Your event starts blank — add budget lines and checklist tasks from the event page.'}
         </p>
       </div>
     </div>
@@ -765,6 +849,10 @@ export function CreateEventWizard() {
 
   const set = useCallback((key: keyof WizardState, value: string) => {
     setState((prev) => ({ ...prev, [key]: value }))
+  }, [])
+
+  const toggleSeed = useCallback((key: 'includeDefaultBudget' | 'includeDefaultChecklist') => {
+    setState((prev) => ({ ...prev, [key]: !prev[key] }))
   }, [])
 
   const toggleTribe = useCallback((value: string) => {
@@ -795,8 +883,10 @@ export function CreateEventWizard() {
         return state.themes.length > 0
       case 4:
         return state.title.trim().length >= 2
-      case 5:
-        return parseInt(state.totalBudget, 10) >= 1000
+      case 5: {
+        const amount = parseInt(state.totalBudget, 10)
+        return Number.isFinite(amount) && amount >= 0
+      }
       default:
         return true
     }
@@ -817,6 +907,8 @@ export function CreateEventWizard() {
         tribes: state.tribes,
         themes: state.themes,
         totalBudget: parseInt(state.totalBudget, 10),
+        includeDefaultBudget: state.includeDefaultBudget,
+        includeDefaultChecklist: state.includeDefaultChecklist,
         estimatedDate: state.estimatedDate || undefined,
         guestCount: state.guestCount ? parseInt(state.guestCount, 10) : undefined,
         location: state.location || undefined,
@@ -870,7 +962,7 @@ export function CreateEventWizard() {
               {step === 2 && <StepTribe {...stepProps} toggleTribe={toggleTribe} />}
               {step === 3 && <StepTheme state={state} toggleTheme={toggleTheme} />}
               {step === 4 && <StepDetails {...stepProps} />}
-              {step === 5 && <StepBudget {...stepProps} />}
+              {step === 5 && <StepBudget {...stepProps} toggleSeed={toggleSeed} />}
               {step === 6 && <StepReview state={state} />}
             </motion.div>
           </AnimatePresence>

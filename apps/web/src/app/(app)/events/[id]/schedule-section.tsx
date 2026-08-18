@@ -15,13 +15,14 @@ import {
   ListTodo,
   Loader2,
   Sparkles,
-  ChevronDown,
   ChevronRight,
   CheckCircle2,
   Circle,
   FileText,
 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
+import { useLazyGet } from '@/lib/use-lazy-get'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { useTranslations } from 'next-intl'
 import type {
@@ -30,6 +31,7 @@ import type {
   EventJourneyStop,
   EventScheduleItem,
 } from '@/lib/api.types'
+import { cn } from '@/lib/utils'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 import { composeItinerary } from '@/lib/event-itinerary'
 import { formatEventDate } from '@/lib/event-timing'
@@ -61,13 +63,14 @@ interface Props {
   eventId: string
   itinerary?: boolean
   childrenEvents?: EventJourneyStop[]
-  initialItems: EventScheduleItem[]
-  budgetItems: EventBudgetItem[]
-  checklistItems: EventChecklistItem[]
+  initialItems?: EventScheduleItem[]
+  budgetItems?: EventBudgetItem[]
+  checklistItems?: EventChecklistItem[]
   focusItemId?: string
   onItemsChange?: (items: EventScheduleItem[]) => void
   onOpenLinkedItem?: (kind: 'budget' | 'checklist' | 'moodboard', id: string) => void
   onChecklistChange?: (items: EventChecklistItem[]) => void
+  onCollapse?: () => void
 }
 
 export function ScheduleSection({
@@ -75,22 +78,41 @@ export function ScheduleSection({
   itinerary = false,
   childrenEvents = [],
   initialItems,
-  budgetItems,
-  checklistItems,
+  budgetItems: budgetProp,
+  checklistItems: checklistProp,
   focusItemId,
   onItemsChange,
   onOpenLinkedItem,
   onChecklistChange,
+  onCollapse,
 }: Props) {
   const tCat = useTranslations('vendorCategories')
-  const { canEdit } = useEventAccess()
+  const { canEdit, canSee } = useEventAccess()
   const { reload: reloadMoodBoard } = useMoodBoardLinks()
-  const [items, setItems] = useState(initialItems)
+  const fetchedSchedule = useLazyGet<EventScheduleItem[]>(
+    initialItems ? null : `/events/${eventId}/schedule`,
+  )
+  const fetchedBudget = useLazyGet<EventBudgetItem[]>(
+    budgetProp || !canSee('BUDGET') ? null : `/events/${eventId}/budget`,
+  )
+  const fetchedChecklist = useLazyGet<EventChecklistItem[]>(
+    checklistProp || !canSee('CHECKLIST') ? null : `/events/${eventId}/checklist`,
+  )
+  const [items, setItems] = useState(initialItems ?? [])
   const [adding, setAdding] = useState(false)
+  const budgetItems = budgetProp ?? fetchedBudget.data ?? []
+  const checklistItems = checklistProp ?? fetchedChecklist.data ?? []
+  const loading = !initialItems && fetchedSchedule.loading && items.length === 0
 
   useEffect(() => {
-    setItems(initialItems)
+    if (initialItems) setItems(initialItems)
   }, [initialItems])
+
+  useEffect(() => {
+    if (fetchedSchedule.data) {
+      setItems(Array.isArray(fetchedSchedule.data) ? fetchedSchedule.data : [])
+    }
+  }, [fetchedSchedule.data])
 
   useEffect(() => {
     if (!focusItemId) return
@@ -159,6 +181,16 @@ export function ScheduleSection({
         style={{ borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center gap-2">
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="text-muted hover:text-foreground -ml-1 rounded-md p-1"
+              aria-label="Collapse"
+            >
+              <ChevronRight size={14} className="rotate-90" />
+            </button>
+          )}
           <Clock size={15} style={{ color: 'var(--color-brand-primary)' }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             Schedule
@@ -186,67 +218,75 @@ export function ScheduleSection({
       </div>
 
       <div className="space-y-3 p-5">
-        {adding && (
-          <ScheduleForm
-            requireDate={itinerary}
-            budgetItems={budgetItems}
-            checklistItems={checklistItems}
-            onCancel={() => setAdding(false)}
-            onSave={async (payload) => {
-              const { data } = await proxyClient.post<EventScheduleItem>(
-                `/events/${eventId}/schedule`,
-                payload,
-              )
-              commit([...items, data])
-              await reloadMoodBoard()
-              setAdding(false)
-            }}
-          />
-        )}
-
-        {empty && !adding && (
-          <div className="py-8 text-center">
-            <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-              No schedule yet
-            </p>
-            <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
-              {itinerary
-                ? 'Add dates and times for this event. Sub-events show up here on their own day.'
-                : 'Build the day timeline and link each block to budget lines, checklist tasks, or saved inspiration.'}
-            </p>
-          </div>
-        )}
-
-        {itinerary ? (
-          <div className="space-y-6">
-            {days.map((day) => (
-              <section key={day.date ?? 'undated'}>
-                <h3
-                  className="mb-2 text-xs font-semibold tracking-wide uppercase"
-                  style={{ color: day.date ? 'var(--color-text-primary)' : 'var(--color-muted)' }}
-                >
-                  {day.label}
-                </h3>
-                <ol className="relative space-y-0">
-                  {day.rows.map((row, index) =>
-                    row.kind === 'event' ? (
-                      <ChildBeat
-                        key={row.id}
-                        child={row.child}
-                        isLast={index === day.rows.length - 1}
-                      />
-                    ) : (
-                      renderBlock(row.item, index === day.rows.length - 1)
-                    ),
-                  )}
-                </ol>
-              </section>
-            ))}
-          </div>
+        {loading ? (
+          <TableSkeleton rows={5} cols={3} />
         ) : (
-          <ol className="relative space-y-0">
-            {sorted.map((item, index) => renderBlock(item, index === sorted.length - 1))}
-          </ol>
+          <>
+            {adding && (
+              <ScheduleForm
+                requireDate={itinerary}
+                budgetItems={budgetItems}
+                checklistItems={checklistItems}
+                onCancel={() => setAdding(false)}
+                onSave={async (payload) => {
+                  const { data } = await proxyClient.post<EventScheduleItem>(
+                    `/events/${eventId}/schedule`,
+                    payload,
+                  )
+                  commit([...items, data])
+                  await reloadMoodBoard()
+                  setAdding(false)
+                }}
+              />
+            )}
+
+            {empty && !adding && (
+              <div className="py-8 text-center">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  No schedule yet
+                </p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
+                  {itinerary
+                    ? 'Add dates and times for this event. Sub-events show up here on their own day.'
+                    : 'Build the day timeline and link each block to budget lines, checklist tasks, or saved inspiration.'}
+                </p>
+              </div>
+            )}
+
+            {itinerary ? (
+              <div className="space-y-6">
+                {days.map((day) => (
+                  <section key={day.date ?? 'undated'}>
+                    <h3
+                      className="mb-2 text-xs font-semibold tracking-wide uppercase"
+                      style={{
+                        color: day.date ? 'var(--color-text-primary)' : 'var(--color-muted)',
+                      }}
+                    >
+                      {day.label}
+                    </h3>
+                    <ol className="relative space-y-0">
+                      {day.rows.map((row, index) =>
+                        row.kind === 'event' ? (
+                          <ChildBeat
+                            key={row.id}
+                            child={row.child}
+                            isLast={index === day.rows.length - 1}
+                          />
+                        ) : (
+                          renderBlock(row.item, index === day.rows.length - 1)
+                        ),
+                      )}
+                    </ol>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <ol className="relative space-y-0">
+                {sorted.map((item, index) => renderBlock(item, index === sorted.length - 1))}
+              </ol>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -415,13 +455,12 @@ function ScheduleRow({
             className="min-w-0 flex-1 rounded-xl px-2 py-1.5 text-left hover:opacity-90"
           >
             <div className="flex items-start gap-2">
-              <ChevronDown
+              <ChevronRight
                 size={14}
-                className="mt-0.5 shrink-0 transition-transform"
-                style={{
-                  color: 'var(--color-muted)',
-                  transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-                }}
+                className={cn(
+                  'text-muted mt-0.5 shrink-0 transition-transform',
+                  expanded && 'rotate-90',
+                )}
               />
               <div className="min-w-0 flex-1">
                 {(start || end) && (
@@ -716,10 +755,10 @@ function CollapsibleGroup({
         aria-expanded={open}
         className="mb-1.5 flex w-full items-center gap-1.5 rounded-md text-left hover:opacity-80"
       >
-        <ChevronDown
-          size={12}
-          className="shrink-0 transition-transform duration-150"
-          style={{ color, transform: open ? undefined : 'rotate(-90deg)' }}
+        <ChevronRight
+          size={14}
+          className={cn('shrink-0 transition-transform duration-150', open && 'rotate-90')}
+          style={{ color }}
         />
         <span className="shrink-0" style={{ color }}>
           {icon}

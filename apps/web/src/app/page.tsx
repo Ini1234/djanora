@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getMe, getEvents } from '@/lib/api.server'
+import { getMe } from '@/lib/api.server'
 import { LandingPage } from '@/components/marketing/landing-page'
 import { AppShell } from '@/components/dashboard/app-shell'
 import { DashboardHome } from './(app)/dashboard-home'
@@ -11,11 +11,9 @@ export default async function RootPage() {
   if (!user.onboardingCompletedAt) redirect('/onboarding')
   if (user.activeMode === 'vendor') redirect('/vendor/dashboard')
 
-  const events = await getEvents()
-
   return (
     <AppShell user={user}>
-      <DashboardHome firstName={user.firstName ?? 'there'} events={events} />
+      <DashboardHome firstName={user.firstName ?? 'there'} />
     </AppShell>
   )
 }
