@@ -85,7 +85,7 @@ export interface UserVendorContact {
 export interface EventBudgetItem {
   id: string
   category: VendorCategory
-  label: string | null
+  label: string
   vendorName: string | null
   vendorProfileId: string | null
   userVendorContactId: string | null

@@ -130,6 +130,12 @@ function asOptionalString(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function requiredLabel(value: unknown): string {
+  const label = typeof value === 'string' ? value.trim() : ''
+  if (!label) throw new BadRequestException('Budget item name is required')
+  return label
+}
+
 function foldKey(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
 }
@@ -742,7 +748,7 @@ export class EventsService {
       data: {
         eventId,
         category: dto.category,
-        label: dto.label ?? null,
+        label: requiredLabel(dto.label),
         vendorName: dto.vendorName ?? null,
         vendorProfileId: safeVendorProfileId,
         userVendorContactId: safeContactId,
@@ -785,7 +791,7 @@ export class EventsService {
     const toCreate: {
       eventId: string
       category: VendorCategory
-      label: string | null
+      label: string
       vendorName: string | null
       notes: string | null
       allocatedAmount: number
@@ -799,7 +805,11 @@ export class EventsService {
       const item = asRecord(raw)
       const category = item.category
       if (typeof category !== 'string' || !(category in VendorCategory)) continue
-      const label = asOptionalString(item.label)
+      const label = typeof item.label === 'string' ? item.label.trim() : ''
+      if (!label) {
+        skipped += 1
+        continue
+      }
       const vendorName = asOptionalString(item.vendorName)
       const key = `${category}|${foldKey(label)}|${foldKey(vendorName)}`
       if (seen.has(key)) {
@@ -900,7 +910,7 @@ export class EventsService {
     const updated = await this.prisma.eventBudgetItem.update({
       where: { id: itemId },
       data: {
-        ...(dto.label !== undefined && { label: dto.label }),
+        ...(dto.label !== undefined && { label: requiredLabel(dto.label) }),
         ...(dto.vendorName !== undefined && { vendorName: dto.vendorName }),
         ...vendorProfileUpdate,
         ...contactUpdate,

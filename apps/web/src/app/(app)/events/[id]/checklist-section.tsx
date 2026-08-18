@@ -1365,7 +1365,6 @@ function AddRow({
   onAdded: (item: EventChecklistItem) => void
   onClose: () => void
 }) {
-  const [isPending, startTransition] = useTransition()
   const { canEdit } = useEventAccess()
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -1419,14 +1418,6 @@ function AddRow({
     }
     onAdded(optimistic)
     setTitle('')
-    setDueDate('')
-    setNotifyEmail(false)
-    setNotifySms(false)
-    setNeedsVendor(false)
-    setVendorCategory('')
-    setVendors([])
-    setAssigneeUserId('')
-    setExpanded(false)
     requestAnimationFrame(() => ref.current?.focus())
     try {
       const { data: created } = await proxyClient.post<EventChecklistItem>(
@@ -1446,7 +1437,7 @@ function AddRow({
     } catch {
       onAdded({ ...optimistic, id: `REMOVE-${tempId}` })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [
     title,
     dueDate,
@@ -1458,6 +1449,8 @@ function AddRow({
     assigneeUserId,
     people,
     canEdit,
+    eventId,
+    onAdded,
   ])
 
   return (
@@ -1470,7 +1463,7 @@ function AddRow({
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
-            startTransition(submit)
+            void submit()
           }
           if (e.key === 'Escape') onClose()
         }}
@@ -1539,11 +1532,11 @@ function AddRow({
       <div className="flex items-center gap-2 pt-0.5">
         <button
           type="button"
-          onClick={() => startTransition(submit)}
-          disabled={!title.trim() || isPending}
+          onClick={() => void submit()}
+          disabled={!title.trim()}
           className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Plus size={11} /> {isPending ? 'Adding…' : 'Add task'}
+          <Plus size={11} /> Add task
         </button>
         <button
           type="button"

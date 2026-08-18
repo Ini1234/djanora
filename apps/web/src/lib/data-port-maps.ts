@@ -63,7 +63,7 @@ export const GUEST_HEADERS = [
 
 export type BudgetImportRow = {
   category: VendorCategoryKey
-  label?: string
+  label: string
   vendorName?: string
   notes?: string
   allocatedAmount: number
@@ -188,9 +188,13 @@ export function parseBudgetTable(table: SheetTable): {
       return
     }
     const label = cell(row, idx.name)
+    if (!label) {
+      issues.push(`Row ${line}: name is required.`)
+      return
+    }
     items.push({
       category,
-      ...(label && { label }),
+      label,
       ...(cell(row, idx.vendor) && { vendorName: cell(row, idx.vendor) }),
       ...(cell(row, idx.notes) && { notes: cell(row, idx.notes) }),
       allocatedAmount: allocated,

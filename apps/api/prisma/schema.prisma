@@ -537,7 +537,7 @@ model EventBudgetItem {
   id                  String              @id @default(cuid())
   eventId             String              @map("event_id")
   category            VendorCategory
-  label               String?
+  label               String
   vendorName          String?             @map("vendor_name")
   vendorProfileId     String?             @map("vendor_profile_id")
   userVendorContactId String?             @map("user_vendor_contact_id")

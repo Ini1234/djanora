@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsInt,
   Min,
+  MinLength,
+  MaxLength,
   IsEnum,
   IsArray,
   ArrayMaxSize,
@@ -15,9 +17,10 @@ export class CreateBudgetItemDto {
   @IsEnum(VendorCategory)
   category: VendorCategory
 
-  @IsOptional()
   @IsString()
-  label?: string
+  @MinLength(1)
+  @MaxLength(120)
+  label: string
 
   @IsOptional()
   @IsString()
@@ -52,6 +55,8 @@ export class CreateBudgetItemDto {
 export class UpdateBudgetItemDto {
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(120)
   label?: string
 
   @IsOptional()
