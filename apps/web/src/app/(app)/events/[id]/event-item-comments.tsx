@@ -151,9 +151,9 @@ export function EventItemComments({
     if (!focusCommentId) return
     const el = document.getElementById(`comment-${focusCommentId}`)
     if (!el) return
-    setOpen(true)
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [focusCommentId, comments, loading])
+  if (focusCommentId && !open) setOpen(true)
 
   async function addComment(body: string, mentionUserIds: string[], parentId?: string) {
     const { data } = await proxyClient.post<Comment>(`/events/${eventId}/comments`, {

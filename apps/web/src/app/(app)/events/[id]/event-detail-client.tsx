@@ -341,6 +341,12 @@ export function EventDetailClient({ event }: Props) {
   const [focusItem, setFocusItem] = useState<{ tab: Tab; id: string } | null>(
     urlTab && urlItem ? { tab: urlTab, id: urlItem } : null,
   )
+  const [prevUrl, setPrevUrl] = useState({ tab: urlTab, item: urlItem })
+  if (urlTab !== prevUrl.tab || urlItem !== prevUrl.item) {
+    setPrevUrl({ tab: urlTab, item: urlItem })
+    if (urlTab) setTab(urlTab)
+    if (urlTab && urlItem) setFocusItem({ tab: urlTab, id: urlItem })
+  }
   const [open, setOpen] = useState({ schedule: false, budget: false, checklist: false })
   const tabListRef = useRef<HTMLDivElement>(null)
   const peopleRef = useRef<HTMLDivElement>(null)
@@ -353,10 +359,9 @@ export function EventDetailClient({ event }: Props) {
     return !surface || canSee(surface)
   })
 
-  useEffect(() => {
-    if (urlTab) setTab(urlTab)
-    if (urlTab && urlItem) setFocusItem({ tab: urlTab, id: urlItem })
-  }, [urlTab, urlItem])
+  if (!visibleTabs.some((t) => t.id === tab)) {
+    setTab('overview')
+  }
 
   useEffect(() => {
     proxyClient
@@ -378,8 +383,13 @@ export function EventDetailClient({ event }: Props) {
   useEffect(() => {
     const surface = TAB_UNREAD[tab]
     void proxyClient.patch(`/events/${localEvent.id}/unread`, { surface }).catch(() => {})
-    setUnread((prev) => (prev[surface] ? { ...prev, [surface]: 0 } : prev))
   }, [tab, localEvent.id])
+  const unreadSurface = TAB_UNREAD[tab]
+  const [clearedTab, setClearedTab] = useState(tab)
+  if (tab !== clearedTab) {
+    setClearedTab(tab)
+    setUnread((prev) => (prev[unreadSurface] ? { ...prev, [unreadSurface]: 0 } : prev))
+  }
 
   function openLinkedItem(kind: 'budget' | 'checklist' | 'moodboard', id: string) {
     const surface: EventSurface =
@@ -432,10 +442,6 @@ export function EventDetailClient({ event }: Props) {
   function toggleOpen(key: keyof typeof open) {
     setOpen((prev) => ({ ...prev, [key]: !prev[key] }))
   }
-
-  useLayoutEffect(() => {
-    if (!visibleTabs.some((t) => t.id === tab)) setTab('overview')
-  }, [tab, visibleTabs])
 
   useLayoutEffect(() => {
     const list = tabListRef.current
@@ -820,7 +826,7 @@ export function EventDetailClient({ event }: Props) {
                     onOpen={() => toggleOpen('checklist')}
                   />
                 ))}
-              <EventActivityFeed eventId={localEvent.id} />
+              <EventActivityFeed key={localEvent.id} eventId={localEvent.id} />
               <div
                 className="rounded-2xl px-5 py-4"
                 style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}

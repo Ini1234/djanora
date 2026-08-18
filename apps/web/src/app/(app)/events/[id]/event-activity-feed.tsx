@@ -44,17 +44,9 @@ export function EventActivityFeed({ eventId }: { eventId: string }) {
   const loadedRef = useRef(false)
   const fetchGen = useRef(0)
 
-  loadedRef.current = loaded
-
   useEffect(() => {
-    fetchGen.current += 1
-    setOpen(false)
-    setRows([])
-    setNextCursor(null)
-    setLoaded(false)
-    setLoading(false)
-    setLoadingMore(false)
-  }, [eventId])
+    loadedRef.current = loaded
+  })
 
   async function fetchPage(cursor?: string) {
     const { data } = await proxyClient.get<ActivityPage>(`/events/${eventId}/activity`, {

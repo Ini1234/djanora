@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react'
+import { useHydratedState } from '@/lib/use-synced-state'
 import Link from 'next/link'
 import {
   Plus,
@@ -98,21 +99,18 @@ export function ScheduleSection({
   const fetchedChecklist = useLazyGet<EventChecklistItem[]>(
     checklistProp || !canSee('CHECKLIST') ? null : `/events/${eventId}/checklist`,
   )
-  const [items, setItems] = useState(initialItems ?? [])
+  const [items, setItems] = useHydratedState(
+    fetchedSchedule.data === undefined
+      ? initialItems
+      : Array.isArray(fetchedSchedule.data)
+        ? fetchedSchedule.data
+        : [],
+    initialItems ?? [],
+  )
   const [adding, setAdding] = useState(false)
   const budgetItems = budgetProp ?? fetchedBudget.data ?? []
   const checklistItems = checklistProp ?? fetchedChecklist.data ?? []
   const loading = !initialItems && fetchedSchedule.loading && items.length === 0
-
-  useEffect(() => {
-    if (initialItems) setItems(initialItems)
-  }, [initialItems])
-
-  useEffect(() => {
-    if (fetchedSchedule.data) {
-      setItems(Array.isArray(fetchedSchedule.data) ? fetchedSchedule.data : [])
-    }
-  }, [fetchedSchedule.data])
 
   useEffect(() => {
     if (!focusItemId) return
@@ -375,6 +373,7 @@ function ScheduleRow({
 }) {
   const [editing, setEditing] = useState(false)
   const [expanded, setExpanded] = useState(!!focused)
+  if (focused && !expanded) setExpanded(true)
   const [deleting, startDelete] = useTransition()
   const { entriesByScheduleId, reload: reloadMoodBoard } = useMoodBoardLinks()
   const { canEdit } = useEventAccess()
@@ -382,10 +381,6 @@ function ScheduleRow({
   const budgets = item.budgetItems ?? []
   const tasks = item.checklistItems ?? []
   const hasLinks = budgets.length > 0 || tasks.length > 0 || linkedInspirations.length > 0
-
-  useEffect(() => {
-    if (focused) setExpanded(true)
-  }, [focused])
 
   function isDone(task: { id: string; isCompleted?: boolean }) {
     return (
@@ -675,6 +670,7 @@ function ScheduleRow({
                       }}
                     >
                       {entry.inspirationItem.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={entry.inspirationItem.imageUrl}
                           alt=""

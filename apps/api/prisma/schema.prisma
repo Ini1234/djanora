@@ -254,6 +254,7 @@ model VendorProfile {
   reviews          Review[]       @relation("ReviewVendor")
   budgetBookings   EventBudgetItem[] @relation("BudgetBookings")
   contactLink      UserVendorContact? @relation("ContactToProfile")
+  checklistItems   EventChecklist[] @relation("ChecklistPrimaryVendor")
   checklistVendors EventChecklistVendor[] @relation("ChecklistVendorLinks")
   inspirationItems InspirationItem[] @relation("InspirationVendor")
   favorites        VendorFavorite[]
@@ -524,6 +525,7 @@ model UserVendorContact {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   vendorProfile   VendorProfile?  @relation("ContactToProfile", fields: [vendorProfileId], references: [id], onDelete: SetNull)
   budgetItems     EventBudgetItem[]
+  checklistItems  EventChecklist[] @relation("ChecklistPrimaryContact")
   checklistVendors EventChecklistVendor[]
 
   @@index([userId])
@@ -587,12 +589,16 @@ model EventChecklist {
   notifiedAt          DateTime?          @map("notified_at")
   needsVendor         Boolean            @default(false) @map("needs_vendor")
   vendorCategory      String?            @map("vendor_category")
+  vendorProfileId     String?            @map("vendor_profile_id")
+  userVendorContactId String?            @map("user_vendor_contact_id")
   assigneeUserId      String?            @map("assignee_user_id")
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @updatedAt @map("updated_at")
 
   event               Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignee            User?              @relation("ChecklistAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  vendorProfile       VendorProfile?     @relation("ChecklistPrimaryVendor", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  userVendorContact   UserVendorContact? @relation("ChecklistPrimaryContact", fields: [userVendorContactId], references: [id], onDelete: SetNull)
   vendors             EventChecklistVendor[]
   inspirations        MoodBoardItem[]
   scheduleLinks       EventScheduleChecklistLink[]
@@ -602,6 +608,8 @@ model EventChecklist {
   @@index([eventId])
   @@index([dueDate, isCompleted])
   @@index([assigneeUserId, isCompleted])
+  @@index([vendorProfileId])
+  @@index([userVendorContactId])
   @@map("event_checklist")
 }
 

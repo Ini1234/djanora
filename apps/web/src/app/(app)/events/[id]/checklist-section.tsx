@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useHydratedState } from '@/lib/use-synced-state'
 import Link from 'next/link'
 import {
   CheckCircle2,
@@ -293,6 +294,8 @@ function LinkedInspirations({ checklistItemId }: { checklistItemId: string }) {
               style={{ background: 'rgba(255,255,255,0.06)' }}
             >
               {insp.imageUrl ? (
+                // Dynamic inspiration thumbs; next/image needs a known remote host.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={insp.imageUrl} alt={insp.title} className="h-full w-full object-cover" />
               ) : (
                 <Sparkles size={12} className="text-muted" />
@@ -1606,7 +1609,10 @@ export function ChecklistSection({
   const fetched = useLazyGet<EventChecklistItem[]>(
     initialItems ? null : `/events/${eventId}/checklist`,
   )
-  const [items, setItems] = useState<EventChecklistItem[]>(initialItems ?? [])
+  const [items, setItems] = useHydratedState(
+    fetched.data === undefined ? undefined : Array.isArray(fetched.data) ? fetched.data : [],
+    initialItems ?? [],
+  )
   const [openItemId, setOpenItemId] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [sortBy, setSortBy] = useState<SortKey>('due-asc')
@@ -1614,11 +1620,16 @@ export function ChecklistSection({
   const [groupBy, setGroupBy] = useState<GroupKey>('due')
   const skipNotify = useRef(true)
   const onItemsChangeRef = useRef(onItemsChange)
-  onItemsChangeRef.current = onItemsChange
+  const [handledFocus, setHandledFocus] = useState<string | null>(null)
+  if (focusItemId && focusItemId !== handledFocus) {
+    setHandledFocus(focusItemId)
+    setFilterBy('all')
+    setOpenItemId(focusItemId)
+  }
 
   useEffect(() => {
-    if (fetched.data) setItems(Array.isArray(fetched.data) ? fetched.data : [])
-  }, [fetched.data])
+    onItemsChangeRef.current = onItemsChange
+  })
 
   const loading = !initialItems && fetched.loading && items.length === 0
 
@@ -1670,8 +1681,6 @@ export function ChecklistSection({
 
   useEffect(() => {
     if (!focusItemId) return
-    setFilterBy('all')
-    setOpenItemId(focusItemId)
     const frame = requestAnimationFrame(() => {
       document
         .getElementById(`checklist-item-${focusItemId}`)

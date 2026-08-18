@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useClientMounted } from '@/lib/use-synced-state'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, ChevronLeft, Loader2, Check, Store, Calendar, Globe } from 'lucide-react'
@@ -13,6 +14,12 @@ import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categ
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Role = 'USER' | 'VENDOR'
+
+const ADULT_DOB_MAX = (() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 18)
+  return d.toISOString().split('T')[0]
+})()
 type Tribe =
   | 'YORUBA'
   | 'IGBO'
@@ -73,7 +80,7 @@ export function OnboardingWizard({
   const [dir, setDir] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useClientMounted()
 
   // ── Shared fields ──
   const [firstName, setFirstName] = useState(defaultFirstName)
@@ -97,10 +104,6 @@ export function OnboardingWizard({
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [instagramUrl, setInstagramUrl] = useState('')
   const [facebookUrl, setFacebookUrl] = useState('')
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const totalSteps = role === 'VENDOR' ? VENDOR_STEPS : USER_STEPS
 
@@ -625,7 +628,7 @@ function StepAbout({
           id="dateOfBirth"
           type="date"
           autoComplete="bday"
-          max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+          max={ADULT_DOB_MAX}
           value={dateOfBirth}
           onChange={(e) => onDateOfBirth(e.target.value)}
           className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white [color-scheme:dark] transition focus:bg-white/12 focus:outline-none"

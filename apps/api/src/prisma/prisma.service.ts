@@ -25,7 +25,7 @@ function isTransientDbError(err: unknown): boolean {
 }
 
 function withOneRetry(pool: Pool) {
-  const query = pool.query.bind(pool)
+  const query = pool.query.bind(pool) as unknown as Pool['query']
   // Prisma's pg adapter only uses the promise form.
   pool.query = ((...args: unknown[]) => {
     const result = (query as (...a: unknown[]) => Promise<unknown>)(...args)

@@ -44,8 +44,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = (window.localStorage.getItem(STORAGE_KEY) as Theme | null) ?? DEFAULT_THEME
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate theme from localStorage */
     setThemeState(stored)
     setResolvedTheme(apply(stored))
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
   useEffect(() => {

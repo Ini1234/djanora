@@ -107,9 +107,8 @@ export class EventActivityService {
       : 20
     const cursor = opts.cursor?.trim() || undefined
 
-    let rows
-    try {
-      rows = await this.prisma.eventActivity.findMany({
+    const rows = await this.prisma.eventActivity
+      .findMany({
         where: {
           eventId,
           OR: [{ surface: null }, { surface: { in: visible } }],
@@ -119,12 +118,12 @@ export class EventActivityService {
         take: limit + 1,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       })
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
-        throw new BadRequestException('Invalid cursor')
-      }
-      throw err
-    }
+      .catch((err: unknown) => {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+          throw new BadRequestException('Invalid cursor')
+        }
+        throw err
+      })
 
     const hasMore = rows.length > limit
     const page = hasMore ? rows.slice(0, limit) : rows

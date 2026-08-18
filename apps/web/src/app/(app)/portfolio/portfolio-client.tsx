@@ -279,6 +279,7 @@ export function PortfolioClient({
 
       {editing && (
         <PostEditor
+          key={editing.id}
           post={editing}
           onClose={() => setEditing(null)}
           onChange={upsert}
@@ -345,18 +346,6 @@ function PostEditor({
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [uploading, setUploading] = useState(false)
-
-  useEffect(() => {
-    setTitle(post.title)
-    setDescription(post.description)
-    setCategories(post.categories?.length ? post.categories : [post.category])
-    setLocation(post.location ?? '')
-    setFrom(post.priceRangeFrom?.toString() ?? '')
-    setTo(post.priceRangeTo?.toString() ?? '')
-    setCostNote(post.costNote ?? '')
-    setVisibility(post.visibility)
-    setTags(post.tagItems.map((t) => t.label))
-  }, [post.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     proxyClient

@@ -126,9 +126,10 @@ export class SseService implements OnModuleDestroy {
     }
 
     while (set.size >= SSE_MAX_CONNECTIONS_PER_USER) {
-      const oldest = set.values().next().value
+      const oldest: SseConnection | undefined = [...set][0]
       if (!oldest) break
       this.drop(oldest)
+      set.delete(oldest)
     }
 
     const connection: SseConnection = {

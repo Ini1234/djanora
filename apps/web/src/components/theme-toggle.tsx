@@ -2,16 +2,12 @@
 
 import { useTheme } from '@/components/theme-provider'
 import { Sun, Moon, Monitor } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useClientMounted } from '@/lib/use-synced-state'
 import { cn } from '@/lib/utils'
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useClientMounted()
   if (!mounted) return <div className="h-8 w-8" />
 
   const options = [

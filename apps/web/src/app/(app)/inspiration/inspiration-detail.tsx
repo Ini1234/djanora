@@ -107,9 +107,18 @@ export function InspirationDetail({
   const [askOpen, setAskOpen] = useState(false)
   const [error, setError] = useState('')
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
   const returnTo = authRedirect ?? `/inspiration?item=${item.id}`
   const canAct = signedIn === true || (signedIn !== false && me != null)
+  const [prevItemId, setPrevItemId] = useState(item.id)
+  if (item.id !== prevItemId) {
+    setPrevItemId(item.id)
+    setDetail(item)
+    setIdx(0)
+    setLoadingComments(true)
+  }
 
   function requireAuth(then: () => void) {
     if (canAct) {
@@ -121,8 +130,6 @@ export function InspirationDetail({
   }
 
   useEffect(() => {
-    setDetail(item)
-    setIdx(0)
     backend
       .get<InspirationDetailItem>(`/inspiration/${item.id}`)
       .then(({ data }) => {
@@ -132,21 +139,19 @@ export function InspirationDetail({
   }, [item.id])
 
   useEffect(() => {
-    if (signedIn === false) {
-      setMe(null)
-      setMeLoaded(true)
-      return
-    }
-    if (signedIn === true) setMeLoaded(true)
+    if (signedIn === false) return
     proxyClient
       .get<UserMe>('/users/me')
       .then(({ data }) => setMe(data))
       .catch(() => setMe(null))
       .finally(() => setMeLoaded(true))
   }, [signedIn])
+  if (signedIn === false) {
+    if (me !== null) setMe(null)
+    if (!meLoaded) setMeLoaded(true)
+  }
 
   useEffect(() => {
-    setLoadingComments(true)
     backend
       .get<Comment[]>(`/inspiration/${item.id}/comments`)
       .then(({ data }) => setComments(Array.isArray(data) ? data : []))

@@ -47,7 +47,8 @@ export function EventSubEventsSection({
   const [actingId, setActingId] = useState<string | null>(null)
   const [standalone, setStandalone] = useState<Event[] | null>(null)
 
-  const children = event.children ?? []
+  const children = event.children
+  const stops = children ?? []
   const tree = event.treeBudget
   const isHost = event.viewer?.isHost === true
   const remaining = tree ? tree.pot - tree.envelopesTotal : event.totalBudget
@@ -61,7 +62,7 @@ export function EventSubEventsSection({
 
   const attachable = useMemo(() => {
     if (!standalone) return []
-    const taken = new Set(children.map((stop) => stop.id))
+    const taken = new Set((children ?? []).map((stop) => stop.id))
     return standalone.filter(
       (row) => row.viewer?.isHost && !row.parentId && row.id !== event.id && !taken.has(row.id),
     )
@@ -173,7 +174,7 @@ export function EventSubEventsSection({
   }
 
   if (event.parentId) return null
-  if (!isHost && children.length === 0) return null
+  if (!isHost && stops.length === 0) return null
 
   return (
     <section
@@ -244,14 +245,14 @@ export function EventSubEventsSection({
           </>
         )}
 
-        {children.length === 0 ? (
+        {stops.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             Optional. Add bride price, traditional, court, reception — or any sub-event inside this
             one.
           </p>
         ) : (
           <ol className="relative space-y-0">
-            {children.map((stop: EventJourneyStop, index) => (
+            {stops.map((stop: EventJourneyStop, index) => (
               <li key={stop.id} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <span
@@ -268,7 +269,7 @@ export function EventSubEventsSection({
                   >
                     {stop.isCompleted ? <Check size={12} /> : index + 1}
                   </span>
-                  {index < children.length - 1 && (
+                  {index < stops.length - 1 && (
                     <span
                       className="min-h-[28px] w-px flex-1"
                       style={{ background: 'var(--color-border)' }}
