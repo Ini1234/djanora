@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'dist/**', 'prisma/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -42,7 +42,18 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'auto',
+          semi: false,
+          singleQuote: true,
+          trailingComma: 'all',
+          printWidth: 100,
+          tabWidth: 2,
+        },
+        { usePrettierrc: false },
+      ],
     },
   },
   {
