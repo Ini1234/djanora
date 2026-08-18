@@ -117,7 +117,8 @@ export function PersonalChecklist({
       eventId: input.eventId || null,
     })
     if (!dueOnly || belongsOnDueList(data)) {
-      setItems((prev) => [...prev, { ...data, source: 'MINE' }].sort(byDue))
+      const created: UserChecklist = { ...data, source: 'MINE' }
+      setItems((prev) => [...prev, created].sort(byDue))
     }
     setCreating(false)
   }
@@ -136,11 +137,8 @@ export function PersonalChecklist({
       setItems((prev) => prev.filter((row) => row.id !== item.id))
       return
     }
-    setItems((prev) =>
-      prev
-        .map((row) => (row.id === item.id ? { ...data, source: item.source ?? 'MINE' } : row))
-        .sort(byDue),
-    )
+    const updated: UserChecklist = { ...data, source: item.source ?? 'MINE' }
+    setItems((prev) => prev.map((row) => (row.id === item.id ? updated : row)).sort(byDue))
   }
 
   async function toggle(item: UserChecklist) {
