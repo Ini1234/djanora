@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { basename } from 'path'
 import { PrismaService } from '../prisma/prisma.service'
 import { BlobStorageService } from '../uploads/blob-storage.service'
@@ -6,10 +11,15 @@ import { EventActivityAction, EventSurface, VendorCategory } from '@prisma/clien
 import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './dto/children.dto'
 import { CreateEventDto } from './dto/create-event.dto'
 import { CreateChecklistItemDto, UpdateChecklistItemDto } from './dto/checklist.dto'
-import { CreateBudgetItemDto, UpdateBudgetItemDto } from './dto/budget.dto'
+import { CreateBudgetItemDto, UpdateBudgetItemDto, ImportBudgetDto } from './dto/budget.dto'
 import { UpdateEventDto } from './dto/update-event.dto'
 import { CreateScheduleItemDto, UpdateScheduleItemDto } from './dto/schedule.dto'
-import { EventAccessService, ALL_SURFACES, viewerDto, type EventAccess } from './event-access.service'
+import {
+  EventAccessService,
+  ALL_SURFACES,
+  viewerDto,
+  type EventAccess,
+} from './event-access.service'
 import { EventActivityService, OPENED_SURFACE } from './event-activity.service'
 
 const SCHEDULE_INCLUDE = {
@@ -38,10 +48,9 @@ export function receiptProxyUrl(eventId: string, itemId: string, receiptId: stri
   return `/api/proxy/events/${eventId}/budget/${itemId}/receipts/${receiptId}/file`
 }
 
-export function rewriteReceiptUrls<T extends { id: string; receipts?: { id: string; url: string }[] }>(
-  eventId: string,
-  items: T[],
-): T[] {
+export function rewriteReceiptUrls<
+  T extends { id: string; receipts?: { id: string; url: string }[] },
+>(eventId: string, items: T[]): T[] {
   return items.map((item) => ({
     ...item,
     receipts: (item.receipts ?? []).map((receipt) => ({
@@ -52,7 +61,7 @@ export function rewriteReceiptUrls<T extends { id: string; receipts?: { id: stri
 }
 
 const DEFAULT_BUDGET_SPLIT: Record<VendorCategory, number> = {
-  CATERER: 0.30,
+  CATERER: 0.3,
   PHOTOGRAPHER: 0.12,
   VIDEOGRAPHER: 0.08,
   DECORATOR: 0.15,
@@ -65,24 +74,97 @@ const DEFAULT_BUDGET_SPLIT: Record<VendorCategory, number> = {
   OTHER: 0.02,
 }
 
-const EVENT_DETAIL_INCLUDE = {
-  budgetItems: {
-    orderBy: { category: 'asc' as const },
-    include: { receipts: { orderBy: { createdAt: 'asc' as const } } },
-  },
-  checklist: {
-    orderBy: { sortOrder: 'asc' as const },
-    include: {
-      assignee: { select: { id: true, firstName: true, lastName: true } },
-      concealments: { select: { eventMemberId: true } },
-    },
-  },
-  schedule: {
-    orderBy: [{ startTime: 'asc' as const }, { sortOrder: 'asc' as const }],
-    include: SCHEDULE_INCLUDE,
-  },
-  inquiries: { select: { id: true, status: true, vendorProfileId: true } },
+const DEFAULT_BUDGET_ITEM_LABELS: Record<VendorCategory, string> = {
+  CATERER: 'Catering',
+  PHOTOGRAPHER: 'Photography',
+  VIDEOGRAPHER: 'Videography',
+  DECORATOR: 'Decor & flowers',
+  DJ: 'DJ set',
+  LIVE_BAND: 'Live performance',
+  MAKEUP_ARTIST: 'Hair & makeup',
+  MC: 'Hosting',
+  WEDDING_PLANNER: 'Planning',
+  FASHION_STYLIST: 'Attire',
+  OTHER: 'Miscellaneous',
 }
+
+function defaultBudgetItems(total: number) {
+  return Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
+    category: category as VendorCategory,
+    label: DEFAULT_BUDGET_ITEM_LABELS[category as VendorCategory],
+    allocatedAmount: Math.round(total * ratio),
+    spentAmount: 0,
+  }))
+}
+
+type ChecklistVendorInput = {
+  vendorProfileId?: string | null
+  userVendorContactId?: string | null
+  name?: string | null
+}
+
+type ChecklistVendorRow = {
+  vendorProfileId: string | null
+  userVendorContactId: string | null
+  name: string | null
+  sortOrder: number
+}
+
+type ChecklistVendorStore = {
+  deleteMany: (args: { where: { checklistId: string } }) => Promise<unknown>
+  createMany: (args: {
+    data: Array<ChecklistVendorRow & { checklistId: string }>
+  }) => Promise<unknown>
+}
+
+function checklistVendorStore(prisma: PrismaService): ChecklistVendorStore {
+  const store: unknown = Reflect.get(prisma, 'eventChecklistVendor')
+  return store as ChecklistVendorStore
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+}
+
+function asOptionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function requiredLabel(value: unknown): string {
+  const label = typeof value === 'string' ? value.trim() : ''
+  if (!label) throw new BadRequestException('Budget item name is required')
+  return label
+}
+
+function foldKey(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+const CHECKLIST_VENDOR_INCLUDE = {
+  orderBy: { sortOrder: 'asc' as const },
+  include: {
+    userVendorContact: true,
+    vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } },
+  },
+} as const
+
+const CHECKLIST_ITEM_INCLUDE = {
+  vendors: CHECKLIST_VENDOR_INCLUDE,
+  assignee: { select: { id: true, firstName: true, lastName: true } },
+} as const
+
+const EVENT_SHELL_INCLUDE = {
+  parent: { select: { id: true, title: true } },
+} as const
+
+const BUDGET_ITEM_INCLUDE = {
+  receipts: { orderBy: { createdAt: 'asc' as const } },
+  userVendorContact: true,
+} as const
+
+const LIST_EVENT_INCLUDE = {
+  parent: { select: { id: true, title: true } },
+} as const
 
 function recencyMs(
   event: { id: string; createdAt: Date; updatedAt?: Date },
@@ -113,9 +195,146 @@ export class EventsService {
     void this.activity.log({ eventId, actorId, action, surface, summary, subjectType, subjectId })
   }
 
+  private vendorsFromDto(dto: {
+    vendors?: ChecklistVendorInput[]
+    vendorProfileId?: string | null
+    userVendorContactId?: string | null
+    needsVendor?: boolean
+  }): ChecklistVendorInput[] | undefined {
+    if (dto.needsVendor === false) return []
+    if (dto.vendors !== undefined) {
+      const raw = Array.isArray(dto.vendors) ? dto.vendors : []
+      return raw.map((entry) => {
+        const rec = asRecord(entry)
+        return {
+          vendorProfileId: asOptionalString(rec.vendorProfileId),
+          userVendorContactId: asOptionalString(rec.userVendorContactId),
+          name: asOptionalString(rec.name),
+        }
+      })
+    }
+    if (dto.vendorProfileId !== undefined || dto.userVendorContactId !== undefined) {
+      if (!dto.vendorProfileId && !dto.userVendorContactId) return []
+      return [
+        {
+          vendorProfileId: dto.vendorProfileId ?? null,
+          userVendorContactId: dto.userVendorContactId ?? null,
+        },
+      ]
+    }
+    return undefined
+  }
+
+  private async replaceChecklistVendors(
+    checklistId: string,
+    userId: string,
+    vendors: ChecklistVendorInput[],
+  ) {
+    const cleaned: ChecklistVendorRow[] = []
+    const seen = new Set<string>()
+
+    for (const vendor of vendors) {
+      const rec = asRecord(vendor)
+      let vendorProfileId: string | null = asOptionalString(rec.vendorProfileId)
+      let userVendorContactId: string | null = asOptionalString(rec.userVendorContactId)
+      let name = asOptionalString(rec.name)?.trim() || null
+
+      if (vendorProfileId) {
+        const profile = await this.prisma.vendorProfile.findUnique({
+          where: { id: vendorProfileId },
+          select: { id: true, businessName: true },
+        })
+        if (!profile) continue
+        vendorProfileId = profile.id
+        name = profile.businessName
+      } else if (userVendorContactId) {
+        const contact = await this.prisma.userVendorContact.findFirst({
+          where: { id: userVendorContactId, userId },
+          select: { id: true, name: true },
+        })
+        if (!contact) continue
+        userVendorContactId = contact.id
+        name = contact.name
+      }
+
+      if (!vendorProfileId && !userVendorContactId && !name) continue
+      const key = vendorProfileId
+        ? `p:${vendorProfileId}`
+        : userVendorContactId
+          ? `c:${userVendorContactId}`
+          : `n:${foldKey(name)}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      cleaned.push({ vendorProfileId, userVendorContactId, name, sortOrder: cleaned.length })
+    }
+
+    const vendorStore = checklistVendorStore(this.prisma)
+    await vendorStore.deleteMany({ where: { checklistId } })
+    const primary = cleaned[0]
+    await this.prisma.eventChecklist.update({
+      where: { id: checklistId },
+      data: {
+        vendorProfileId: primary?.vendorProfileId ?? null,
+        userVendorContactId: primary?.userVendorContactId ?? null,
+      },
+    })
+    if (cleaned.length === 0) return
+    const rows: Array<ChecklistVendorRow & { checklistId: string }> = cleaned.map((row) => ({
+      checklistId,
+      ...row,
+    }))
+    await vendorStore.createMany({ data: rows })
+  }
+
+  private toChecklistItemDto<
+    T extends {
+      vendors?: {
+        id: string
+        vendorProfileId: string | null
+        userVendorContactId: string | null
+        name: string | null
+        sortOrder: number
+        vendorProfile: {
+          id: string
+          businessName: string
+          isVerified: boolean
+          slug: string
+        } | null
+        userVendorContact: unknown
+      }[]
+      concealments?: { eventMemberId: string }[]
+    },
+  >(row: T, hiddenFromMemberIds: string[] = []) {
+    const { concealments: _concealments, vendors = [], ...rest } = row
+    const mapped = vendors.map((vendor) => ({
+      id: vendor.id,
+      vendorProfileId: vendor.vendorProfileId,
+      userVendorContactId: vendor.userVendorContactId,
+      name:
+        vendor.vendorProfile?.businessName ??
+        (vendor.userVendorContact as { name?: string } | null)?.name ??
+        vendor.name,
+      vendorProfile: vendor.vendorProfile,
+      userVendorContact: vendor.userVendorContact,
+    }))
+    const first = mapped[0] ?? null
+    return {
+      ...rest,
+      vendors: mapped,
+      vendorProfileId: first?.vendorProfileId ?? null,
+      userVendorContactId: first?.userVendorContactId ?? null,
+      vendorProfile: first?.vendorProfile ?? null,
+      userVendorContact: first?.userVendorContact ?? null,
+      hiddenFromMemberIds,
+    }
+  }
+
   async create(clerkId: string, dto: CreateEventDto) {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
+
+    const seedBudget = dto.includeDefaultBudget === true
+    const seedChecklist = dto.includeDefaultChecklist === true
 
     const event = await this.prisma.event.create({
       data: {
@@ -128,16 +347,16 @@ export class EventsService {
         estimatedDate: dto.estimatedDate ? new Date(dto.estimatedDate) : null,
         guestCount: dto.guestCount ?? null,
         location: dto.location ?? 'Ottawa, Ontario, Canada',
-        budgetItems: {
-          create: Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
-            category: category as VendorCategory,
-            allocatedAmount: Math.round(dto.totalBudget * ratio),
-            spentAmount: 0,
-          })),
-        },
-        checklist: {
-          create: this.getDefaultChecklist(dto.tribes),
-        },
+        ...(seedBudget && {
+          budgetItems: {
+            create: defaultBudgetItems(dto.totalBudget),
+          },
+        }),
+        ...(seedChecklist && {
+          checklist: {
+            create: this.getDefaultChecklist(dto.tribes),
+          },
+        }),
       },
       include: {
         budgetItems: true,
@@ -156,16 +375,23 @@ export class EventsService {
     const access = await this.access.require(clerkId, eventId)
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, deletedAt: null },
-      include: EVENT_DETAIL_INCLUDE,
+      include: EVENT_SHELL_INCLUDE,
     })
     if (!event) return event
     void this.activity.recordOpen(access.user.id, eventId)
-    const tree = await this.projectTree(access)
-    return { ...this.projectEvent(event, access, assignedToMe), ...tree }
+    const [tree, stats] = await Promise.all([
+      this.projectTree(access),
+      this.eventStats(eventId, access, assignedToMe),
+    ])
+    return {
+      ...this.projectShell(event, access),
+      stats,
+      ...tree,
+    }
   }
 
   async updateEvent(clerkId: string, eventId: string, dto: UpdateEventDto) {
-    const { event } = await this.access.require(clerkId, eventId, { action: 'host' })
+    await this.access.require(clerkId, eventId, { action: 'host' })
 
     return this.prisma.event.update({
       where: { id: eventId },
@@ -200,11 +426,12 @@ export class EventsService {
       include: { budgetItems: { select: { spentAmount: true } } },
     })
 
-    const grants = !access.isHost && access.memberId
-      ? await this.prisma.eventSubGrant.findMany({
-          where: { eventMemberId: access.memberId, eventId: { in: children.map((c) => c.id) } },
-        })
-      : []
+    const grants =
+      !access.isHost && access.memberId
+        ? await this.prisma.eventSubGrant.findMany({
+            where: { eventMemberId: access.memberId, eventId: { in: children.map((c) => c.id) } },
+          })
+        : []
     const grantByChild = new Map(grants.map((g) => [g.eventId, g]))
     const visible = access.isHost
       ? children
@@ -219,35 +446,40 @@ export class EventsService {
       location: child.location,
       sortOrder: child.sortOrder,
       isCompleted: child.isCompleted,
-      allocatedBudget: this.access.canSee(access, EventSurface.BUDGET)
-        || grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET)
-        ? child.totalBudget
-        : undefined,
-      spentAmount: this.access.canSee(access, EventSurface.BUDGET)
-        || grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET)
-        ? child.budgetItems.reduce((sum, item) => sum + item.spentAmount, 0)
-        : undefined,
+      allocatedBudget:
+        this.access.canSee(access, EventSurface.BUDGET) ||
+        grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET)
+          ? child.totalBudget
+          : undefined,
+      spentAmount:
+        this.access.canSee(access, EventSurface.BUDGET) ||
+        grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET)
+          ? child.budgetItems.reduce((sum, item) => sum + item.spentAmount, 0)
+          : undefined,
     }))
 
-    const budgetChildren = visible.filter((child) => (
-      access.isHost
-      || this.access.canSee(access, EventSurface.BUDGET)
-      || Boolean(grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET))
-    ))
+    const budgetChildren = visible.filter(
+      (child) =>
+        access.isHost ||
+        this.access.canSee(access, EventSurface.BUDGET) ||
+        Boolean(grantByChild.get(child.id)?.surfaces.includes(EventSurface.BUDGET)),
+    )
 
     return {
       parent,
       children: journey,
-      treeBudget: children.length === 0
-        ? null
-        : {
-            pot: this.access.canSee(access, EventSurface.BUDGET) ? event.totalBudget : 0,
-            envelopesTotal: budgetChildren.reduce((sum, child) => sum + child.totalBudget, 0),
-            spentTotal: budgetChildren.reduce(
-              (sum, child) => sum + child.budgetItems.reduce((acc, item) => acc + item.spentAmount, 0),
-              0,
-            ),
-          },
+      treeBudget:
+        children.length === 0
+          ? null
+          : {
+              pot: this.access.canSee(access, EventSurface.BUDGET) ? event.totalBudget : 0,
+              envelopesTotal: budgetChildren.reduce((sum, child) => sum + child.totalBudget, 0),
+              spentTotal: budgetChildren.reduce(
+                (sum, child) =>
+                  sum + child.budgetItems.reduce((acc, item) => acc + item.spentAmount, 0),
+                0,
+              ),
+            },
     }
   }
 
@@ -269,40 +501,41 @@ export class EventsService {
       select: { sortOrder: true },
     })
 
-    return this.prisma.event.create({
-      data: {
-        userId: parent.userId,
-        parentId,
-        title: dto.title,
-        eventType: dto.eventType,
-        tribes: dto.tribes,
-        themes: dto.themes,
-        estimatedDate: dto.estimatedDate ? new Date(dto.estimatedDate) : null,
-        location: dto.location,
-        guestCount: dto.guestCount ?? null,
-        totalBudget: envelope,
-        currency: parent.currency,
-        sortOrder: (last?.sortOrder ?? 0) + 1,
-        budgetItems: {
-          create: Object.entries(DEFAULT_BUDGET_SPLIT).map(([category, ratio]) => ({
-            category: category as VendorCategory,
-            allocatedAmount: Math.round(envelope * ratio),
-            spentAmount: 0,
-          })),
+    return this.prisma.event
+      .create({
+        data: {
+          userId: parent.userId,
+          parentId,
+          title: dto.title,
+          eventType: dto.eventType,
+          tribes: dto.tribes,
+          themes: dto.themes,
+          estimatedDate: dto.estimatedDate ? new Date(dto.estimatedDate) : null,
+          location: dto.location,
+          guestCount: dto.guestCount ?? null,
+          totalBudget: envelope,
+          currency: parent.currency,
+          sortOrder: (last?.sortOrder ?? 0) + 1,
+          budgetItems: {
+            create: defaultBudgetItems(envelope),
+          },
+          checklist: {
+            create: this.getDefaultChecklist(dto.tribes),
+          },
         },
-      },
-    }).then(async (created) => {
-      this.track(
-        parentId,
-        user.id,
-        EventActivityAction.CREATED,
-        EventSurface.SCHEDULE,
-        `Added sub-event “${created.title}”`,
-        'EVENT',
-        created.id,
-      )
-      return this.findById(clerkId, parentId)
-    })
+      })
+      .then(async (created) => {
+        this.track(
+          parentId,
+          user.id,
+          EventActivityAction.CREATED,
+          EventSurface.SCHEDULE,
+          `Added sub-event “${created.title}”`,
+          'EVENT',
+          created.id,
+        )
+        return this.findById(clerkId, parentId)
+      })
   }
 
   async attachChild(clerkId: string, parentId: string, dto: AttachChildEventDto) {
@@ -366,10 +599,12 @@ export class EventsService {
     const { user, event } = await this.access.require(clerkId, eventId, { action: 'host' })
     const childIds = event.parentId
       ? []
-      : (await this.prisma.event.findMany({
-          where: { parentId: eventId, deletedAt: null },
-          select: { id: true },
-        })).map((child) => child.id)
+      : (
+          await this.prisma.event.findMany({
+            where: { parentId: eventId, deletedAt: null },
+            select: { id: true },
+          })
+        ).map((child) => child.id)
 
     await this.prisma.event.updateMany({
       where: { id: { in: [eventId, ...childIds] }, deletedAt: null },
@@ -392,15 +627,7 @@ export class EventsService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
 
-    const listInclude = {
-      parent: { select: { id: true, title: true } },
-      budgetItems: { include: { receipts: true, userVendorContact: true } },
-      checklist: { include: { userVendorContact: true, vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } } } },
-      schedule: {
-        orderBy: [{ startTime: 'asc' as const }, { sortOrder: 'asc' as const }],
-        include: SCHEDULE_INCLUDE,
-      },
-    }
+    const listInclude = LIST_EVENT_INCLUDE
 
     const [hosted, memberships, grants] = await Promise.all([
       this.prisma.event.findMany({
@@ -416,10 +643,7 @@ export class EventsService {
         where: {
           member: {
             acceptedAt: { not: null },
-            OR: [
-              { userId: user.id },
-              { email: { equals: user.email, mode: 'insensitive' } },
-            ],
+            OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
             event: { deletedAt: null },
           },
           event: { deletedAt: null },
@@ -433,7 +657,7 @@ export class EventsService {
 
     const hostedIds = new Set(hosted.map((e) => e.id))
     const hostedProjected = hosted.map((event) =>
-      this.projectEvent(event, {
+      this.projectShell(event, {
         user,
         event,
         isHost: true,
@@ -446,7 +670,7 @@ export class EventsService {
       .filter((m) => !seen.has(m.eventId))
       .map((m) => {
         seen.add(m.eventId)
-        return this.projectEvent(m.event, {
+        return this.projectShell(m.event, {
           user,
           event: m.event,
           isHost: false,
@@ -458,7 +682,7 @@ export class EventsService {
     const grantProjected = grants
       .filter((g) => !seen.has(g.eventId))
       .map((g) =>
-        this.projectEvent(g.event, {
+        this.projectShell(g.event, {
           user,
           event: g.event,
           isHost: false,
@@ -478,7 +702,6 @@ export class EventsService {
       select: { eventId: true, seenAt: true },
     })
     const openedAt = new Map(opened.map((row) => [row.eventId, row.seenAt.getTime()]))
-
     return combined.sort((a, b) => recencyMs(b, openedAt) - recencyMs(a, openedAt))
   }
 
@@ -487,34 +710,45 @@ export class EventsService {
   async listBudget(clerkId: string, eventId: string) {
     await this.access.require(clerkId, eventId, { surface: EventSurface.BUDGET, action: 'view' })
 
-    return this.prisma.eventBudgetItem.findMany({
+    const items = await this.prisma.eventBudgetItem.findMany({
       where: { eventId },
       orderBy: { category: 'asc' },
-      select: { id: true, label: true, vendorName: true, category: true },
+      include: BUDGET_ITEM_INCLUDE,
     })
+    return rewriteReceiptUrls(eventId, items)
   }
 
   async addBudgetItem(clerkId: string, eventId: string, dto: CreateBudgetItemDto) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.BUDGET, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'edit',
+    })
 
     // Only link to a vendor profile if it actually exists — never create one.
     const safeVendorProfileId = dto.vendorProfileId
-      ? (await this.prisma.vendorProfile.findUnique({ where: { id: dto.vendorProfileId }, select: { id: true } }))?.id ?? null
+      ? ((
+          await this.prisma.vendorProfile.findUnique({
+            where: { id: dto.vendorProfileId },
+            select: { id: true },
+          })
+        )?.id ?? null)
       : null
 
     // Validate userVendorContactId belongs to this user
     const safeContactId = dto.userVendorContactId
-      ? (await this.prisma.userVendorContact.findFirst({
-          where: { id: dto.userVendorContactId, userId: user.id },
-          select: { id: true },
-        }))?.id ?? null
+      ? ((
+          await this.prisma.userVendorContact.findFirst({
+            where: { id: dto.userVendorContactId, userId: user.id },
+            select: { id: true },
+          })
+        )?.id ?? null)
       : null
 
     const created = await this.prisma.eventBudgetItem.create({
       data: {
         eventId,
         category: dto.category,
-        label: dto.label ?? null,
+        label: requiredLabel(dto.label),
         vendorName: dto.vendorName ?? null,
         vendorProfileId: safeVendorProfileId,
         userVendorContactId: safeContactId,
@@ -539,13 +773,91 @@ export class EventsService {
     return created
   }
 
+  async importBudgetItems(clerkId: string, eventId: string, dto: ImportBudgetDto) {
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'edit',
+    })
+    const existing = await this.prisma.eventBudgetItem.findMany({
+      where: { eventId },
+      select: { category: true, label: true, vendorName: true },
+    })
+    const seen = new Set(
+      existing.map(
+        (row) =>
+          `${row.category}|${(row.label ?? '').trim().toLowerCase()}|${(row.vendorName ?? '').trim().toLowerCase()}`,
+      ),
+    )
+    const toCreate: {
+      eventId: string
+      category: VendorCategory
+      label: string
+      vendorName: string | null
+      notes: string | null
+      allocatedAmount: number
+      spentAmount: number
+    }[] = []
+    let skipped = 0
+    const rawItems: unknown[] = Array.isArray(asRecord(dto).items)
+      ? (asRecord(dto).items as unknown[])
+      : []
+    for (const raw of rawItems) {
+      const item = asRecord(raw)
+      const category = item.category
+      if (typeof category !== 'string' || !(category in VendorCategory)) continue
+      const label = typeof item.label === 'string' ? item.label.trim() : ''
+      if (!label) {
+        skipped += 1
+        continue
+      }
+      const vendorName = asOptionalString(item.vendorName)
+      const key = `${category}|${foldKey(label)}|${foldKey(vendorName)}`
+      if (seen.has(key)) {
+        skipped += 1
+        continue
+      }
+      seen.add(key)
+      const allocatedAmount =
+        typeof item.allocatedAmount === 'number'
+          ? item.allocatedAmount
+          : Number(item.allocatedAmount)
+      const spentAmount =
+        typeof item.spentAmount === 'number' ? item.spentAmount : Number(item.spentAmount ?? 0)
+      if (!Number.isFinite(allocatedAmount)) continue
+      toCreate.push({
+        eventId,
+        category: category as VendorCategory,
+        label,
+        vendorName,
+        notes: asOptionalString(item.notes),
+        allocatedAmount,
+        spentAmount: Number.isFinite(spentAmount) ? spentAmount : 0,
+      })
+    }
+    if (toCreate.length > 0) {
+      await this.prisma.eventBudgetItem.createMany({ data: toCreate })
+      this.track(
+        eventId,
+        user.id,
+        EventActivityAction.CREATED,
+        EventSurface.BUDGET,
+        `Imported ${toCreate.length} budget item${toCreate.length === 1 ? '' : 's'}`,
+      )
+    }
+    const items = await this.listBudget(clerkId, eventId)
+    return { created: toCreate.length, skipped, items }
+  }
+
   async updateBudgetItem(
     clerkId: string,
     eventId: string,
     itemId: string,
     dto: UpdateBudgetItemDto,
   ) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.BUDGET, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'edit',
+    })
 
     const existing = await this.prisma.eventBudgetItem.findFirst({
       where: { id: itemId, eventId },
@@ -557,7 +869,12 @@ export class EventsService {
     let safeVendorProfileId: string | null | undefined = undefined
     if (dto.vendorProfileId !== undefined) {
       safeVendorProfileId = dto.vendorProfileId
-        ? (await this.prisma.vendorProfile.findUnique({ where: { id: dto.vendorProfileId }, select: { id: true } }))?.id ?? null
+        ? ((
+            await this.prisma.vendorProfile.findUnique({
+              where: { id: dto.vendorProfileId },
+              select: { id: true },
+            })
+          )?.id ?? null)
         : null
     }
 
@@ -565,25 +882,35 @@ export class EventsService {
     let safeContactId: string | null | undefined = undefined
     if (dto.userVendorContactId !== undefined) {
       safeContactId = dto.userVendorContactId
-        ? (await this.prisma.userVendorContact.findFirst({
-            where: { id: dto.userVendorContactId, userId: user.id },
-            select: { id: true },
-          }))?.id ?? null
+        ? ((
+            await this.prisma.userVendorContact.findFirst({
+              where: { id: dto.userVendorContactId, userId: user.id },
+              select: { id: true },
+            })
+          )?.id ?? null)
         : null
     }
 
     // When linking to a registered profile, clear the personal contact link and vice versa
-    const vendorProfileUpdate = safeVendorProfileId !== undefined
-      ? { vendorProfileId: safeVendorProfileId, ...(safeVendorProfileId !== null ? { userVendorContactId: null } : {}) }
-      : {}
-    const contactUpdate = safeContactId !== undefined
-      ? { userVendorContactId: safeContactId, ...(safeContactId !== null ? { vendorProfileId: null } : {}) }
-      : {}
+    const vendorProfileUpdate =
+      safeVendorProfileId !== undefined
+        ? {
+            vendorProfileId: safeVendorProfileId,
+            ...(safeVendorProfileId !== null ? { userVendorContactId: null } : {}),
+          }
+        : {}
+    const contactUpdate =
+      safeContactId !== undefined
+        ? {
+            userVendorContactId: safeContactId,
+            ...(safeContactId !== null ? { vendorProfileId: null } : {}),
+          }
+        : {}
 
     const updated = await this.prisma.eventBudgetItem.update({
       where: { id: itemId },
       data: {
-        ...(dto.label !== undefined && { label: dto.label }),
+        ...(dto.label !== undefined && { label: requiredLabel(dto.label) }),
         ...(dto.vendorName !== undefined && { vendorName: dto.vendorName }),
         ...vendorProfileUpdate,
         ...contactUpdate,
@@ -609,7 +936,10 @@ export class EventsService {
   }
 
   async deleteBudgetItem(clerkId: string, eventId: string, itemId: string) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.BUDGET, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.BUDGET,
+      action: 'edit',
+    })
 
     const existing = await this.prisma.eventBudgetItem.findFirst({
       where: { id: itemId, eventId },
@@ -667,11 +997,12 @@ export class EventsService {
     if (!receipt) throw new NotFoundException('Receipt not found')
 
     const name = basename(receipt.url.split('?')[0] ?? '')
-    const kind = receipt.url.includes('private/') || receipt.url.startsWith('private/')
-      ? 'receipts'
-      : name.startsWith('receipt-')
-        ? 'images'
-        : null
+    const kind =
+      receipt.url.includes('private/') || receipt.url.startsWith('private/')
+        ? 'receipts'
+        : name.startsWith('receipt-')
+          ? 'images'
+          : null
     const stream = kind ? await this.storage.download(kind, name) : null
     if (!stream) throw new NotFoundException('Receipt not found')
 
@@ -704,7 +1035,10 @@ export class EventsService {
   }
 
   async listChecklist(clerkId: string, eventId: string, assignedToMe = false) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.CHECKLIST, action: 'view' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.CHECKLIST,
+      action: 'view',
+    })
 
     const rows = await this.prisma.eventChecklist.findMany({
       where: {
@@ -713,51 +1047,57 @@ export class EventsService {
       },
       orderBy: { sortOrder: 'asc' },
       include: {
+        ...CHECKLIST_ITEM_INCLUDE,
         concealments: { select: { eventMemberId: true } },
       },
     })
 
     return rows
       .filter((row) => this.access.canSeeChecklistRow(access, row.concealments))
-      .map((row) => ({ id: row.id, title: row.title }))
+      .map((row) =>
+        this.toChecklistItemDto(
+          row,
+          access.isHost ? row.concealments.map((c) => c.eventMemberId) : [],
+        ),
+      )
   }
 
   async addChecklistItem(clerkId: string, eventId: string, dto: CreateChecklistItemDto) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.CHECKLIST, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.CHECKLIST,
+      action: 'edit',
+    })
 
     const last = await this.prisma.eventChecklist.findFirst({
       where: { eventId },
       orderBy: { sortOrder: 'desc' },
     })
 
-    // Validate vendor FKs — only link if they actually exist
-    const safeVendorProfileId = dto.vendorProfileId
-      ? (await this.prisma.vendorProfile.findUnique({ where: { id: dto.vendorProfileId }, select: { id: true } }))?.id ?? null
-      : null
-
-    const safeContactId = dto.userVendorContactId
-      ? (await this.prisma.userVendorContact.findFirst({
-          where: { id: dto.userVendorContactId, userId: user.id },
-          select: { id: true },
-        }))?.id ?? null
-      : null
+    const dtoFields = asRecord(dto)
+    const assigneeUserId = asOptionalString(dtoFields.assigneeUserId)
+    if (assigneeUserId) await this.assertAssignee(eventId, assigneeUserId)
 
     const created = await this.prisma.eventChecklist.create({
       data: {
         eventId,
-        title: dto.title,
-        description: dto.description ?? null,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        notifyByEmail: dto.notifyByEmail ?? false,
-        notifyBySms: dto.notifyBySms ?? false,
-        needsVendor: dto.needsVendor ?? false,
-        vendorCategory: dto.vendorCategory ?? null,
-        vendorProfileId: safeVendorProfileId,
-        userVendorContactId: safeContactId,
+        title: asOptionalString(dtoFields.title) ?? '',
+        description: asOptionalString(dtoFields.description),
+        dueDate: typeof dtoFields.dueDate === 'string' ? new Date(dtoFields.dueDate) : null,
+        notifyByEmail: dtoFields.notifyByEmail === true,
+        notifyBySms: dtoFields.notifyBySms === true,
+        needsVendor: dtoFields.needsVendor === true,
+        vendorCategory: asOptionalString(dtoFields.vendorCategory),
+        assigneeUserId,
         sortOrder: (last?.sortOrder ?? 0) + 1,
       },
-      include: { userVendorContact: true, vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } } },
+      include: CHECKLIST_ITEM_INCLUDE,
     })
+
+    const vendors = this.vendorsFromDto(dto) ?? []
+    if (vendors.length > 0) {
+      await this.replaceChecklistVendors(created.id, user.id, vendors)
+    }
+
     this.track(
       eventId,
       user.id,
@@ -767,7 +1107,12 @@ export class EventsService {
       'CHECKLIST_ITEM',
       created.id,
     )
-    return created
+
+    const row = await this.prisma.eventChecklist.findUniqueOrThrow({
+      where: { id: created.id },
+      include: CHECKLIST_ITEM_INCLUDE,
+    })
+    return this.toChecklistItemDto(row)
   }
 
   async updateChecklistItem(
@@ -776,7 +1121,10 @@ export class EventsService {
     itemId: string,
     dto: UpdateChecklistItemDto,
   ) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.CHECKLIST, action: 'edit' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.CHECKLIST,
+      action: 'edit',
+    })
     const { user } = access
     await this.access.assertCanSeeChecklistItem(access, itemId)
 
@@ -794,38 +1142,17 @@ export class EventsService {
     }
 
     if (dto.assigneeUserId !== undefined || dto.hiddenFromMemberIds !== undefined) {
-      const assignee = dto.assigneeUserId !== undefined
-        ? dto.assigneeUserId
-        : (await this.prisma.eventChecklist.findFirst({
-            where: { id: itemId },
-            select: { assigneeUserId: true },
-          }))?.assigneeUserId ?? null
+      const assignee =
+        dto.assigneeUserId !== undefined
+          ? dto.assigneeUserId
+          : ((
+              await this.prisma.eventChecklist.findFirst({
+                where: { id: itemId },
+                select: { assigneeUserId: true },
+              })
+            )?.assigneeUserId ?? null)
       await this.assertAssignee(eventId, assignee, dto.hiddenFromMemberIds, itemId)
     }
-    let safeVendorProfileId: string | null | undefined = undefined
-    if (dto.vendorProfileId !== undefined) {
-      safeVendorProfileId = dto.vendorProfileId
-        ? (await this.prisma.vendorProfile.findUnique({ where: { id: dto.vendorProfileId }, select: { id: true } }))?.id ?? null
-        : null
-    }
-
-    let safeContactId: string | null | undefined = undefined
-    if (dto.userVendorContactId !== undefined) {
-      safeContactId = dto.userVendorContactId
-        ? (await this.prisma.userVendorContact.findFirst({
-            where: { id: dto.userVendorContactId, userId: user.id },
-            select: { id: true },
-          }))?.id ?? null
-        : null
-    }
-
-    // Linking one clears the other
-    const vendorProfileUpdate = safeVendorProfileId !== undefined
-      ? { vendorProfileId: safeVendorProfileId, ...(safeVendorProfileId !== null ? { userVendorContactId: null } : {}) }
-      : {}
-    const contactUpdate = safeContactId !== undefined
-      ? { userVendorContactId: safeContactId, ...(safeContactId !== null ? { vendorProfileId: null } : {}) }
-      : {}
 
     const updated = await this.prisma.eventChecklist.update({
       where: { id: itemId },
@@ -841,12 +1168,15 @@ export class EventsService {
         ...(dto.notifyBySms !== undefined && { notifyBySms: dto.notifyBySms }),
         ...(dto.needsVendor !== undefined && { needsVendor: dto.needsVendor }),
         ...(dto.vendorCategory !== undefined && { vendorCategory: dto.vendorCategory }),
-        ...vendorProfileUpdate,
-        ...contactUpdate,
         ...(dto.assigneeUserId !== undefined && { assigneeUserId: dto.assigneeUserId }),
       },
-      include: { userVendorContact: true, vendorProfile: { select: { id: true, businessName: true, isVerified: true, slug: true } } },
+      include: CHECKLIST_ITEM_INCLUDE,
     })
+
+    const vendors = this.vendorsFromDto(dto)
+    if (vendors !== undefined) {
+      await this.replaceChecklistVendors(itemId, user.id, vendors)
+    }
     if (dto.hiddenFromMemberIds !== undefined) {
       await this.prisma.eventChecklistConcealment.deleteMany({ where: { checklistId: itemId } })
       if (dto.hiddenFromMemberIds.length > 0) {
@@ -868,9 +1198,10 @@ export class EventsService {
         data: homeSync,
       })
     }
-    const action = dto.isCompleted === true && !existing.isCompleted
-      ? EventActivityAction.COMPLETED
-      : EventActivityAction.UPDATED
+    const action =
+      dto.isCompleted === true && !existing.isCompleted
+        ? EventActivityAction.COMPLETED
+        : EventActivityAction.UPDATED
     this.track(
       eventId,
       user.id,
@@ -882,11 +1213,24 @@ export class EventsService {
       'CHECKLIST_ITEM',
       updated.id,
     )
-    return updated
+    const row = await this.prisma.eventChecklist.findFirst({
+      where: { id: itemId, eventId },
+      include: {
+        ...CHECKLIST_ITEM_INCLUDE,
+        concealments: { select: { eventMemberId: true } },
+      },
+    })
+    return this.toChecklistItemDto(
+      row!,
+      access.isHost ? (row?.concealments ?? []).map((c) => c.eventMemberId) : [],
+    )
   }
 
   async deleteChecklistItem(clerkId: string, eventId: string, itemId: string) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.CHECKLIST, action: 'edit' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.CHECKLIST,
+      action: 'edit',
+    })
     const { user } = access
     await this.access.assertCanSeeChecklistItem(access, itemId)
 
@@ -953,7 +1297,15 @@ export class EventsService {
 
   private toScheduleDto<
     T extends {
-      budgetLinks: { budgetItem: { id: string; label: string | null; vendorName: string | null; category: VendorCategory; allocatedAmount: number } }[]
+      budgetLinks: {
+        budgetItem: {
+          id: string
+          label: string | null
+          vendorName: string | null
+          category: VendorCategory
+          allocatedAmount: number
+        }
+      }[]
       checklistLinks: {
         checklistItem: {
           id: string
@@ -972,12 +1324,15 @@ export class EventsService {
       budgetItems: showBudget ? budgetLinks.map((link) => link.budgetItem) : [],
       checklistItems: showChecklist
         ? checklistLinks
-          .filter((link) => !access || this.access.canSeeChecklistRow(access, link.checklistItem.concealments))
-          .map((link) => ({
-            id: link.checklistItem.id,
-            title: link.checklistItem.title,
-            isCompleted: link.checklistItem.isCompleted,
-          }))
+            .filter(
+              (link) =>
+                !access || this.access.canSeeChecklistRow(access, link.checklistItem.concealments),
+            )
+            .map((link) => ({
+              id: link.checklistItem.id,
+              title: link.checklistItem.title,
+              isCompleted: link.checklistItem.isCompleted,
+            }))
         : [],
     }
   }
@@ -995,10 +1350,12 @@ export class EventsService {
     if (!event) throw new NotFoundException('Event not found')
 
     const parentHost = event.parentId
-      ? Boolean(await this.prisma.event.findFirst({
-          where: { id: event.parentId, userId: assigneeUserId, deletedAt: null },
-          select: { id: true },
-        }))
+      ? Boolean(
+          await this.prisma.event.findFirst({
+            where: { id: event.parentId, userId: assigneeUserId, deletedAt: null },
+            select: { id: true },
+          }),
+        )
       : false
     const isHost = event.userId === assigneeUserId || parentHost
 
@@ -1053,6 +1410,53 @@ export class EventsService {
     }
   }
 
+  private projectShell<T extends { totalBudget: number }>(event: T, access: EventAccess) {
+    return {
+      ...event,
+      totalBudget: this.access.canSee(access, EventSurface.BUDGET) ? event.totalBudget : 0,
+      viewer: viewerDto(access),
+    }
+  }
+
+  private async eventStats(eventId: string, access: EventAccess, assignedToMe = false) {
+    const showBudget = this.access.canSee(access, EventSurface.BUDGET)
+    const showChecklist = this.access.canSee(access, EventSurface.CHECKLIST)
+    const showSchedule = this.access.canSee(access, EventSurface.SCHEDULE)
+    const showGuests = access.isHost || this.access.canSee(access, EventSurface.GUESTS)
+    const checklistWhere = {
+      eventId,
+      ...(assignedToMe ? { assigneeUserId: access.user.id } : {}),
+    }
+
+    const [spent, checklistDone, checklistTotal, scheduleCount, confirmedGuestCount] =
+      await Promise.all([
+        showBudget
+          ? this.prisma.eventBudgetItem.aggregate({
+              where: { eventId },
+              _sum: { spentAmount: true },
+            })
+          : Promise.resolve({ _sum: { spentAmount: null as number | null } }),
+        showChecklist
+          ? this.prisma.eventChecklist.count({ where: { ...checklistWhere, isCompleted: true } })
+          : Promise.resolve(0),
+        showChecklist
+          ? this.prisma.eventChecklist.count({ where: checklistWhere })
+          : Promise.resolve(0),
+        showSchedule
+          ? this.prisma.eventScheduleItem.count({ where: { eventId } })
+          : Promise.resolve(0),
+        showGuests ? this.prisma.guest.count({ where: { eventId } }) : Promise.resolve(0),
+      ])
+
+    return {
+      spentTotal: spent._sum.spentAmount ?? 0,
+      checklistDone,
+      checklistTotal,
+      scheduleCount,
+      confirmedGuestCount,
+    }
+  }
+
   private projectEvent<
     T extends {
       totalBudget: number
@@ -1062,7 +1466,15 @@ export class EventsService {
         concealments?: { eventMemberId: string }[]
       }>
       schedule: {
-        budgetLinks: { budgetItem: { id: string; label: string | null; vendorName: string | null; category: VendorCategory; allocatedAmount: number } }[]
+        budgetLinks: {
+          budgetItem: {
+            id: string
+            label: string | null
+            vendorName: string | null
+            category: VendorCategory
+            allocatedAmount: number
+          }
+        }[]
         checklistLinks: { checklistItem: { id: string; title: string; isCompleted: boolean } }[]
       }[]
       inquiries?: unknown[]
@@ -1081,21 +1493,23 @@ export class EventsService {
     if (assignedToMe) {
       checklist = checklist.filter((row) => row.assigneeUserId === access.user.id)
     }
-    const projectedChecklist = checklist.map((row) => {
-      const { concealments, ...rest } = row
-      return {
-        ...rest,
-        hiddenFromMemberIds: access.isHost ? (concealments ?? []).map((c) => c.eventMemberId) : [],
-      }
-    })
+    const projectedChecklist = checklist.map((row) =>
+      this.toChecklistItemDto(
+        row,
+        access.isHost ? (row.concealments ?? []).map((c) => c.eventMemberId) : [],
+      ),
+    )
     return {
       ...event,
       totalBudget: showBudget ? event.totalBudget : 0,
-      budgetItems: showBudget ? rewriteReceiptUrls(event.id, event.budgetItems as { id: string; receipts?: { id: string; url: string }[] }[]) : [],
-      checklist: projectedChecklist,
-      schedule: showSchedule
-        ? event.schedule.map((item) => this.toScheduleDto(item, access))
+      budgetItems: showBudget
+        ? rewriteReceiptUrls(
+            event.id,
+            event.budgetItems as { id: string; receipts?: { id: string; url: string }[] }[],
+          )
         : [],
+      checklist: projectedChecklist,
+      schedule: showSchedule ? event.schedule.map((item) => this.toScheduleDto(item, access)) : [],
       ...(event.inquiries !== undefined ? { inquiries: showVendors ? event.inquiries : [] } : {}),
       viewer: viewerDto(access),
     }
@@ -1152,12 +1566,13 @@ export class EventsService {
     inspirationItemIds: string[],
   ) {
     const ids = this.uniqueIds(inspirationItemIds)
-    const moodItems = ids.length === 0
-      ? []
-      : await this.prisma.moodBoardItem.findMany({
-        where: { eventId, inspirationItemId: { in: ids } },
-        select: { id: true },
-      })
+    const moodItems =
+      ids.length === 0
+        ? []
+        : await this.prisma.moodBoardItem.findMany({
+            where: { eventId, inspirationItemId: { in: ids } },
+            select: { id: true },
+          })
     if (moodItems.length !== ids.length) {
       throw new NotFoundException('Inspiration is not saved to this event')
     }
@@ -1176,17 +1591,24 @@ export class EventsService {
   }
 
   async listSchedule(clerkId: string, eventId: string) {
-    await this.access.require(clerkId, eventId, { surface: EventSurface.SCHEDULE, action: 'view' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.SCHEDULE,
+      action: 'view',
+    })
 
-    return this.prisma.eventScheduleItem.findMany({
+    const rows = await this.prisma.eventScheduleItem.findMany({
       where: { eventId },
       orderBy: [{ startTime: 'asc' }, { sortOrder: 'asc' }],
-      select: { id: true, title: true, date: true, startTime: true, endTime: true },
+      include: SCHEDULE_INCLUDE,
     })
+    return rows.map((item) => this.toScheduleDto(item, access))
   }
 
   async addScheduleItem(clerkId: string, eventId: string, dto: CreateScheduleItemDto) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.SCHEDULE, action: 'edit' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.SCHEDULE,
+      action: 'edit',
+    })
 
     const budgetItemIds = this.uniqueIds(dto.budgetItemIds)
     const checklistItemIds = this.uniqueIds(dto.checklistItemIds)
@@ -1238,15 +1660,20 @@ export class EventsService {
     itemId: string,
     dto: UpdateScheduleItemDto,
   ) {
-    const access = await this.access.require(clerkId, eventId, { surface: EventSurface.SCHEDULE, action: 'edit' })
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.SCHEDULE,
+      action: 'edit',
+    })
 
     const existing = await this.prisma.eventScheduleItem.findFirst({
       where: { id: itemId, eventId },
     })
     if (!existing) throw new NotFoundException('Schedule item not found')
 
-    const budgetItemIds = dto.budgetItemIds === undefined ? undefined : this.uniqueIds(dto.budgetItemIds)
-    const checklistItemIds = dto.checklistItemIds === undefined ? undefined : this.uniqueIds(dto.checklistItemIds)
+    const budgetItemIds =
+      dto.budgetItemIds === undefined ? undefined : this.uniqueIds(dto.budgetItemIds)
+    const checklistItemIds =
+      dto.checklistItemIds === undefined ? undefined : this.uniqueIds(dto.checklistItemIds)
     this.assertLinkSurfaces(
       access,
       budgetItemIds ?? [],
@@ -1300,7 +1727,10 @@ export class EventsService {
   }
 
   async deleteScheduleItem(clerkId: string, eventId: string, itemId: string) {
-    const { user } = await this.access.require(clerkId, eventId, { surface: EventSurface.SCHEDULE, action: 'edit' })
+    const { user } = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.SCHEDULE,
+      action: 'edit',
+    })
 
     const existing = await this.prisma.eventScheduleItem.findFirst({
       where: { id: itemId, eventId },

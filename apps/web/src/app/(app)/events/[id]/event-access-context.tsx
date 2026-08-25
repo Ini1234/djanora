@@ -53,11 +53,7 @@ export function EventAccessProvider({
     canComment: (surface) => canCommentSurface(v, surface),
   }
 
-  return (
-    <EventAccessContext.Provider value={value}>
-      {children}
-    </EventAccessContext.Provider>
-  )
+  return <EventAccessContext.Provider value={value}>{children}</EventAccessContext.Provider>
 }
 
 export function useEventAccess() {

@@ -143,10 +143,12 @@ function unsetIfPlaceholder(value?: string) {
 }
 
 export function isSafeName(filename: string) {
-  return Boolean(filename)
-    && !filename.includes('..')
-    && !filename.includes('/')
-    && !filename.includes('\\')
+  return (
+    Boolean(filename) &&
+    !filename.includes('..') &&
+    !filename.includes('/') &&
+    !filename.includes('\\')
+  )
 }
 
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'])

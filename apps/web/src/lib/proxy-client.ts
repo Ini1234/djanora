@@ -16,6 +16,19 @@ const _base = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+_base.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    const headers = config.headers
+    if (headers && typeof headers.delete === 'function') {
+      headers.delete('Content-Type')
+    } else if (headers) {
+      delete (headers as Record<string, unknown>)['Content-Type']
+      delete (headers as Record<string, unknown>)['content-type']
+    }
+  }
+  return config
+})
+
 const _inFlight = new Map<string, Promise<AxiosResponse<unknown>>>()
 
 function getKey(url: string, config?: AxiosRequestConfig) {
@@ -28,9 +41,9 @@ export const proxyClient = {
     const hit = _inFlight.get(key) as Promise<AxiosResponse<T>> | undefined
     if (hit) return hit
 
-    const p = _base
-      .get<T>(url, config)
-      .finally(() => _inFlight.delete(key)) as Promise<AxiosResponse<T>>
+    const p = _base.get<T>(url, config).finally(() => _inFlight.delete(key)) as Promise<
+      AxiosResponse<T>
+    >
 
     _inFlight.set(key, p as Promise<AxiosResponse<unknown>>)
     return p
@@ -52,10 +65,7 @@ export const proxyClient = {
     return _base.patch<T>(url, data, config)
   },
 
-  delete<T = unknown>(
-    url: string,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<T>> {
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return _base.delete<T>(url, config)
   },
 }

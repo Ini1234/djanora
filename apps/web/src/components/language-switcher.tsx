@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale } from 'next-intl'
-import { useTransition } from 'react'
+import { persistLocale } from '@/lib/persist-locale'
 import { cn } from '@/lib/utils'
 
 type Locale = 'en' | 'fr'
@@ -12,21 +12,16 @@ type Locale = 'en' | 'fr'
  */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale() as Locale
-  const [isPending, startTransition] = useTransition()
 
   function setLocale(next: Locale) {
-    document.cookie = `locale=${next}; path=/; max-age=31536000; SameSite=Lax`
-    startTransition(() => {
-      window.location.reload()
-    })
+    persistLocale(next)
   }
 
   return (
     <div
       className={cn(
         'flex items-center gap-0.5 rounded-full border p-0.5 text-xs font-semibold',
-        'border-black/10 dark:border-white/10 bg-black/4 dark:bg-white/6',
-        isPending && 'opacity-60 pointer-events-none',
+        'border-black/10 bg-black/4 dark:border-white/10 dark:bg-white/6',
         className,
       )}
       aria-label="Language"
@@ -38,7 +33,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           type="button"
           onClick={() => setLocale(lang)}
           className={cn(
-            'px-2.5 py-0.5 rounded-full transition-all duration-150 uppercase tracking-wide',
+            'rounded-full px-2.5 py-0.5 tracking-wide uppercase transition-all duration-150',
             locale === lang
               ? 'bg-gold-600 text-brand-900 shadow-sm'
               : 'text-brand-500 dark:text-brand-400 hover:text-brand-800 dark:hover:text-white',

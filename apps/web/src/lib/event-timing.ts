@@ -35,7 +35,10 @@ export function formatEventDate(dateStr: string | null | undefined): string | nu
   })
 }
 
-export function countdownLabel(days: number | null, style: 'short' | 'long' = 'short'): string | null {
+export function countdownLabel(
+  days: number | null,
+  style: 'short' | 'long' = 'short',
+): string | null {
   if (days == null || days < 0) return null
   if (days === 0) return 'Today'
   if (days === 1) return style === 'long' ? '1 day' : 'Tomorrow'

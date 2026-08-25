@@ -6,7 +6,7 @@ import { clerkAppearance } from '@/lib/clerk-appearance'
 export function SettingsSecurity() {
   return (
     <ClerkProvider appearance={clerkAppearance} afterSignOutUrl="/">
-      <div className="rounded-xl overflow-hidden bg-white">
+      <div className="overflow-hidden rounded-xl bg-white">
         <UserProfile
           routing="hash"
           appearance={{

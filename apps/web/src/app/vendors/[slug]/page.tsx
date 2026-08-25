@@ -13,9 +13,11 @@ async function getVendor(slug: string) {
   return publicGet<VendorProfile>(`/vendors/${slug}`)
 }
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> },
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
   const { slug } = await params
   const vendor = await getVendor(slug)
   if (!vendor) return { title: 'Vendor not found' }
@@ -37,15 +39,9 @@ function withShell(user: UserMe | null, children: ReactNode) {
   )
 }
 
-export default async function VendorProfilePage(
-  { params }: { params: Promise<{ slug: string }> },
-) {
+export default async function VendorProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const [vendor, clerkUser, me] = await Promise.all([
-    getVendor(slug),
-    currentUser(),
-    getMe(),
-  ])
+  const [vendor, clerkUser, me] = await Promise.all([getVendor(slug), currentUser(), getMe()])
   if (!vendor) notFound()
 
   const signedIn = Boolean(clerkUser || me)

@@ -10,19 +10,25 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\"",
+    "prepare": "husky",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
     "db:studio": "turbo db:studio",
     "test:hardening": "npm run test:hardening --workspace=api"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.14",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },
   "packageManager": "npm@11.17.0",
   "engines": {
-    "node": "24.19.0"
+    "node": ">=24.13.0"
   }
 }

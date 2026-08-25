@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, MinLength, MaxLength, IsDateString } from 'class-validator'
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  IsDateString,
+} from 'class-validator'
 
 export class CreateInquiryDto {
   @IsOptional()

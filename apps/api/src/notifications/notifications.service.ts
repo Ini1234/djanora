@@ -65,10 +65,7 @@ export class NotificationsService {
         type,
         title,
         body,
-        metadata:
-          metadata !== undefined
-            ? (metadata as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
+        metadata: metadata !== undefined ? (metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     })
 

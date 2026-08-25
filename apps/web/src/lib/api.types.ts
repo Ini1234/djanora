@@ -85,7 +85,7 @@ export interface UserVendorContact {
 export interface EventBudgetItem {
   id: string
   category: VendorCategory
-  label: string | null
+  label: string
   vendorName: string | null
   vendorProfileId: string | null
   userVendorContactId: string | null
@@ -95,6 +95,20 @@ export interface EventBudgetItem {
   spentAmount: number
   currency: string
   receipts: BudgetReceipt[]
+}
+
+export interface EventChecklistVendor {
+  id?: string
+  vendorProfileId: string | null
+  userVendorContactId: string | null
+  name: string | null
+  vendorProfile: {
+    id: string
+    businessName: string
+    isVerified: boolean
+    slug: string
+  } | null
+  userVendorContact: UserVendorContact | null
 }
 
 export interface EventChecklistItem {
@@ -107,6 +121,7 @@ export interface EventChecklistItem {
   notifyBySms: boolean
   needsVendor: boolean
   vendorCategory: string | null
+  vendors?: EventChecklistVendor[]
   vendorProfileId: string | null
   userVendorContactId: string | null
   userVendorContact: UserVendorContact | null
@@ -148,7 +163,12 @@ export type EventSurface = 'SCHEDULE' | 'CHECKLIST' | 'BUDGET' | 'MOODBOARD' | '
 export type EventMemberRole = 'HOST' | 'EDITOR' | 'COMMENTER' | 'VIEWER'
 
 export const ALL_EVENT_SURFACES: EventSurface[] = [
-  'SCHEDULE', 'CHECKLIST', 'BUDGET', 'MOODBOARD', 'VENDORS', 'GUESTS',
+  'SCHEDULE',
+  'CHECKLIST',
+  'BUDGET',
+  'MOODBOARD',
+  'VENDORS',
+  'GUESTS',
 ]
 
 export interface EventViewer {
@@ -157,6 +177,14 @@ export interface EventViewer {
   surfaces: EventSurface[]
   memberId?: string | null
   userId?: string | null
+}
+
+export interface EventStats {
+  spentTotal: number
+  checklistDone: number
+  checklistTotal: number
+  scheduleCount: number
+  confirmedGuestCount: number
 }
 
 export interface Event {
@@ -175,9 +203,10 @@ export interface Event {
   parentId?: string | null
   sortOrder?: number
   createdAt: string
-  budgetItems: EventBudgetItem[]
-  checklist: EventChecklistItem[]
+  budgetItems?: EventBudgetItem[]
+  checklist?: EventChecklistItem[]
   schedule?: EventScheduleItem[]
+  stats?: EventStats
   viewer?: EventViewer
   parent?: { id: string; title: string } | null
   children?: EventJourneyStop[]
@@ -197,9 +226,14 @@ export interface UserChecklist {
   eventChecklistId: string | null
   event: { id: string; title: string } | null
   assigneeUserId?: string
-  source?: 'MINE' | 'ASSIGNED'
+  source?: 'MINE' | 'ASSIGNED' | 'EVENT'
   createdAt: string
   updatedAt: string
+}
+
+export interface UserChecklistPage {
+  items: UserChecklist[]
+  nextCursor: string | null
 }
 
 export interface EventJourneyStop {
@@ -297,13 +331,7 @@ export interface MyVendorProfile {
 export type InspirationVisibility = 'DRAFT' | 'PROFILE' | 'INSPIRATION'
 export type InspirationMediaType = 'IMAGE' | 'VIDEO' | 'EXTERNAL'
 export type InspirationCategory =
-  | 'PERFORMANCE'
-  | 'VENUE'
-  | 'DECOR'
-  | 'MUSIC'
-  | 'FASHION'
-  | 'FOOD'
-  | 'OTHER'
+  'PERFORMANCE' | 'VENUE' | 'DECOR' | 'MUSIC' | 'FASHION' | 'FOOD' | 'OTHER'
 
 export interface VendorPostMedia {
   id: string
@@ -325,6 +353,7 @@ export interface VendorPost {
   title: string
   description: string
   category: InspirationCategory
+  categories?: InspirationCategory[]
   location: string | null
   priceRangeFrom: number | null
   priceRangeTo: number | null

@@ -1,7 +1,4 @@
-import {
-  IsString, IsOptional, IsEmail, IsUrl,
-  MinLength, MaxLength, IsEnum,
-} from 'class-validator'
+import { IsString, IsOptional, IsEmail, IsUrl, MinLength, MaxLength, IsEnum } from 'class-validator'
 import { VendorCategory } from '@prisma/client'
 
 export class CreateVendorContactDto {

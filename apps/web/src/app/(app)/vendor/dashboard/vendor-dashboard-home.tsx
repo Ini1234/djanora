@@ -3,9 +3,19 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
-  BadgeCheck, Star, MessageSquare, ImageIcon, Globe,
-  Edit3, ChevronRight, Sparkles, TrendingUp,
-  Users, AlertCircle, ExternalLink, Link2,
+  BadgeCheck,
+  Star,
+  MessageSquare,
+  ImageIcon,
+  Globe,
+  Edit3,
+  ChevronRight,
+  Sparkles,
+  TrendingUp,
+  Users,
+  AlertCircle,
+  ExternalLink,
+  Link2,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
@@ -28,7 +38,10 @@ function fadeUp(i: number) {
 }
 
 const TRIBE_LABELS: Record<string, string> = {
-  YORUBA: 'Yoruba', IGBO: 'Igbo', HAUSA: 'Hausa/Fulani', OTHER: 'Other',
+  YORUBA: 'Yoruba',
+  IGBO: 'Igbo',
+  HAUSA: 'Hausa/Fulani',
+  OTHER: 'Other',
 }
 
 function getGreeting() {
@@ -53,12 +66,29 @@ function completeness(p: MyVendorProfile) {
 
 function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
   const items: { done: boolean; label: string; hint: string; href?: string }[] = [
-    { done: !!p.bio,                                           label: 'Add a bio',              hint: 'Tell planners what makes you special' },
-    { done: !!p.city,                                          label: 'Set your city / region',  hint: 'Helps planners find local vendors' },
-    { done: !!p.estimatedPriceFrom,                            label: 'Add a price range',       hint: 'Planners plan better with a budget guide' },
-    { done: !!(p.websiteUrl || p.instagramUrl || p.facebookUrl), label: 'Add a social / website link', hint: 'Builds trust and drives bookings' },
-    { done: p.portfolioCount > 0,                              label: 'Add portfolio looks', hint: 'Looks with photos get more inquiries', href: '/portfolio' },
-    { done: p.tribesServed.length > 0,                         label: 'Set communities served',  hint: 'Matches you to the right planners' },
+    { done: !!p.bio, label: 'Add a bio', hint: 'Tell planners what makes you special' },
+    { done: !!p.city, label: 'Set your city / region', hint: 'Helps planners find local vendors' },
+    {
+      done: !!p.estimatedPriceFrom,
+      label: 'Add a price range',
+      hint: 'Planners plan better with a budget guide',
+    },
+    {
+      done: !!(p.websiteUrl || p.instagramUrl || p.facebookUrl),
+      label: 'Add a social / website link',
+      hint: 'Builds trust and drives bookings',
+    },
+    {
+      done: p.portfolioCount > 0,
+      label: 'Add portfolio looks',
+      hint: 'Looks with photos get more inquiries',
+      href: '/portfolio',
+    },
+    {
+      done: p.tribesServed.length > 0,
+      label: 'Set communities served',
+      hint: 'Matches you to the right planners',
+    },
   ]
   const remaining = items.filter((i) => !i.done)
   if (remaining.length === 0) return null
@@ -67,16 +97,20 @@ function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
       {remaining.map((item) => {
         const inner = (
           <>
-            <AlertCircle size={15} className="text-gold-500 shrink-0 mt-0.5" />
+            <AlertCircle size={15} className="text-gold-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-brand-800 dark:text-white">{item.label}</p>
-              <p className="text-xs text-brand-500 mt-0.5">{item.hint}</p>
+              <p className="text-brand-800 text-sm font-medium dark:text-white">{item.label}</p>
+              <p className="text-brand-500 mt-0.5 text-xs">{item.hint}</p>
             </div>
           </>
         )
         const className = 'flex items-start gap-3 py-2.5 px-3 rounded-xl bg-black/3 dark:bg-white/3'
         return item.href ? (
-          <Link key={item.label} href={item.href} className={`${className} hover:bg-black/6 dark:hover:bg-white/6 transition-colors`}>
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`${className} transition-colors hover:bg-black/6 dark:hover:bg-white/6`}
+          >
             {inner}
           </Link>
         ) : (
@@ -89,26 +123,27 @@ function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
   )
 }
 
-export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
+export function VendorDashboardHome({ firstName, profile }: Props) {
   const tCat = useTranslations('vendorCategories')
   const score = profile ? completeness(profile) : 0
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
+    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       {/* ── Greeting + profile header ─────────────────────────────────── */}
       <motion.div {...fadeUp(0)}>
-        <p className="text-brand-400 dark:text-brand-400 text-sm font-medium mb-1">{getGreeting()}</p>
+        <p className="text-brand-400 dark:text-brand-400 mb-1 text-sm font-medium">
+          {getGreeting()}
+        </p>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl sm:text-4xl font-semibold text-brand-900 dark:text-white">
+            <h1 className="font-display text-brand-900 text-3xl font-semibold sm:text-4xl dark:text-white">
               {firstName} 🎪
             </h1>
             {profile && (
-              <p className="text-brand-500 dark:text-brand-400 text-sm mt-1">
+              <p className="text-brand-500 dark:text-brand-400 mt-1 text-sm">
                 {profile.businessName}
                 {profile.isVerified && (
-                  <span className="inline-flex items-center gap-1 ml-2 text-gold-600 dark:text-gold-400">
+                  <span className="text-gold-600 dark:text-gold-400 ml-2 inline-flex items-center gap-1">
                     <BadgeCheck size={13} /> Verified
                   </span>
                 )}
@@ -118,7 +153,7 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
           {profile && (
             <Link
               href="/settings"
-              className="flex items-center gap-2 text-sm font-medium text-brand-500 dark:text-brand-300 hover:text-brand-800 dark:hover:text-white bg-black/4 dark:bg-white/6 border border-black/8 dark:border-white/10 hover:border-black/14 dark:hover:border-white/20 px-4 py-2 rounded-xl transition-all"
+              className="text-brand-500 dark:text-brand-300 hover:text-brand-800 flex items-center gap-2 rounded-xl border border-black/8 bg-black/4 px-4 py-2 text-sm font-medium transition-all hover:border-black/14 dark:border-white/10 dark:bg-white/6 dark:hover:border-white/20 dark:hover:text-white"
             >
               <Edit3 size={14} />
               Edit profile
@@ -131,13 +166,15 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
       {profile && profile.categories.length > 0 && (
         <motion.div {...fadeUp(1)} className="flex flex-wrap gap-2">
           {profile.categories.map((cat) => (
-            <span key={cat}
-              className="text-xs font-medium px-3 py-1.5 rounded-full bg-gold-500/12 dark:bg-gold-500/15 border border-gold-500/25 text-gold-700 dark:text-gold-400">
+            <span
+              key={cat}
+              className="bg-gold-500/12 dark:bg-gold-500/15 border-gold-500/25 text-gold-700 dark:text-gold-400 rounded-full border px-3 py-1.5 text-xs font-medium"
+            >
               {getVendorCategoryLabel(cat, tCat)}
             </span>
           ))}
           {profile.city && (
-            <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/8 border border-black/8 dark:border-white/12 text-brand-600 dark:text-brand-300">
+            <span className="text-brand-600 dark:text-brand-300 rounded-full border border-black/8 bg-black/5 px-3 py-1.5 text-xs font-medium dark:border-white/12 dark:bg-white/8">
               📍 {profile.city}
             </span>
           )}
@@ -145,13 +182,18 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
       )}
 
       {/* ── Stats row ─────────────────────────────────────────────────── */}
-      <motion.div {...fadeUp(2)} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <motion.div {...fadeUp(2)} className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
           {
             icon: MessageSquare,
             label: 'Bookings',
             value: profile ? String(profile.bookingCount) : '0',
-            sub: profile?.bookingCount === 0 ? 'None yet' : profile?.bookingCount === 1 ? '1 event booked' : `${profile?.bookingCount} events booked`,
+            sub:
+              profile?.bookingCount === 0
+                ? 'None yet'
+                : profile?.bookingCount === 1
+                  ? '1 event booked'
+                  : `${profile?.bookingCount} events booked`,
             color: 'text-blue-500 dark:text-blue-400',
             bg: 'bg-blue-500/10',
           },
@@ -183,48 +225,71 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
             icon: MessageSquare,
             label: 'Inquiries',
             value: profile ? String(profile.inquiryCount) : '0',
-            sub: profile?.inquiryCount === 0 ? 'None yet' : profile?.inquiryCount === 1 ? '1 message received' : `${profile?.inquiryCount} messages received`,
+            sub:
+              profile?.inquiryCount === 0
+                ? 'None yet'
+                : profile?.inquiryCount === 1
+                  ? '1 message received'
+                  : `${profile?.inquiryCount} messages received`,
             color: 'text-brand-400',
             bg: 'bg-brand-500/10 dark:bg-white/6',
           },
         ].map((stat) => (
-          <div key={stat.label}
-            className="bg-white/60 dark:bg-white/5 border border-black/8 dark:border-white/8 rounded-2xl px-5 py-5 flex items-start gap-4">
-            <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', stat.bg)}>
+          <div
+            key={stat.label}
+            className="flex items-start gap-4 rounded-2xl border border-black/8 bg-white/60 px-5 py-5 dark:border-white/8 dark:bg-white/5"
+          >
+            <div
+              className={cn(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                stat.bg,
+              )}
+            >
               <stat.icon size={16} className={stat.color} aria-hidden="true" />
             </div>
             <div>
-              <p className="text-xl font-semibold text-brand-900 dark:text-white font-display">{stat.value}</p>
-              <p className="text-sm font-medium text-brand-600 dark:text-brand-200">{stat.label}</p>
-              <p className="text-xs text-brand-400 dark:text-brand-500 mt-0.5">{stat.sub}</p>
+              <p className="text-brand-900 font-display text-xl font-semibold dark:text-white">
+                {stat.value}
+              </p>
+              <p className="text-brand-600 dark:text-brand-200 text-sm font-medium">{stat.label}</p>
+              <p className="text-brand-400 dark:text-brand-500 mt-0.5 text-xs">{stat.sub}</p>
             </div>
           </div>
         ))}
       </motion.div>
 
       {/* ── Two-column lower section ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Profile completeness card */}
-        <motion.div {...fadeUp(3)}
-          className="lg:col-span-2 bg-white/60 dark:bg-white/4 border border-black/8 dark:border-white/8 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-5">
+        <motion.div
+          {...fadeUp(3)}
+          className="rounded-2xl border border-black/8 bg-white/60 p-6 lg:col-span-2 dark:border-white/8 dark:bg-white/4"
+        >
+          <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="font-display text-base font-semibold text-brand-900 dark:text-white">Profile completeness</h2>
-              <p className="text-xs text-brand-500 dark:text-brand-400 mt-0.5">
+              <h2 className="font-display text-brand-900 text-base font-semibold dark:text-white">
+                Profile completeness
+              </h2>
+              <p className="text-brand-500 dark:text-brand-400 mt-0.5 text-xs">
                 A complete profile gets significantly more bookings
               </p>
             </div>
-            <span className={cn(
-              'text-sm font-bold font-display',
-              score === 100 ? 'text-emerald-600 dark:text-emerald-400' : score >= 60 ? 'text-gold-600 dark:text-gold-400' : 'text-brand-500',
-            )}>
+            <span
+              className={cn(
+                'font-display text-sm font-bold',
+                score === 100
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : score >= 60
+                    ? 'text-gold-600 dark:text-gold-400'
+                    : 'text-brand-500',
+              )}
+            >
               {score}%
             </span>
           </div>
 
           {/* Progress bar */}
-          <div className="h-2 rounded-full bg-black/8 dark:bg-white/10 mb-6 overflow-hidden">
+          <div className="mb-6 h-2 overflow-hidden rounded-full bg-black/8 dark:bg-white/10">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${score}%` }}
@@ -238,43 +303,69 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
 
           {profile ? (
             score === 100 ? (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 <BadgeCheck size={16} /> Profile is fully complete — great work!
               </div>
             ) : (
               <CompletenessChecklist p={profile} />
             )
           ) : (
-            <p className="text-sm text-brand-400">Profile data unavailable.</p>
+            <p className="text-brand-400 text-sm">Profile data unavailable.</p>
           )}
         </motion.div>
 
         {/* Quick actions */}
-        <motion.div {...fadeUp(4)}
-          className="bg-white/60 dark:bg-white/4 border border-black/8 dark:border-white/8 rounded-2xl p-6">
-          <h2 className="font-display text-base font-semibold text-brand-900 dark:text-white mb-4">Quick actions</h2>
+        <motion.div
+          {...fadeUp(4)}
+          className="rounded-2xl border border-black/8 bg-white/60 p-6 dark:border-white/8 dark:bg-white/4"
+        >
+          <h2 className="font-display text-brand-900 mb-4 text-base font-semibold dark:text-white">
+            Quick actions
+          </h2>
           <div className="space-y-2">
             {[
-              { icon: Edit3,      label: 'Edit profile',         href: '/settings',           sub: 'Update your details' },
-              { icon: ImageIcon,  label: 'Add portfolio looks', href: '/portfolio',           sub: 'Showcase your work' },
-              { icon: Users,      label: 'View inquiries',       href: '/inquiries',           sub: 'Messages from planners' },
-              ...(profile ? [{
-                icon: ExternalLink,
-                label: 'View public profile',
-                href: `/vendors/${profile.slug}`,
-                sub: 'See what planners see',
-              }] : []),
+              { icon: Edit3, label: 'Edit profile', href: '/settings', sub: 'Update your details' },
+              {
+                icon: ImageIcon,
+                label: 'Add portfolio looks',
+                href: '/portfolio',
+                sub: 'Showcase your work',
+              },
+              {
+                icon: Users,
+                label: 'View inquiries',
+                href: '/inquiries',
+                sub: 'Messages from planners',
+              },
+              ...(profile
+                ? [
+                    {
+                      icon: ExternalLink,
+                      label: 'View public profile',
+                      href: `/vendors/${profile.slug}`,
+                      sub: 'See what planners see',
+                    },
+                  ]
+                : []),
             ].map((action) => (
-              <Link key={action.label} href={action.href}
-                className="group flex items-center gap-3 px-3 py-3 rounded-xl bg-black/3 dark:bg-white/3 hover:bg-black/6 dark:hover:bg-white/6 border border-transparent hover:border-black/8 dark:hover:border-white/10 transition-all">
-                <div className="w-8 h-8 rounded-xl bg-gold-500/12 flex items-center justify-center shrink-0">
+              <Link
+                key={action.label}
+                href={action.href}
+                className="group flex items-center gap-3 rounded-xl border border-transparent bg-black/3 px-3 py-3 transition-all hover:border-black/8 hover:bg-black/6 dark:bg-white/3 dark:hover:border-white/10 dark:hover:bg-white/6"
+              >
+                <div className="bg-gold-500/12 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
                   <action.icon size={14} className="text-gold-600 dark:text-gold-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-brand-800 dark:text-white truncate">{action.label}</p>
-                  <p className="text-xs text-brand-400 dark:text-brand-500">{action.sub}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-brand-800 truncate text-sm font-medium dark:text-white">
+                    {action.label}
+                  </p>
+                  <p className="text-brand-400 dark:text-brand-500 text-xs">{action.sub}</p>
                 </div>
-                <ChevronRight size={14} className="text-brand-400 group-hover:text-brand-600 dark:group-hover:text-brand-200 transition-colors shrink-0" />
+                <ChevronRight
+                  size={14}
+                  className="text-brand-400 group-hover:text-brand-600 dark:group-hover:text-brand-200 shrink-0 transition-colors"
+                />
               </Link>
             ))}
           </div>
@@ -282,60 +373,82 @@ export function VendorDashboardHome({ firstName, avatarUrl, profile }: Props) {
       </div>
 
       {/* ── Bio + links preview (if set) ───────────────────────────────── */}
-      {profile && (profile.bio || profile.websiteUrl || profile.instagramUrl || profile.facebookUrl) && (
-        <motion.div {...fadeUp(5)}
-          className="bg-white/60 dark:bg-white/4 border border-black/8 dark:border-white/8 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-base font-semibold text-brand-900 dark:text-white">Your profile preview</h2>
-            <span className="text-xs text-brand-400">What planners see</span>
-          </div>
-
-          {profile.bio && (
-            <p className="text-sm text-brand-700 dark:text-brand-300 leading-relaxed mb-4 line-clamp-3">
-              {profile.bio}
-            </p>
-          )}
-
-          {(profile.estimatedPriceFrom || profile.estimatedPriceTo) && (
-            <p className="text-sm font-medium text-brand-800 dark:text-brand-200 mb-4">
-              <span className="text-brand-400 dark:text-brand-500 mr-1">Starting from</span>
-              CA${(profile.estimatedPriceFrom ?? 0).toLocaleString('en-CA')}
-              {profile.estimatedPriceTo ? ` – $${profile.estimatedPriceTo.toLocaleString('en-CA')}` : '+'}
-            </p>
-          )}
-
-          {profile.tribesServed.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {profile.tribesServed.map((t) => (
-                <span key={t} className="text-xs px-2.5 py-1 rounded-full bg-brand-100 dark:bg-white/8 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-white/10">
-                  {TRIBE_LABELS[t] ?? t}
-                </span>
-              ))}
+      {profile &&
+        (profile.bio || profile.websiteUrl || profile.instagramUrl || profile.facebookUrl) && (
+          <motion.div
+            {...fadeUp(5)}
+            className="rounded-2xl border border-black/8 bg-white/60 p-6 dark:border-white/8 dark:bg-white/4"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-brand-900 text-base font-semibold dark:text-white">
+                Your profile preview
+              </h2>
+              <span className="text-brand-400 text-xs">What planners see</span>
             </div>
-          )}
 
-          <div className="flex flex-wrap gap-3">
-            {profile.websiteUrl && (
-              <a href={profile.websiteUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs text-brand-500 dark:text-brand-400 hover:text-brand-800 dark:hover:text-white transition-colors">
-                <Globe size={13} /> Website
-              </a>
+            {profile.bio && (
+              <p className="text-brand-700 dark:text-brand-300 mb-4 line-clamp-3 text-sm leading-relaxed">
+                {profile.bio}
+              </p>
             )}
-            {profile.instagramUrl && (
-              <a href={profile.instagramUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs text-brand-500 dark:text-brand-400 hover:text-brand-800 dark:hover:text-white transition-colors">
-                <Link2 size={13} /> Instagram
-              </a>
+
+            {(profile.estimatedPriceFrom || profile.estimatedPriceTo) && (
+              <p className="text-brand-800 dark:text-brand-200 mb-4 text-sm font-medium">
+                <span className="text-brand-400 dark:text-brand-500 mr-1">Starting from</span>
+                CA${(profile.estimatedPriceFrom ?? 0).toLocaleString('en-CA')}
+                {profile.estimatedPriceTo
+                  ? ` – $${profile.estimatedPriceTo.toLocaleString('en-CA')}`
+                  : '+'}
+              </p>
             )}
-            {profile.facebookUrl && (
-              <a href={profile.facebookUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs text-brand-500 dark:text-brand-400 hover:text-brand-800 dark:hover:text-white transition-colors">
-                <Sparkles size={13} /> Facebook
-              </a>
+
+            {profile.tribesServed.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-1.5">
+                {profile.tribesServed.map((t) => (
+                  <span
+                    key={t}
+                    className="bg-brand-100 text-brand-600 dark:text-brand-300 border-brand-200 rounded-full border px-2.5 py-1 text-xs dark:border-white/10 dark:bg-white/8"
+                  >
+                    {TRIBE_LABELS[t] ?? t}
+                  </span>
+                ))}
+              </div>
             )}
-          </div>
-        </motion.div>
-      )}
+
+            <div className="flex flex-wrap gap-3">
+              {profile.websiteUrl && (
+                <a
+                  href={profile.websiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                >
+                  <Globe size={13} /> Website
+                </a>
+              )}
+              {profile.instagramUrl && (
+                <a
+                  href={profile.instagramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                >
+                  <Link2 size={13} /> Instagram
+                </a>
+              )}
+              {profile.facebookUrl && (
+                <a
+                  href={profile.facebookUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                >
+                  <Sparkles size={13} /> Facebook
+                </a>
+              )}
+            </div>
+          </motion.div>
+        )}
 
       <style>{`
         @media (prefers-reduced-motion: reduce) {

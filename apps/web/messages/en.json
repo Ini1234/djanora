@@ -21,6 +21,23 @@
     "deleting": "Deleting…",
     "or": "or"
   },
+  "dataPort": {
+    "menu": "Export / Import",
+    "exportCsv": "Export CSV",
+    "exportExcel": "Export Excel",
+    "exportNotion": "Export Notion template",
+    "import": "Import spreadsheet",
+    "importPreview": "Review import",
+    "importDone": "Import complete",
+    "previewCount": "{count} rows found",
+    "importConfirm": "Import {count}",
+    "importSummary": "Added {created}. Skipped {skipped} duplicates.",
+    "close": "Close",
+    "emptyFile": "That file has no rows.",
+    "parseFailed": "Could not read that file.",
+    "importFailed": "Import failed.",
+    "tooManyRows": "Only the first 500 rows were imported."
+  },
   "vendorCategories": {
     "CATERER": "Caterer / Food",
     "PHOTOGRAPHER": "Photographer",
@@ -90,7 +107,12 @@
     "checklistName": "What needs doing?",
     "dueDate": "Due date",
     "linkToEvent": "Link to an event",
-    "notLinked": "Not linked"
+    "notLinked": "Not linked",
+    "due": "Due",
+    "nothingDue": "Nothing due",
+    "seeAllChecklists": "See all",
+    "loadMore": "Load more",
+    "loadingChecklist": "Loading…"
   },
   "checklist": {
     "title": "Checklist",
@@ -126,7 +148,22 @@
       "overdueFirst": "Overdue first",
       "todoFirst": "Incomplete first",
       "doneFirst": "Completed first",
-      "alpha": "A → Z"
+      "alpha": "A → Z",
+      "assigneeAsc": "Person A → Z",
+      "assigneeDesc": "Person Z → A"
+    },
+    "group": {
+      "none": "Flat",
+      "due": "By due date",
+      "person": "By person"
+    },
+    "groups": {
+      "overdue": "Overdue",
+      "thisWeek": "This week",
+      "later": "Later",
+      "noDate": "No date",
+      "done": "Done",
+      "unassigned": "Unassigned"
     },
     "status": {
       "overdue": "Overdue",
@@ -154,7 +191,48 @@
     "totalSpent": "Total spent",
     "remaining": "Remaining",
     "paid_status": "Paid",
-    "unpaid_status": "Unpaid"
+    "unpaid_status": "Unpaid",
+    "allocated": "Allocated",
+    "spent": "Spent",
+    "left": "Left",
+    "item": "Item",
+    "group": {
+      "category": "By category",
+      "status": "By status",
+      "none": "Flat"
+    },
+    "groups": {
+      "over": "Over budget",
+      "inProgress": "In progress",
+      "notStarted": "Not started"
+    },
+    "filters": {
+      "all": "All",
+      "over": "Over",
+      "unpaid": "Unpaid",
+      "vendor": "Has vendor"
+    },
+    "spentOf": "{spent} spent of {total}",
+    "ofTotal": "{total} total",
+    "allocatedAcross": "{amount} allocated",
+    "emptyFilter": "Nothing matches this filter.",
+    "inquirySent": "Inquiry sent",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all",
+    "groupBy": "Group",
+    "defaults": {
+      "CATERER": "Catering",
+      "PHOTOGRAPHER": "Photography",
+      "VIDEOGRAPHER": "Videography",
+      "DECORATOR": "Decor & flowers",
+      "DJ": "DJ set",
+      "LIVE_BAND": "Live performance",
+      "MAKEUP_ARTIST": "Hair & makeup",
+      "MC": "Hosting",
+      "WEDDING_PLANNER": "Planning",
+      "FASHION_STYLIST": "Attire",
+      "OTHER": "Miscellaneous"
+    }
   },
   "guests": {
     "title": "Guest List",

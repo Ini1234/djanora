@@ -6,13 +6,7 @@ describe('re-embed admin gate', () => {
     const prisma = {
       user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) },
     }
-    const svc = new InspirationService(
-      prisma as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    )
+    const svc = new InspirationService(prisma as any, {} as any, {} as any, {} as any, {} as any)
 
     await expect(svc.requireAdmin('clerk_user')).rejects.toBeInstanceOf(NotFoundException)
     await expect(svc.reEmbedAll('clerk_user')).rejects.toBeInstanceOf(NotFoundException)

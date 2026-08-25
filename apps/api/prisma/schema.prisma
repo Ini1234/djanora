@@ -254,7 +254,8 @@ model VendorProfile {
   reviews          Review[]       @relation("ReviewVendor")
   budgetBookings   EventBudgetItem[] @relation("BudgetBookings")
   contactLink      UserVendorContact? @relation("ContactToProfile")
-  checklistItems   EventChecklist[]  @relation("ChecklistVendorProfile")
+  checklistItems   EventChecklist[] @relation("ChecklistPrimaryVendor")
+  checklistVendors EventChecklistVendor[] @relation("ChecklistVendorLinks")
   inspirationItems InspirationItem[] @relation("InspirationVendor")
   favorites        VendorFavorite[]
 
@@ -524,7 +525,8 @@ model UserVendorContact {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   vendorProfile   VendorProfile?  @relation("ContactToProfile", fields: [vendorProfileId], references: [id], onDelete: SetNull)
   budgetItems     EventBudgetItem[]
-  checklistItems  EventChecklist[] @relation("ChecklistContact")
+  checklistItems  EventChecklist[] @relation("ChecklistPrimaryContact")
+  checklistVendors EventChecklistVendor[]
 
   @@index([userId])
   @@index([userId, category])
@@ -535,7 +537,7 @@ model EventBudgetItem {
   id                  String              @id @default(cuid())
   eventId             String              @map("event_id")
   category            VendorCategory
-  label               String?
+  label               String
   vendorName          String?             @map("vendor_name")
   vendorProfileId     String?             @map("vendor_profile_id")
   userVendorContactId String?             @map("user_vendor_contact_id")
@@ -594,9 +596,10 @@ model EventChecklist {
   updatedAt           DateTime           @updatedAt @map("updated_at")
 
   event               Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  vendorProfile       VendorProfile?     @relation("ChecklistVendorProfile", fields: [vendorProfileId], references: [id], onDelete: SetNull)
-  userVendorContact   UserVendorContact? @relation("ChecklistContact", fields: [userVendorContactId], references: [id], onDelete: SetNull)
   assignee            User?              @relation("ChecklistAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  vendorProfile       VendorProfile?     @relation("ChecklistPrimaryVendor", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  userVendorContact   UserVendorContact? @relation("ChecklistPrimaryContact", fields: [userVendorContactId], references: [id], onDelete: SetNull)
+  vendors             EventChecklistVendor[]
   inspirations        MoodBoardItem[]
   scheduleLinks       EventScheduleChecklistLink[]
   homeItem            UserChecklist?
@@ -604,10 +607,29 @@ model EventChecklist {
 
   @@index([eventId])
   @@index([dueDate, isCompleted])
+  @@index([assigneeUserId, isCompleted])
   @@index([vendorProfileId])
   @@index([userVendorContactId])
-  @@index([assigneeUserId, isCompleted])
   @@map("event_checklist")
+}
+
+model EventChecklistVendor {
+  id                  String             @id @default(cuid())
+  checklistId         String             @map("checklist_id")
+  vendorProfileId     String?            @map("vendor_profile_id")
+  userVendorContactId String?            @map("user_vendor_contact_id")
+  name                String?            @db.VarChar(120)
+  sortOrder           Int                @default(0) @map("sort_order")
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  checklist           EventChecklist     @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  vendorProfile       VendorProfile?     @relation("ChecklistVendorLinks", fields: [vendorProfileId], references: [id], onDelete: SetNull)
+  userVendorContact   UserVendorContact? @relation(fields: [userVendorContactId], references: [id], onDelete: SetNull)
+
+  @@index([checklistId, sortOrder])
+  @@index([vendorProfileId])
+  @@index([userVendorContactId])
+  @@map("event_checklist_vendors")
 }
 
 model EventChecklistConcealment {
@@ -867,6 +889,7 @@ model InspirationItem {
   title          String
   description    String                 @db.Text
   category       InspirationCategory
+  categories     InspirationCategory[]  @default([])
   tags           String[]               @default([])
   imageUrl       String?                @map("image_url")
   location       String?

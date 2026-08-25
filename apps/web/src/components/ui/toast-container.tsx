@@ -45,7 +45,7 @@ function ToastCard({
   return (
     <div
       role="alert"
-      className="relative flex items-start gap-3 w-72 rounded-xl px-4 py-3 shadow-lg overflow-hidden cursor-pointer select-none"
+      className="relative flex w-72 cursor-pointer items-start gap-3 overflow-hidden rounded-xl px-4 py-3 shadow-lg select-none"
       style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--color-border)',
@@ -58,26 +58,35 @@ function ToastCard({
     >
       {/* Icon */}
       <div
-        className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-full shrink-0"
+        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
         style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 15%, transparent)' }}
       >
         <MessageSquare size={15} style={{ color: 'var(--color-brand-primary)' }} />
       </div>
 
       {/* Text */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: 'var(--color-text-primary)' }}>
+      <div className="min-w-0 flex-1">
+        <p
+          className="truncate text-[13px] leading-tight font-semibold"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
           {toast.title}
         </p>
-        <p className="text-[12px] mt-0.5 line-clamp-2 leading-snug" style={{ color: 'var(--color-text-secondary)' }}>
+        <p
+          className="mt-0.5 line-clamp-2 text-[12px] leading-snug"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
           {toast.body}
         </p>
       </div>
 
       {/* Dismiss */}
       <button
-        onClick={(e) => { e.stopPropagation(); onDismiss() }}
-        className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation()
+          onDismiss()
+        }}
+        className="shrink-0 opacity-50 transition-opacity hover:opacity-100"
         style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Dismiss notification"
       >
@@ -102,7 +111,7 @@ export function ToastContainer({ vendorMode = false }: { vendorMode?: boolean })
 
   return (
     <div
-      className="fixed bottom-5 right-5 z-[9999] flex flex-col-reverse gap-2 max-h-[calc(100vh-5rem)] overflow-hidden"
+      className="fixed right-5 bottom-5 z-[9999] flex max-h-[calc(100vh-5rem)] flex-col-reverse gap-2 overflow-hidden"
       aria-live="polite"
       aria-label="Notifications"
     >

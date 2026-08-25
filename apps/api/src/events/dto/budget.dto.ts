@@ -1,13 +1,26 @@
-import { IsString, IsOptional, IsInt, Min, IsEnum } from 'class-validator'
+import { Type } from 'class-transformer'
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  MinLength,
+  MaxLength,
+  IsEnum,
+  IsArray,
+  ArrayMaxSize,
+  ValidateNested,
+} from 'class-validator'
 import { VendorCategory } from '@prisma/client'
 
 export class CreateBudgetItemDto {
   @IsEnum(VendorCategory)
   category: VendorCategory
 
-  @IsOptional()
   @IsString()
-  label?: string
+  @MinLength(1)
+  @MaxLength(120)
+  label: string
 
   @IsOptional()
   @IsString()
@@ -27,11 +40,13 @@ export class CreateBudgetItemDto {
   @IsString()
   notes?: string
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   allocatedAmount: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   spentAmount?: number
@@ -40,6 +55,8 @@ export class CreateBudgetItemDto {
 export class UpdateBudgetItemDto {
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(120)
   label?: string
 
   @IsOptional()
@@ -67,4 +84,12 @@ export class UpdateBudgetItemDto {
   @IsInt()
   @Min(0)
   spentAmount?: number
+}
+
+export class ImportBudgetDto {
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => CreateBudgetItemDto)
+  items: CreateBudgetItemDto[]
 }

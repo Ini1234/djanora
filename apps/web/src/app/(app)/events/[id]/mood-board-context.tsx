@@ -26,6 +26,7 @@ export interface MoodBoardInspirationItem {
   title: string
   description: string
   category: string
+  categories?: string[]
   tags: string[]
   imageUrl: string | null
   location: string | null
@@ -53,23 +54,19 @@ interface MoodBoardContextValue {
   entriesByBudgetId: Map<string, MoodBoardEntry[]>
   entriesByScheduleId: Map<string, MoodBoardEntry[]>
   reload: () => Promise<void>
+  ensureLoaded: () => void
   removeEntry: (inspirationItemId: string) => Promise<void>
 }
 
 const MoodBoardContext = createContext<MoodBoardContextValue | null>(null)
 
-export function MoodBoardProvider({
-  eventId,
-  children,
-}: {
-  eventId: string
-  children: ReactNode
-}) {
+export function MoodBoardProvider({ eventId, children }: { eventId: string; children: ReactNode }) {
   const [entries, setEntries] = useState<MoodBoardEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const loadedRef = useRef(false)
 
   const reload = useCallback(async () => {
+    setLoading(true)
     try {
       const { data } = await proxyClient.get<MoodBoardEntry[]>(`/inspiration/mood-board/${eventId}`)
       setEntries(Array.isArray(data) ? data : [])
@@ -80,18 +77,21 @@ export function MoodBoardProvider({
     }
   }, [eventId])
 
-  useEffect(() => {
+  const ensureLoaded = useCallback(() => {
     if (loadedRef.current) return
     loadedRef.current = true
-    reload()
+    void reload()
   }, [reload])
 
-  const removeEntry = useCallback(async (inspirationItemId: string) => {
-    await proxyClient.delete(`/inspiration/${inspirationItemId}/save`, {
-      params: { eventId },
-    })
-    setEntries((prev) => prev.filter((entry) => entry.inspirationItem.id !== inspirationItemId))
-  }, [eventId])
+  const removeEntry = useCallback(
+    async (inspirationItemId: string) => {
+      await proxyClient.delete(`/inspiration/${inspirationItemId}/save`, {
+        params: { eventId },
+      })
+      setEntries((prev) => prev.filter((entry) => entry.inspirationItem.id !== inspirationItemId))
+    },
+    [eventId],
+  )
 
   const { entriesByChecklistId, entriesByBudgetId, entriesByScheduleId } = useMemo(() => {
     const byChecklist = new Map<string, MoodBoardEntry[]>()
@@ -116,18 +116,35 @@ export function MoodBoardProvider({
       }
     }
 
-    return { entriesByChecklistId: byChecklist, entriesByBudgetId: byBudget, entriesByScheduleId: bySchedule }
+    return {
+      entriesByChecklistId: byChecklist,
+      entriesByBudgetId: byBudget,
+      entriesByScheduleId: bySchedule,
+    }
   }, [entries])
 
-  const value = useMemo(() => ({
-    entries,
-    loading,
-    entriesByChecklistId,
-    entriesByBudgetId,
-    entriesByScheduleId,
-    reload,
-    removeEntry,
-  }), [entries, loading, entriesByChecklistId, entriesByBudgetId, entriesByScheduleId, reload, removeEntry])
+  const value = useMemo(
+    () => ({
+      entries,
+      loading,
+      entriesByChecklistId,
+      entriesByBudgetId,
+      entriesByScheduleId,
+      reload,
+      ensureLoaded,
+      removeEntry,
+    }),
+    [
+      entries,
+      loading,
+      entriesByChecklistId,
+      entriesByBudgetId,
+      entriesByScheduleId,
+      reload,
+      ensureLoaded,
+      removeEntry,
+    ],
+  )
 
   return <MoodBoardContext.Provider value={value}>{children}</MoodBoardContext.Provider>
 }
@@ -135,5 +152,8 @@ export function MoodBoardProvider({
 export function useMoodBoardLinks() {
   const ctx = useContext(MoodBoardContext)
   if (!ctx) throw new Error('useMoodBoardLinks must be used within MoodBoardProvider')
+  useEffect(() => {
+    ctx.ensureLoaded()
+  }, [ctx])
   return ctx
 }

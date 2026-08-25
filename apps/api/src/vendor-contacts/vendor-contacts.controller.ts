@@ -1,10 +1,18 @@
 import {
-  Controller, Get, Post, Patch, Delete,
-  Body, Param, Query, Request, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common'
 import { VendorContactsService } from './vendor-contacts.service'
 import { CreateVendorContactDto, UpdateVendorContactDto } from './dto/vendor-contact.dto'
-import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
+import { ClerkAuthGuard, type AuthedRequest } from '../common/guards/clerk-auth.guard'
 
 @Controller('vendor-contacts')
 @UseGuards(ClerkAuthGuard)
@@ -12,18 +20,18 @@ export class VendorContactsController {
   constructor(private readonly service: VendorContactsService) {}
 
   @Get()
-  findAll(@Request() req: any, @Query('category') category?: string) {
+  findAll(@Request() req: AuthedRequest, @Query('category') category?: string) {
     return this.service.findAll(req.userId, category)
   }
 
   @Post()
-  create(@Request() req: any, @Body() dto: CreateVendorContactDto) {
+  create(@Request() req: AuthedRequest, @Body() dto: CreateVendorContactDto) {
     return this.service.create(req.userId, dto)
   }
 
   @Patch(':id')
   update(
-    @Request() req: any,
+    @Request() req: AuthedRequest,
     @Param('id') id: string,
     @Body() dto: UpdateVendorContactDto,
   ) {
@@ -31,7 +39,7 @@ export class VendorContactsController {
   }
 
   @Delete(':id')
-  remove(@Request() req: any, @Param('id') id: string) {
+  remove(@Request() req: AuthedRequest, @Param('id') id: string) {
     return this.service.remove(req.userId, id)
   }
 }

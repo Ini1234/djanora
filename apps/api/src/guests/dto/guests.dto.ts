@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import {
   IsString,
   IsOptional,
@@ -5,11 +6,11 @@ import {
   IsBoolean,
   IsEnum,
   IsArray,
-  ValidateNested,
   IsNotEmpty,
   MinLength,
+  ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator'
-import { Type } from 'class-transformer'
 
 export class CreateGuestDto {
   @IsString()
@@ -40,6 +41,14 @@ export class CreateGuestDto {
   @IsOptional()
   @IsString()
   tableNumber?: string
+}
+
+export class ImportGuestsDto {
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => CreateGuestDto)
+  guests: CreateGuestDto[]
 }
 
 export class UpdateGuestDto {

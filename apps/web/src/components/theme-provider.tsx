@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useServerInsertedHTML } from 'next/navigation'
 
 export type Theme = 'light' | 'dark' | 'system'
@@ -47,14 +40,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('dark')
 
-  useServerInsertedHTML(() => (
-    <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />
-  ))
+  useServerInsertedHTML(() => <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />)
 
   useEffect(() => {
     const stored = (window.localStorage.getItem(STORAGE_KEY) as Theme | null) ?? DEFAULT_THEME
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate theme from localStorage */
     setThemeState(stored)
     setResolvedTheme(apply(stored))
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
   useEffect(() => {

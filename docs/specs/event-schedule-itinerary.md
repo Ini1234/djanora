@@ -1,13 +1,13 @@
 # Event schedule: parent itinerary and child day timeline
 
-| Field | Value |
-|---|---|
-| Author | Product + engineering (locked grill, 2026-08-15) |
-| Date | 2026-08-15 |
-| Status | **Implemented** |
-| Reviewers | Host-product owner |
-| Apps | `apps/api` (Nest + Prisma), `apps/web` (Next.js App Router) |
-| HTTP | Browser calls `proxyClient` → `/api/proxy/*` → Nest. No `fetch()` in `apps/web`. No new dedicated proxy route files. |
+| Field     | Value                                                                                                                |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| Author    | Product + engineering (locked grill, 2026-08-15)                                                                     |
+| Date      | 2026-08-15                                                                                                           |
+| Status    | **Implemented**                                                                                                      |
+| Reviewers | Host-product owner                                                                                                   |
+| Apps      | `apps/api` (Nest + Prisma), `apps/web` (Next.js App Router)                                                          |
+| HTTP      | Browser calls `proxyClient` → `/api/proxy/*` → Nest. No `fetch()` in `apps/web`. No new dedicated proxy route files. |
 
 ---
 
@@ -136,14 +136,14 @@ Existing routes. Body gains optional `date`.
 type ScheduleItemWrite = {
   title: string
   notes?: string | null
-  date?: string | null        // YYYY-MM-DD; REQUIRED on create when :id is top-level
-  startTime?: string | null   // HH:MM
+  date?: string | null // YYYY-MM-DD; REQUIRED on create when :id is top-level
+  startTime?: string | null // HH:MM
   endTime?: string | null
   location?: string
   budgetItemIds?: string[]
   checklistItemIds?: string[]
   inspirationItemIds?: string[]
-  sortOrder?: number          // PATCH only
+  sortOrder?: number // PATCH only
 }
 
 // GET /events/:id/schedule and Event.schedule on GET /events/:id
@@ -151,25 +151,31 @@ type EventScheduleItem = {
   id: string
   title: string
   notes: string | null
-  date: string | null         // always null on sub-event items
+  date: string | null // always null on sub-event items
   startTime: string | null
   endTime: string | null
   location: string | null
   sortOrder: number
-  budgetItems: { id: string; label: string | null; vendorName: string | null; category: string; allocatedAmount: number }[]
+  budgetItems: {
+    id: string
+    label: string | null
+    vendorName: string | null
+    category: string
+    allocatedAmount: number
+  }[]
   checklistItems: { id: string; title: string; isCompleted: boolean }[]
 }
 
 type ApiError = { statusCode: 400 | 403 | 404; message: string }
 ```
 
-| Call | Top-level `:id` | Sub-event `:id` |
-|---|---|---|
-| POST without `date` | `400` | `201` (date ignored / rejected if sent) |
-| POST with `date` | `201` | `400` |
-| PATCH `date: null` | `400` | `400` if date sent |
-| DELETE authored item | `200` as today | `200` as today |
-| DELETE child beat | N/A — not an item | N/A |
+| Call                 | Top-level `:id`   | Sub-event `:id`                         |
+| -------------------- | ----------------- | --------------------------------------- |
+| POST without `date`  | `400`             | `201` (date ignored / rejected if sent) |
+| POST with `date`     | `201`             | `400`                                   |
+| PATCH `date: null`   | `400`             | `400` if date sent                      |
+| DELETE authored item | `200` as today    | `200` as today                          |
+| DELETE child beat    | N/A — not an item | N/A                                     |
 
 Itinerary composition MAY happen in `apps/web` from `event.schedule` + `event.children` already returned by `GET /events/:id`. Children on that payload MUST already be grant-filtered (`projectTree`). MUST NOT add `GET /events/:id/itinerary`.
 
@@ -179,8 +185,8 @@ Itinerary composition MAY happen in `apps/web` from `event.schedule` + `event.ch
 
 ### `EventScheduleItem` (add column)
 
-| Field | Type | Constraints |
-|---|---|---|
+| Field  | Type      | Constraints                                            |
+| ------ | --------- | ------------------------------------------------------ |
 | `date` | `String?` | `YYYY-MM-DD` or null. `@map("date")` `@db.VarChar(10)` |
 
 Existing columns unchanged: `title`, `notes`, `startTime`, `endTime`, `location`, `sortOrder`, links.
@@ -199,17 +205,17 @@ Derived from a visible child `Event`: `id`, `title`, `eventType`, `estimatedDate
 
 ## 8. Out of Scope
 
-| ID | Exclusion | Why |
-|---|---|---|
-| OS-1 | Unroll child’s timed blocks onto the parent | Locked: one beat per child |
-| OS-2 | Pin a parent authored block to a child | Locked: date + optional time only |
-| OS-3 | `Event` start/end time fields | Child beat is date-level; times live on the child schedule |
-| OS-4 | A sub-event that itself spans multiple calendar days | One `estimatedDate` per child; split into another sub-event if needed |
-| OS-5 | New itinerary endpoint or proxy route | Compose from existing event payload |
-| OS-6 | Calendar export, ICS, reminders | Not in this grill |
-| OS-7 | Reordering child beats independently of journey `sortOrder` | Journey remains source of child order |
-| OS-8 | Showing hidden children as locked placeholders | Fail closed (FR-16) |
-| OS-9 | Changing budget / sharing / My Events list | Unrelated |
+| ID   | Exclusion                                                   | Why                                                                   |
+| ---- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| OS-1 | Unroll child’s timed blocks onto the parent                 | Locked: one beat per child                                            |
+| OS-2 | Pin a parent authored block to a child                      | Locked: date + optional time only                                     |
+| OS-3 | `Event` start/end time fields                               | Child beat is date-level; times live on the child schedule            |
+| OS-4 | A sub-event that itself spans multiple calendar days        | One `estimatedDate` per child; split into another sub-event if needed |
+| OS-5 | New itinerary endpoint or proxy route                       | Compose from existing event payload                                   |
+| OS-6 | Calendar export, ICS, reminders                             | Not in this grill                                                     |
+| OS-7 | Reordering child beats independently of journey `sortOrder` | Journey remains source of child order                                 |
+| OS-8 | Showing hidden children as locked placeholders              | Fail closed (FR-16)                                                   |
+| OS-9 | Changing budget / sharing / My Events list                  | Unrelated                                                             |
 
 ---
 

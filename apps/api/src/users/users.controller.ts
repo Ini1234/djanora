@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards } from '@nestjs/common'
+import { Controller, Get, Patch, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { UsersService } from './users.service'
@@ -11,6 +11,11 @@ interface ClerkPayload {
   sub: string
 }
 
+function parseLimit(limit: string | undefined, fallback: number) {
+  const parsed = parseInt(limit ?? String(fallback), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 50) : fallback
+}
+
 @Controller('users')
 @UseGuards(ClerkAuthGuard)
 export class UsersController {
@@ -18,7 +23,7 @@ export class UsersController {
 
   @Get('me')
   getMe(@CurrentUser() user: ClerkPayload) {
-    return this.usersService.findByClerkId(user.sub)
+    return this.usersService.ensureFromClerk(user.sub)
   }
 
   @Patch('me')
@@ -32,23 +37,36 @@ export class UsersController {
   }
 
   @Patch('me/onboarding')
-  completeOnboarding(
-    @CurrentUser() user: ClerkPayload,
-    @Body() dto: CompleteOnboardingDto,
-  ) {
+  completeOnboarding(@CurrentUser() user: ClerkPayload, @Body() dto: CompleteOnboardingDto) {
     return this.usersService.completeOnboarding(user.sub, dto)
   }
 
+  @Get('me/checklists/due')
+  listDueChecklists(
+    @CurrentUser() user: ClerkPayload,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.usersService.listDueChecklists(user.sub, {
+      limit: parseLimit(limit, 8),
+      cursor: cursor?.trim() || undefined,
+    })
+  }
+
   @Get('me/checklists')
-  listChecklists(@CurrentUser() user: ClerkPayload) {
-    return this.usersService.listChecklists(user.sub)
+  listChecklists(
+    @CurrentUser() user: ClerkPayload,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.usersService.listChecklists(user.sub, {
+      limit: parseLimit(limit, 20),
+      cursor: cursor?.trim() || undefined,
+    })
   }
 
   @Post('me/checklists')
-  createChecklist(
-    @CurrentUser() user: ClerkPayload,
-    @Body() dto: CreateUserChecklistDto,
-  ) {
+  createChecklist(@CurrentUser() user: ClerkPayload, @Body() dto: CreateUserChecklistDto) {
     return this.usersService.createChecklist(user.sub, dto)
   }
 
@@ -62,10 +80,7 @@ export class UsersController {
   }
 
   @Delete('me/checklists/:id')
-  deleteChecklist(
-    @CurrentUser() user: ClerkPayload,
-    @Param('id') id: string,
-  ) {
+  deleteChecklist(@CurrentUser() user: ClerkPayload, @Param('id') id: string) {
     return this.usersService.deleteChecklist(user.sub, id)
   }
 }

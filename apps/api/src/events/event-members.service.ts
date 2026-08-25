@@ -93,15 +93,18 @@ export class EventMembersService {
         isHost: false,
         user: m.user,
         inviteUrl:
-          access.isHost && !m.acceptedAt
-            ? `${this.webUrl}/events/join/${m.token}`
-            : undefined,
+          access.isHost && !m.acceptedAt ? `${this.webUrl}/events/join/${m.token}` : undefined,
       })),
     }
   }
 
   /** People the viewer can @mention on this event, optionally limited to a surface. */
-  async listMentionable(clerkId: string, eventId: string, surface?: EventSurface) {
+  async listMentionable(
+    clerkId: string,
+    eventId: string,
+    surface?: EventSurface,
+    includeSelf = false,
+  ) {
     const access = await this.access.require(clerkId, eventId)
     const host = await this.prisma.user.findUnique({
       where: { id: access.event.userId },
@@ -126,22 +129,24 @@ export class EventMembersService {
       firstName: string | null
       lastName: string | null
       email: string
-      role: 'HOST' | string
+      role: string
     }> = []
 
-    if (host && host.id !== access.user.id) {
+    const skipSelf = (userId: string) => !includeSelf && userId === access.user.id
+
+    if (host && !skipSelf(host.id)) {
       people.push({ ...host, role: 'HOST' })
     }
 
     for (const member of members) {
-      if (!member.user || member.user.id === access.user.id) continue
+      if (!member.user || skipSelf(member.user.id)) continue
       if (surface && !member.surfaces.includes(surface)) continue
       people.push({ ...member.user, role: member.role })
     }
 
     for (const grant of parentGrants) {
       const person = grant.member.user
-      if (!person || person.id === access.user.id) continue
+      if (!person || skipSelf(person.id)) continue
       if (surface && !grant.surfaces.includes(surface)) continue
       people.push({ ...person, role: grant.member.role })
     }
@@ -230,6 +235,7 @@ export class EventMembersService {
 
     await this.delivery.sendEmail({
       to: email,
+      kind: 'invitation',
       subject: `${hostName} invited you to plan ${member.event.title}`,
       html: this.buildPlannerInviteEmail({
         hostName,

@@ -72,11 +72,6 @@ export async function mintFromSessionJwt(jwt: string): Promise<string | null> {
   return mintForSession(sid)
 }
 
-export function jwtExpiryDate(jwt: string): Date {
-  const expMs = (decodePayload(jwt)?.exp ?? 0) * 1000
-  return new Date(expMs > Date.now() ? expMs : Date.now() + 60_000)
-}
-
 export async function getClerkSessionId(): Promise<string | null> {
   const { sessionId } = await auth()
   if (sessionId) return sessionId

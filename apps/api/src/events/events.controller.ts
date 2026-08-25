@@ -23,7 +23,7 @@ import { EventCommentsService } from './event-comments.service'
 import { EventActivityService } from './event-activity.service'
 import { CreateEventDto } from './dto/create-event.dto'
 import { CreateChecklistItemDto, UpdateChecklistItemDto } from './dto/checklist.dto'
-import { CreateBudgetItemDto, UpdateBudgetItemDto } from './dto/budget.dto'
+import { CreateBudgetItemDto, UpdateBudgetItemDto, ImportBudgetDto } from './dto/budget.dto'
 import { UpdateEventDto } from './dto/update-event.dto'
 import { CreateScheduleItemDto, UpdateScheduleItemDto } from './dto/schedule.dto'
 import { InviteMemberDto, UpdateMemberDto } from './dto/members.dto'
@@ -162,6 +162,15 @@ export class EventsController {
     return this.eventsService.addBudgetItem(user.sub, eventId, dto)
   }
 
+  @Post(':id/budget/import')
+  importBudget(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: ImportBudgetDto,
+  ) {
+    return this.eventsService.importBudgetItems(user.sub, eventId, dto)
+  }
+
   @Patch(':id/budget/:itemId')
   updateBudgetItem(
     @CurrentUser() user: ClerkPayload,
@@ -205,8 +214,13 @@ export class EventsController {
     const storedName = makeUploadName(file.originalname)
     await this.storage.upload('receipts', storedName, file.buffer, file.mimetype)
     return this.eventsService.addReceipt(
-      user.sub, eventId, itemId,
-      file.originalname, `private/${storedName}`, file.mimetype, file.size,
+      user.sub,
+      eventId,
+      itemId,
+      file.originalname,
+      `private/${storedName}`,
+      file.mimetype,
+      file.size,
     )
   }
 
@@ -240,8 +254,14 @@ export class EventsController {
     @CurrentUser() user: ClerkPayload,
     @Param('id') eventId: string,
     @Query('surface') surface?: EventSurface,
+    @Query('includeSelf') includeSelf?: string,
   ) {
-    return this.membersService.listMentionable(user.sub, eventId, surface)
+    return this.membersService.listMentionable(
+      user.sub,
+      eventId,
+      surface,
+      includeSelf === 'true' || includeSelf === '1',
+    )
   }
 
   @Get(':id/members')
@@ -319,8 +339,18 @@ export class EventsController {
   }
 
   @Get(':id/activity')
-  listActivity(@CurrentUser() user: ClerkPayload, @Param('id') eventId: string) {
-    return this.activityService.list(user.sub, eventId)
+  listActivity(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    const parsed = parseInt(limit ?? '20', 10)
+    const take = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 50) : 20
+    return this.activityService.list(user.sub, eventId, {
+      limit: take,
+      cursor: cursor?.trim() || undefined,
+    })
   }
 
   @Get(':id/unread')
@@ -347,7 +377,8 @@ export class EventsController {
     @Query('subjectType') subjectType: EventCommentSubject,
     @Query('subjectId') subjectId: string,
   ) {
-    if (!subjectType || !subjectId) throw new BadRequestException('subjectType and subjectId are required')
+    if (!subjectType || !subjectId)
+      throw new BadRequestException('subjectType and subjectId are required')
     return this.commentsService.list(user.sub, eventId, subjectType, subjectId)
   }
 

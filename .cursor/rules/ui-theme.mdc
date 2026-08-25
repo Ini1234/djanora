@@ -1,0 +1,70 @@
+---
+description: Light/dark UI in apps/web uses semantic tokens and standard element classes. Never style chrome with text-white, bg-white/N, or hardcoded hex.
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# UI theme — tokens, not remaps
+
+Light and dark are defined **once** in `apps/web/src/app/globals.css` (`:root` vs `.dark`). Screens must consume those tokens. Do not add `text-white` + CSS remaps, `bg-[#0f0f0f]`, or `[color-scheme:dark]`.
+
+## Tokens
+
+Use these (they already switch with the theme):
+
+| Token | Light | Dark |
+|---|---|---|
+| `--background` / `--page-bg` | zinc-50 / zinc-100 | zinc-950 / zinc-900 |
+| `--foreground` | zinc-900 | zinc-50 |
+| `--muted` | zinc-600 | zinc-400 |
+| `--card` / `--card-bg` | white (solid) | zinc-900 / white 4% |
+| `--border` | zinc-200 | zinc-800 |
+| `--input` / `--input-bg` | white (solid) | zinc-900 / white 6% |
+| `--primary` / `--primary-foreground` | black / white | white / black |
+| `--hover` | black 5% | white 6% |
+| `--overlay` | black 40% | black 60% |
+
+Tailwind aliases: `text-foreground`, `text-muted`, `bg-card`, `bg-background`, `border-border`, `bg-input`.
+
+## Standard elements
+
+| UI | Classes |
+|---|---|
+| Selected / active fill | `fill-primary` or `bg-primary text-primary-foreground` |
+| Primary action | `btn btn-primary btn-sm` (or `btn-md` / `btn-lg`) |
+| Secondary / cancel | `btn btn-secondary btn-sm` |
+| Ghost | `btn btn-ghost btn-sm` |
+| Icon-only | `icon-btn` |
+| Text/select/textarea | `input` |
+| Field caption | `label` |
+| Card / section | `card` |
+| Modal / drawer panel | `sheet` |
+| Dropdown | `popover` |
+| Backdrop | `overlay` |
+| Chip / pill | `chip` |
+| List row | `list-row` |
+| Menu row | `menu-item` |
+| Progress | `progress` + `progress-bar` |
+| Secondary copy | `muted` |
+
+## Do not
+
+```tsx
+// BAD — dark-first utilities (light mode then fights them with remaps)
+<div className="bg-[#0f0f0f] text-white border-white/10">
+<input className="bg-white/6 text-white [color-scheme:dark]" />
+```
+
+```tsx
+// GOOD — tokens switch for you
+<div className="sheet">
+  <h3 className="text-foreground">Add budget item</h3>
+  <label className="label">Category</label>
+  <select className="input">…</select>
+  <button className="btn btn-primary btn-sm">Save</button>
+</div>
+```
+
+Hardcoded red/amber for overdue/warning is fine. Brand `gold-*` is zinc now — do not use it for “accent gold.”
+
+Selected/active must pair fill with ink. `--primary` is black in light and white in dark. Never `color: '#fff'` on `var(--color-brand-primary)` — that is white-on-white in dark mode. Use `var(--color-primary-foreground)`.

@@ -9,11 +9,7 @@ import { CreateInspirationDto } from '../inspiration/dto/create-inspiration.dto'
 import { InspirationService } from '../inspiration/inspiration.service'
 import { CompleteOnboardingDto } from '../users/dto/complete-onboarding.dto'
 import { UsersService } from '../users/users.service'
-import {
-  allowsAction,
-  EventAccessService,
-  type EventAccess,
-} from './event-access.service'
+import { allowsAction, EventAccessService, type EventAccess } from './event-access.service'
 import { EventMembersService } from './event-members.service'
 import { receiptProxyUrl, rewriteReceiptUrls } from './events.service'
 
@@ -57,16 +53,19 @@ describe('hardening: concealment row ACL (FR-1–FR-7)', () => {
   it('assertCanSeeChecklistItem 404s on a concealed or unknown row', async () => {
     const prisma = {
       eventChecklist: {
-        findFirst: jest.fn()
+        findFirst: jest
+          .fn()
           .mockResolvedValueOnce({ concealments: [{ eventMemberId: 'm1' }] })
           .mockResolvedValueOnce(null),
       },
     }
     const svc = new EventAccessService(prisma as any)
-    await expect(svc.assertCanSeeChecklistItem(memberAccess, 'hidden-row'))
-      .rejects.toBeInstanceOf(NotFoundException)
-    await expect(svc.assertCanSeeChecklistItem(memberAccess, 'missing'))
-      .rejects.toMatchObject({ message: 'Event not found' })
+    await expect(svc.assertCanSeeChecklistItem(memberAccess, 'hidden-row')).rejects.toBeInstanceOf(
+      NotFoundException,
+    )
+    await expect(svc.assertCanSeeChecklistItem(memberAccess, 'missing')).rejects.toMatchObject({
+      message: 'Event not found',
+    })
   })
 
   it('filterVisibleChecklistIds omits concealed ids and keeps visible ones', async () => {
@@ -97,8 +96,9 @@ describe('hardening: host-only hide list (FR-8, FR-9)', () => {
       eventMember: { findMany: jest.fn().mockResolvedValue([]) },
     }
     const svc = new EventAccessService(prisma as any)
-    await expect(svc.assertConcealmentTargets('evt1', ['stranger']))
-      .rejects.toBeInstanceOf(BadRequestException)
+    await expect(svc.assertConcealmentTargets('evt1', ['stranger'])).rejects.toBeInstanceOf(
+      BadRequestException,
+    )
   })
 
   it('accepts a direct member of this event', async () => {
@@ -157,22 +157,24 @@ describe('hardening: home checklist requires Checklist edit (FR-10, FR-11)', () 
           eventChecklistId: 'ec1',
         }),
       },
-      $transaction: jest.fn(async (fn: (tx: any) => Promise<unknown>) => fn({
-        eventChecklist: { update: eventUpdate },
-        userChecklist: {
-          update: jest.fn().mockResolvedValue({
-            id: 'p1',
-            title: 'Book DJ',
-            isCompleted: true,
-            dueDate: null,
-            eventId: 'evt1',
-            eventChecklistId: 'ec1',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            event: { id: 'evt1', title: 'Wedding' },
-          }),
-        },
-      })),
+      $transaction: jest.fn(async (fn: (tx: any) => Promise<unknown>) =>
+        fn({
+          eventChecklist: { update: eventUpdate },
+          userChecklist: {
+            update: jest.fn().mockResolvedValue({
+              id: 'p1',
+              title: 'Book DJ',
+              isCompleted: true,
+              dueDate: null,
+              eventId: 'evt1',
+              eventChecklistId: 'ec1',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              event: { id: 'evt1', title: 'Wedding' },
+            }),
+          },
+        }),
+      ),
     }
     const svc = new UsersService(prisma as any, {} as any, access as any)
     await svc.updateChecklist('clerk_1', 'p1', { isCompleted: true })
@@ -218,11 +220,24 @@ describe('hardening: public RSVP and invites (FR-12, FR-14)', () => {
           role: EventMemberRole.EDITOR,
           surfaces: [EventSurface.BUDGET, EventSurface.CHECKLIST],
           invitedBy: { firstName: 'Host', lastName: 'Person' },
-          event: { title: 'Ada & Tunde', eventType: 'WEDDING', estimatedDate: null, deletedAt: null },
+          event: {
+            title: 'Ada & Tunde',
+            eventType: 'WEDDING',
+            estimatedDate: null,
+            deletedAt: null,
+          },
         }),
       },
     }
-    const svc = new EventMembersService(prisma as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any)
+    const svc = new EventMembersService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    )
     const preview = await svc.previewByToken('tok')
     expect(preview).toEqual({ accepted: true, event: { title: 'Ada & Tunde' } })
     expect(preview).not.toHaveProperty('surfaces')
@@ -232,7 +247,10 @@ describe('hardening: public RSVP and invites (FR-12, FR-14)', () => {
 })
 
 describe('hardening: members childGrants (FR-22)', () => {
-  function membersService(access: { isHost: boolean }, grants: { eventId: string; surfaces: EventSurface[] }[]) {
+  function membersService(
+    access: { isHost: boolean },
+    grants: { eventId: string; surfaces: EventSurface[] }[],
+  ) {
     const prisma = {
       user: {
         findUnique: jest.fn().mockResolvedValue({
@@ -244,17 +262,19 @@ describe('hardening: members childGrants (FR-22)', () => {
         }),
       },
       eventMember: {
-        findMany: jest.fn().mockResolvedValue([{
-          id: 'm1',
-          email: 'm@x.com',
-          role: EventMemberRole.EDITOR,
-          surfaces: [EventSurface.CHECKLIST],
-          subGrants: grants,
-          acceptedAt: new Date(),
-          createdAt: new Date(),
-          token: 'tok',
-          user: { id: 'u2', firstName: 'M', lastName: 'Em', email: 'm@x.com', avatarUrl: null },
-        }]),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'm1',
+            email: 'm@x.com',
+            role: EventMemberRole.EDITOR,
+            surfaces: [EventSurface.CHECKLIST],
+            subGrants: grants,
+            acceptedAt: new Date(),
+            createdAt: new Date(),
+            token: 'tok',
+            user: { id: 'u2', firstName: 'M', lastName: 'Em', email: 'm@x.com', avatarUrl: null },
+          },
+        ]),
       },
     }
     const accessSvc = {
@@ -324,9 +344,11 @@ describe('hardening: admin, onboarding, inspiration (FR-15–FR-17)', () => {
       category: InspirationCategory.DECOR,
       isAdminCurated: true,
     } as any)
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ isAdminCurated: false }),
-    }))
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isAdminCurated: false }),
+      }),
+    )
   })
 })
 
@@ -343,13 +365,15 @@ describe('hardening: embed prefixes (FR-18)', () => {
 
 describe('hardening: receipts stay off public /uploads (FR-19)', () => {
   it('rewrites every receipt url through the authenticated proxy', () => {
-    const rewritten = rewriteReceiptUrls('evt1', [{
-      id: 'item1',
-      receipts: [
-        { id: 'r1', url: 'http://localhost:3001/uploads/receipt-old.jpg' },
-        { id: 'r2', url: 'private/abc.pdf' },
-      ],
-    }])
+    const rewritten = rewriteReceiptUrls('evt1', [
+      {
+        id: 'item1',
+        receipts: [
+          { id: 'r1', url: 'http://localhost:3001/uploads/receipt-old.jpg' },
+          { id: 'r2', url: 'private/abc.pdf' },
+        ],
+      },
+    ])
     expect(rewritten[0].receipts?.map((row) => row.url)).toEqual([
       receiptProxyUrl('evt1', 'item1', 'r1'),
       receiptProxyUrl('evt1', 'item1', 'r2'),

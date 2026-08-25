@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { VendorCategory } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateVendorContactDto, UpdateVendorContactDto } from './dto/vendor-contact.dto'
+
+function parseVendorCategory(value?: string): VendorCategory | undefined {
+  if (!value) return undefined
+  return (Object.values(VendorCategory) as string[]).includes(value)
+    ? (value as VendorCategory)
+    : undefined
+}
 
 @Injectable()
 export class VendorContactsService {
@@ -14,10 +22,11 @@ export class VendorContactsService {
 
   async findAll(clerkId: string, category?: string) {
     const user = await this.resolveUser(clerkId)
+    const parsedCategory = parseVendorCategory(category)
     return this.prisma.userVendorContact.findMany({
       where: {
         userId: user.id,
-        ...(category ? { category: category as any } : {}),
+        ...(parsedCategory ? { category: parsedCategory } : {}),
       },
       include: {
         vendorProfile: {

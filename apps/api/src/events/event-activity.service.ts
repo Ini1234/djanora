@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { EventActivityAction, EventSurface } from '@prisma/client'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { EventActivityAction, EventSurface, Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService, type SsePayload } from '../sse/sse.service'
 import { EventAccessService, ALL_SURFACES } from './event-access.service'
@@ -78,51 +78,70 @@ export class EventActivityService {
   }
 
   async touchEvent(eventId: string) {
-    await this.prisma.event.update({
-      where: { id: eventId },
-      data: { updatedAt: new Date() },
-    }).catch(() => {})
+    await this.prisma.event
+      .update({
+        where: { id: eventId },
+        data: { updatedAt: new Date() },
+      })
+      .catch(() => {})
   }
 
   async recordOpen(userId: string, eventId: string) {
     const now = new Date()
-    await this.prisma.eventSurfaceRead.upsert({
-      where: {
-        eventId_userId_surface: { eventId, userId, surface: OPENED_SURFACE },
-      },
-      create: { eventId, userId, surface: OPENED_SURFACE, seenAt: now },
-      update: { seenAt: now },
-    }).catch(() => {})
+    await this.prisma.eventSurfaceRead
+      .upsert({
+        where: {
+          eventId_userId_surface: { eventId, userId, surface: OPENED_SURFACE },
+        },
+        create: { eventId, userId, surface: OPENED_SURFACE, seenAt: now },
+        update: { seenAt: now },
+      })
+      .catch(() => {})
   }
 
-  async list(clerkId: string, eventId: string, take = 40) {
+  async list(clerkId: string, eventId: string, opts: { limit?: number; cursor?: string } = {}) {
     const access = await this.access.require(clerkId, eventId)
     const visible = access.isHost ? ALL_SURFACES : access.surfaces
+    const limit = Number.isFinite(opts.limit)
+      ? Math.min(Math.max(Math.trunc(opts.limit!), 1), 50)
+      : 20
+    const cursor = opts.cursor?.trim() || undefined
 
-    const rows = await this.prisma.eventActivity.findMany({
-      where: {
-        eventId,
-        OR: [
-          { surface: null },
-          { surface: { in: visible } },
-        ],
-      },
-      include: { actor: { select: ACTOR_SELECT } },
-      orderBy: { createdAt: 'desc' },
-      take,
-    })
+    const rows = await this.prisma.eventActivity
+      .findMany({
+        where: {
+          eventId,
+          OR: [{ surface: null }, { surface: { in: visible } }],
+        },
+        include: { actor: { select: ACTOR_SELECT } },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+          throw new BadRequestException('Invalid cursor')
+        }
+        throw err
+      })
+
+    const hasMore = rows.length > limit
+    const page = hasMore ? rows.slice(0, limit) : rows
 
     const visibleChecklistIds = await this.access.filterVisibleChecklistIds(
       access,
-      rows.filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId).map((row) => row.subjectId!),
+      page
+        .filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId)
+        .map((row) => row.subjectId!),
     )
 
-    return rows
-      .filter((row) => (
-        row.subjectType !== 'CHECKLIST_ITEM'
-        || !row.subjectId
-        || visibleChecklistIds.has(row.subjectId)
-      ))
+    const items = page
+      .filter(
+        (row) =>
+          row.subjectType !== 'CHECKLIST_ITEM' ||
+          !row.subjectId ||
+          visibleChecklistIds.has(row.subjectId),
+      )
       .map((row) => ({
         id: row.id,
         action: row.action,
@@ -133,6 +152,11 @@ export class EventActivityService {
         createdAt: row.createdAt,
         actor: row.actor,
       }))
+
+    return {
+      items,
+      nextCursor: hasMore ? page[page.length - 1].id : null,
+    }
   }
 
   async unreadCounts(clerkId: string, eventId: string) {
@@ -152,24 +176,23 @@ export class EventActivityService {
       where: {
         eventId,
         actorId: { not: access.user.id },
-        OR: [
-          { surface: null },
-          { surface: { in: visible } },
-        ],
+        OR: [{ surface: null }, { surface: { in: visible } }],
       },
       select: { surface: true, createdAt: true, subjectType: true, subjectId: true },
     })
 
     const visibleChecklistIds = await this.access.filterVisibleChecklistIds(
       access,
-      activities.filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId).map((row) => row.subjectId!),
+      activities
+        .filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId)
+        .map((row) => row.subjectId!),
     )
 
     for (const row of activities) {
       if (
-        row.subjectType === 'CHECKLIST_ITEM'
-        && row.subjectId
-        && !visibleChecklistIds.has(row.subjectId)
+        row.subjectType === 'CHECKLIST_ITEM' &&
+        row.subjectId &&
+        !visibleChecklistIds.has(row.subjectId)
       ) {
         continue
       }
@@ -183,7 +206,10 @@ export class EventActivityService {
 
   async markSeen(clerkId: string, eventId: string, surface: string) {
     const access = await this.access.require(clerkId, eventId)
-    const allowed = surface === OVERVIEW_SURFACE || access.isHost || access.surfaces.includes(surface as EventSurface)
+    const allowed =
+      surface === OVERVIEW_SURFACE ||
+      access.isHost ||
+      access.surfaces.includes(surface as EventSurface)
     if (!allowed) throw new NotFoundException('Event not found')
 
     await this.prisma.eventSurfaceRead.upsert({

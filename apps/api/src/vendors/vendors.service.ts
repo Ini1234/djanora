@@ -1,5 +1,11 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common'
-import { InspirationVisibility } from '@prisma/client'
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common'
+import { InspirationVisibility, VendorCategory, Tribe } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateVendorProfileDto } from './dto/create-vendor-profile.dto'
 import { CreateReviewDto } from './dto/create-review.dto'
@@ -12,15 +18,18 @@ export class VendorsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(category?: string) {
+    const parsed =
+      category && (Object.values(VendorCategory) as string[]).includes(category)
+        ? (category as VendorCategory)
+        : undefined
     const vendors = await this.prisma.vendorProfile.findMany({
       where: {
         isActive: true,
-        ...(category ? {
-          OR: [
-            { category: category as any },
-            { categories: { has: category as any } },
-          ],
-        } : {}),
+        ...(parsed
+          ? {
+              OR: [{ category: parsed }, { categories: { has: parsed } }],
+            }
+          : {}),
       },
       select: {
         id: true,
@@ -40,11 +49,7 @@ export class VendorsService {
           },
         },
       },
-      orderBy: [
-        { isVerified: 'desc' },
-        { averageRating: 'desc' },
-        { businessName: 'asc' },
-      ],
+      orderBy: [{ isVerified: 'desc' }, { averageRating: 'desc' }, { businessName: 'asc' }],
       take: 100,
     })
 
@@ -92,19 +97,18 @@ export class VendorsService {
       slug = `${base}-${suffix}`
     }
 
-    const allCategories = dto.categories && dto.categories.length > 0
-      ? dto.categories
-      : [dto.category]
+    const allCategories =
+      dto.categories && dto.categories.length > 0 ? dto.categories : [dto.category]
 
     const profile = await this.prisma.vendorProfile.create({
       data: {
         userId: user.id,
         slug,
         businessName: dto.businessName,
-        category: allCategories[0] as any,
-        categories: allCategories as any,
+        category: allCategories[0] as VendorCategory,
+        categories: allCategories as VendorCategory[],
         bio: dto.bio ?? null,
-        tribesServed: (dto.tribesServed ?? []) as any,
+        tribesServed: (dto.tribesServed ?? []) as Tribe[],
         estimatedPriceFrom: dto.estimatedPriceFrom ?? null,
         estimatedPriceTo: dto.estimatedPriceTo ?? null,
         websiteUrl: dto.websiteUrl ?? null,
@@ -162,7 +166,9 @@ export class VendorsService {
           },
         },
         inspirationItems: {
-          where: { visibility: { in: [InspirationVisibility.PROFILE, InspirationVisibility.INSPIRATION] } },
+          where: {
+            visibility: { in: [InspirationVisibility.PROFILE, InspirationVisibility.INSPIRATION] },
+          },
           orderBy: { createdAt: 'desc' as const },
           include: POST_INCLUDE,
         },
@@ -267,13 +273,15 @@ export class VendorsService {
       select: { id: true, userId: true },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
-    if (vendor.userId === user.id) throw new BadRequestException('You cannot review your own listing')
+    if (vendor.userId === user.id)
+      throw new BadRequestException('You cannot review your own listing')
 
     const booked = await this.prisma.inquiry.findFirst({
       where: { senderId: user.id, vendorProfileId: vendor.id, status: 'BOOKED' },
       select: { id: true },
     })
-    if (!booked) throw new ForbiddenException('You can review a vendor after marking them as booked')
+    if (!booked)
+      throw new ForbiddenException('You can review a vendor after marking them as booked')
 
     try {
       const review = await this.prisma.review.create({
@@ -471,7 +479,8 @@ export class VendorsService {
       select: { id: true, userId: true, _count: { select: { favorites: true } } },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
-    if (!user) return { favorited: false, favoriteCount: vendor._count.favorites, ownProfile: false }
+    if (!user)
+      return { favorited: false, favoriteCount: vendor._count.favorites, ownProfile: false }
     if (vendor.userId === user.id) {
       return { favorited: false, favoriteCount: vendor._count.favorites, ownProfile: true }
     }

@@ -1,11 +1,4 @@
-import {
-  IsEnum,
-  IsString,
-  IsOptional,
-  IsArray,
-  MinLength,
-  MaxLength,
-} from 'class-validator'
+import { IsEnum, IsString, IsOptional, IsArray, MinLength, MaxLength } from 'class-validator'
 import { EventCommentSubject } from '@prisma/client'
 
 export class CreateCommentDto {

@@ -21,6 +21,23 @@
     "deleting": "Suppression…",
     "or": "ou"
   },
+  "dataPort": {
+    "menu": "Exporter / Importer",
+    "exportCsv": "Exporter en CSV",
+    "exportExcel": "Exporter en Excel",
+    "exportNotion": "Modèle Notion",
+    "import": "Importer un tableur",
+    "importPreview": "Aperçu de l’import",
+    "importDone": "Import terminé",
+    "previewCount": "{count} lignes trouvées",
+    "importConfirm": "Importer {count}",
+    "importSummary": "{created} ajouté(s). {skipped} doublon(s) ignoré(s).",
+    "close": "Fermer",
+    "emptyFile": "Ce fichier ne contient aucune ligne.",
+    "parseFailed": "Impossible de lire ce fichier.",
+    "importFailed": "L’import a échoué.",
+    "tooManyRows": "Seules les 500 premières lignes ont été importées."
+  },
   "vendorCategories": {
     "CATERER": "Traiteur / Alimentation",
     "PHOTOGRAPHER": "Photographe",
@@ -90,7 +107,12 @@
     "checklistName": "Que faut-il faire ?",
     "dueDate": "Échéance",
     "linkToEvent": "Lier à un événement",
-    "notLinked": "Non liée"
+    "notLinked": "Non liée",
+    "due": "À faire",
+    "nothingDue": "Rien à faire",
+    "seeAllChecklists": "Tout voir",
+    "loadMore": "Voir plus",
+    "loadingChecklist": "Chargement…"
   },
   "checklist": {
     "title": "Liste de tâches",
@@ -126,7 +148,22 @@
       "overdueFirst": "En retard d'abord",
       "todoFirst": "Incomplets d'abord",
       "doneFirst": "Complétés d'abord",
-      "alpha": "A → Z"
+      "alpha": "A → Z",
+      "assigneeAsc": "Personne A → Z",
+      "assigneeDesc": "Personne Z → A"
+    },
+    "group": {
+      "none": "Liste",
+      "due": "Par échéance",
+      "person": "Par personne"
+    },
+    "groups": {
+      "overdue": "En retard",
+      "thisWeek": "Cette semaine",
+      "later": "Plus tard",
+      "noDate": "Sans date",
+      "done": "Terminé",
+      "unassigned": "Non assigné"
     },
     "status": {
       "overdue": "En retard",
@@ -154,7 +191,48 @@
     "totalSpent": "Total dépensé",
     "remaining": "Restant",
     "paid_status": "Payé",
-    "unpaid_status": "Non payé"
+    "unpaid_status": "Non payé",
+    "allocated": "Alloué",
+    "spent": "Dépensé",
+    "left": "Restant",
+    "item": "Poste",
+    "group": {
+      "category": "Par catégorie",
+      "status": "Par statut",
+      "none": "Liste"
+    },
+    "groups": {
+      "over": "Dépassé",
+      "inProgress": "En cours",
+      "notStarted": "Pas commencé"
+    },
+    "filters": {
+      "all": "Tout",
+      "over": "Dépassé",
+      "unpaid": "Non payé",
+      "vendor": "Avec prestataire"
+    },
+    "spentOf": "{spent} dépensé sur {total}",
+    "ofTotal": "{total} au total",
+    "allocatedAcross": "{amount} alloués",
+    "emptyFilter": "Rien ne correspond à ce filtre.",
+    "inquirySent": "Demande envoyée",
+    "collapseAll": "Tout replier",
+    "expandAll": "Tout déplier",
+    "groupBy": "Grouper",
+    "defaults": {
+      "CATERER": "Restauration",
+      "PHOTOGRAPHER": "Photographie",
+      "VIDEOGRAPHER": "Vidéo",
+      "DECORATOR": "Décor & fleurs",
+      "DJ": "Set DJ",
+      "LIVE_BAND": "Spectacle live",
+      "MAKEUP_ARTIST": "Coiffure & maquillage",
+      "MC": "Animation",
+      "WEDDING_PLANNER": "Coordination",
+      "FASHION_STYLIST": "Tenue",
+      "OTHER": "Divers"
+    }
   },
   "guests": {
     "title": "Liste des invités",

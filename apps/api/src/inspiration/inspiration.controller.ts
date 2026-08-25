@@ -1,5 +1,13 @@
 import {
-  Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request,
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
 } from '@nestjs/common'
 import { InspirationCategory } from '@prisma/client'
 import { InspirationService } from './inspiration.service'
@@ -9,7 +17,9 @@ import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { InspirationSearchThrottleGuard } from '../common/guards/inspiration-search-throttle.guard'
 
-interface ClerkPayload { sub: string }
+interface ClerkPayload {
+  sub: string
+}
 
 @Controller('inspiration')
 export class InspirationController {
@@ -71,10 +81,7 @@ export class InspirationController {
   }
 
   @Get(':id/matching-vendors')
-  getMatchingVendors(
-    @Param('id') id: string,
-    @Query('limit') limit?: string,
-  ) {
+  getMatchingVendors(@Param('id') id: string, @Query('limit') limit?: string) {
     return this.svc.getMatchingVendors(id, limit ? parseInt(limit) : undefined)
   }
 
@@ -143,7 +150,8 @@ export class InspirationController {
   save(
     @CurrentUser() user: ClerkPayload,
     @Param('id') id: string,
-    @Body() body: {
+    @Body()
+    body: {
       eventId: string
       notes?: string
       checklistItemId?: string
@@ -152,11 +160,16 @@ export class InspirationController {
       scheduleItemIds?: string[]
     },
   ) {
-    const scheduleItemIds = body.scheduleItemIds
-      ?? (body.scheduleItemId ? [body.scheduleItemId] : undefined)
+    const scheduleItemIds =
+      body.scheduleItemIds ?? (body.scheduleItemId ? [body.scheduleItemId] : undefined)
     return this.svc.saveToMoodBoard(
-      user.sub, id, body.eventId, body.notes,
-      body.checklistItemId, body.budgetItemId, scheduleItemIds,
+      user.sub,
+      id,
+      body.eventId,
+      body.notes,
+      body.checklistItemId,
+      body.budgetItemId,
+      scheduleItemIds,
     )
   }
 

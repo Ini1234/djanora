@@ -7,10 +7,7 @@
  *
  * @see https://nextjs.org/docs/app/getting-started/linking-and-navigating#using-the-native-history-api
  */
-export function replaceShallowQuery(
-  pathname: string,
-  patch: Record<string, string | null>,
-): void {
+export function replaceShallowQuery(pathname: string, patch: Record<string, string | null>): void {
   const params = new URLSearchParams(window.location.search)
   for (const [key, value] of Object.entries(patch)) {
     if (!value || value === 'all' || value === 'ALL') params.delete(key)
@@ -20,5 +17,8 @@ export function replaceShallowQuery(
   const url = qs ? `${pathname}?${qs}` : pathname
   const current = `${window.location.pathname}${window.location.search}`
   if (url === current) return
-  window.history.replaceState(window.history.state, '', url)
+  // Next patches History and reads the URL from the third argument. Passing
+  // the previous `history.state` can leave App Router's internal URL unchanged,
+  // so `useSearchParams()` never updates.
+  window.history.replaceState(null, '', url)
 }
