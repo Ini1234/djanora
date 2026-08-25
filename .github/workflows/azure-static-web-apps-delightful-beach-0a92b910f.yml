@@ -1,21 +1,6 @@
-# Deploys apps/coming-soon → Azure Static Web App (prod domain)
-#
-# Runs on merge/push to prod, PRs into prod (preview), or manual Run workflow.
-# Push to main/test does not deploy here (those stay on test-djanora-fe).
-#
-# Token is created by Azure when this Static Web App is linked to GitHub:
-#   AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_BEACH_0A92B910F
-#
-# Custom domain (after first successful deploy):
-#   Azure → Static Web App → Custom domains
-#   Add www.djanora.com (CNAME → the azurestaticapps.net host)
-#   Add djanora.com (ALIAS/ANAME or A record as Azure shows)
-#   Validate TXT, wait for SSL. Leave test-djanora*.azurewebsites.net alone.
-
 name: Azure Static Web Apps CI/CD
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - prod
@@ -24,36 +9,29 @@ on:
     branches:
       - prod
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
-    environment: djanora-prod
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           submodules: true
           lfs: false
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
-        env:
-          ENABLE_ORYX_BUILD: false
-          SKIP_APP_BUILD: true
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_BEACH_0A92B910F }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          app_location: apps/coming-soon
-          api_location: ''
-          output_location: ''
-          skip_app_build: true
-          skip_api_build: true
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          action: "upload"
+          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
+          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
+          app_location: "/" # App source code path
+          api_location: "" # Api source code path - optional
+          output_location: "" # Built app content directory - optional
+          ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -65,4 +43,4 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_BEACH_0A92B910F }}
-          action: close
+          action: "close"
