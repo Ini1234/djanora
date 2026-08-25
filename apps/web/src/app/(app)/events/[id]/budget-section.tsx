@@ -100,7 +100,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
   const [notes, setNotes] = useState(item?.notes ?? '')
   const [allocated, setAllocated] = useState(String(item?.allocatedAmount ?? ''))
   const [spent, setSpent] = useState(String(item?.spentAmount ?? ''))
-  const [isPending, startTransition] = useTransition()
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Registered vendor picker
@@ -192,13 +192,19 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
   }
 
   const handleSave = () => {
+    const name = label.trim()
+    if (!name) {
+      setError('Name is required')
+      return
+    }
     const allocatedNum = parseInt(allocated, 10)
     if (isNaN(allocatedNum) || allocatedNum < 0) {
       setError('Allocated amount must be a positive number')
       return
     }
 
-    startTransition(async () => {
+    void (async () => {
+      setSaving(true)
       setError('')
       try {
         // If custom vendor + saveToContacts, create/update the contact first
@@ -218,7 +224,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
 
         const payload = {
           ...(isNew && { category }),
-          label: label.trim() || null,
+          label: name,
           vendorName: vendorName.trim() || null,
           vendorProfileId: selectedVendorProfileId ?? null,
           userVendorContactId: resolvedContactId ?? null,
@@ -235,8 +241,9 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
         onClose()
       } catch (err: unknown) {
         setError(getErrorMessage(err, 'Something went wrong'))
+        setSaving(false)
       }
-    })
+    })()
   }
 
   return (
@@ -255,6 +262,22 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
 
         {/* Body — scrollable */}
         <div className="space-y-4 overflow-y-auto px-5 py-4">
+          {/* Name */}
+          <div>
+            <label className="label">
+              Name <span className="text-muted">*</span>
+            </label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder={`e.g. "Second photographer"`}
+              className="input"
+              required
+              maxLength={120}
+            />
+          </div>
+
           {/* Category */}
           <div>
             <label className="label">Category</label>
@@ -270,20 +293,6 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Custom label */}
-          <div>
-            <label className="label">
-              Custom label <span className="text-muted">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder={`e.g. "Second photographer"`}
-              className="input"
-            />
           </div>
 
           {/* ── Vendor picker ── */}
@@ -704,10 +713,10 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
           </button>
           <button
             onClick={handleSave}
-            disabled={isPending || !allocated}
+            disabled={saving || !allocated || !label.trim()}
             className="btn btn-primary btn-sm"
           >
-            {isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
             {isNew ? 'Add item' : 'Save changes'}
           </button>
         </div>
@@ -1803,10 +1812,14 @@ export function BudgetSection({
 
       {editingItem !== null && (
         <EditModal
+          key={editingItem === 'new' ? 'new' : editingItem.id}
           eventId={eventId}
           item={editingItem === 'new' ? undefined : editingItem}
           onClose={() => setEditingItem(null)}
-          onSaved={handleSaved}
+          onSaved={(saved) => {
+            handleSaved(saved)
+            setEditingItem(null)
+          }}
         />
       )}
     </div>

@@ -49,7 +49,12 @@ interface Inquiry {
     title: string
     estimatedDate: string | null
   } | null
-  originInspirationItem?: { id: string; title: string; imageUrl: string | null } | null
+  originInspirationItem?: {
+    id: string
+    title: string
+    imageUrl: string | null
+    media?: { url: string }[]
+  } | null
   messages?: { id?: string; message: string; createdAt: string }[]
 }
 
@@ -282,6 +287,8 @@ function DetailPanel({
                   id: inquiry.originInspirationItem.id,
                   title: inquiry.originInspirationItem.title,
                   coverUrl: inquiry.originInspirationItem.imageUrl,
+                  imageUrl: inquiry.originInspirationItem.imageUrl,
+                  media: inquiry.originInspirationItem.media,
                 }
               : null
           }

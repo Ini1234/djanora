@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { backend } from '@/lib/backend'
+import { toMediaSrc, toPublicMediaSrc } from '@/lib/media-src'
 import { InquiryModal } from '@/components/inquiries/inquiry-modal'
 import { lookCategoryLabel, lookCategories } from '@/lib/look-categories'
 import type { UserMe } from '@/lib/api.types'
@@ -130,13 +131,18 @@ export function InspirationDetail({
   }
 
   useEffect(() => {
-    backend
-      .get<InspirationDetailItem>(`/inspiration/${item.id}`)
+    setDetail(item)
+    setIdx(0)
+    const req =
+      signedIn === false
+        ? backend.get<InspirationDetailItem>(`/inspiration/${item.id}`)
+        : proxyClient.get<InspirationDetailItem>(`/inspiration/${item.id}`)
+    req
       .then(({ data }) => {
         if (data) setDetail(data)
       })
       .catch(() => {})
-  }, [item.id])
+  }, [item.id, signedIn])
 
   useEffect(() => {
     if (signedIn === false) return
@@ -172,12 +178,14 @@ export function InspirationDetail({
     }
   }, [askOpen])
 
-  const media =
+  const mediaRaw =
     detail.media && detail.media.length > 0
       ? detail.media
       : detail.imageUrl
         ? [{ id: 'cover', url: detail.imageUrl, mediaType: 'IMAGE' as const, isCover: true }]
         : []
+  const rewrite = signedIn === false ? toPublicMediaSrc : toMediaSrc
+  const media = mediaRaw.map((m) => ({ ...m, url: rewrite(m.url) ?? m.url }))
   const current = media[idx]
 
   async function submitComment() {

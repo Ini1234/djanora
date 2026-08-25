@@ -15,7 +15,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--nav-border)] bg-[var(--nav-bg)]">
+    <header className="fixed top-[var(--sandbox-offset,0px)] right-0 left-0 z-50 border-b border-[var(--nav-border)] bg-[var(--nav-bg)]">
       <nav
         className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
         aria-label="Main navigation"

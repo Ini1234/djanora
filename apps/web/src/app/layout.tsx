@@ -6,8 +6,10 @@ import { JsonLd } from '@/components/json-ld'
 import { AppProviders } from '@/components/app-providers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { isSessionCookieName } from '@/lib/clerk-token'
+import { isSandboxHost } from '@/lib/is-sandbox-host'
+import { SandboxBanner } from '@/components/sandbox-banner'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -89,14 +91,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale()
   const messages = await getMessages()
   const signedIn = (await cookies()).getAll().some((cookie) => isSessionCookieName(cookie.name))
+  const headerList = await headers()
+  const sandbox = isSandboxHost(headerList.get('x-forwarded-host') ?? headerList.get('host'))
 
   return (
     <html
       lang={locale}
       className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}
+      data-sandbox={sandbox ? '' : undefined}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-[var(--color-background)] text-[var(--color-foreground)]">
+        <SandboxBanner />
         <JsonLd data={websiteJsonLd} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>

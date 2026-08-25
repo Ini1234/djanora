@@ -647,3 +647,12 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Darken focus ring in light mode so it's visible against white surfaces */
+:root:not(.dark) :focus-visible {
+  outline-color: #8b6200; /* gold-800, 5.2:1 on white ✓ */
+}
+
+html[data-sandbox] {
+  --sandbox-offset: 2.75rem;
+}

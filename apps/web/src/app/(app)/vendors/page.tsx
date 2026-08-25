@@ -170,7 +170,7 @@ export default function VendorsPage() {
           style={{
             background: showFilters ? 'rgba(201,151,58,0.12)' : 'var(--card-bg)',
             borderColor: showFilters ? 'rgba(201,151,58,0.35)' : 'var(--color-border)',
-            color: showFilters ? 'var(--color-gold-700, #a87b10)' : 'var(--color-foreground)',
+            color: showFilters ? 'var(--color-brand-primary)' : 'var(--color-foreground)',
           }}
         >
           <SlidersHorizontal size={14} />
@@ -225,7 +225,7 @@ export default function VendorsPage() {
             style={{
               background: 'rgba(201,151,58,0.12)',
               border: '1px solid rgba(201,151,58,0.3)',
-              color: 'var(--color-gold-800, #8b6200)',
+              color: 'var(--color-brand-primary)',
             }}
           >
             {getVendorCategoryLabel(activeCategory, tCat)}
@@ -295,7 +295,7 @@ export default function VendorsPage() {
                 selectCategory('ALL')
               }}
               className="mt-3 text-xs hover:underline"
-              style={{ color: '#a87b10' }}
+              style={{ color: 'var(--color-brand-primary)' }}
             >
               Clear filters
             </button>

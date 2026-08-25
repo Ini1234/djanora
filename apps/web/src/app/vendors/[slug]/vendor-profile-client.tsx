@@ -461,12 +461,7 @@ export function VendorProfileClient({
                   {vendor.categories.map((cat) => (
                     <span
                       key={cat}
-                      className="rounded-full border px-2.5 py-0.5 text-xs"
-                      style={{
-                        background: 'rgba(201,151,58,0.10)',
-                        borderColor: 'rgba(201,151,58,0.25)',
-                        color: 'var(--color-gold-800, #8b6200)',
-                      }}
+                      className="border-gold-500/25 bg-gold-500/12 text-gold-700 dark:bg-gold-500/15 dark:text-gold-400 rounded-full border px-2.5 py-0.5 text-xs font-medium"
                     >
                       {getVendorCategoryLabel(cat, tCat)}
                     </span>
@@ -548,8 +543,7 @@ export function VendorProfileClient({
                   href={vendor.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm hover:underline"
-                  style={{ color: 'var(--color-gold-800, #8b6200)' }}
+                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <Globe size={14} />
                   Website
@@ -560,8 +554,7 @@ export function VendorProfileClient({
                   href={vendor.instagramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm hover:underline"
-                  style={{ color: 'var(--color-gold-800, #8b6200)' }}
+                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <ExternalLink size={14} />
                   Instagram
@@ -572,8 +565,7 @@ export function VendorProfileClient({
                   href={vendor.facebookUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm hover:underline"
-                  style={{ color: 'var(--color-gold-800, #8b6200)' }}
+                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <Link2 size={14} />
                   Facebook
@@ -584,8 +576,7 @@ export function VendorProfileClient({
                   href={vendor.externalPortfolioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm hover:underline"
-                  style={{ color: 'var(--color-gold-800, #8b6200)' }}
+                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <ExternalLink size={14} />
                   {vendor.externalPortfolioLabel || 'Portfolio'}

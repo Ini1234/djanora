@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useSse } from '@/contexts/sse-context'
 import { proxyClient } from '@/lib/proxy-client'
+import { lookCoverSrc } from '@/lib/media-src'
 import {
   InspirationDetail,
   type InspirationDetailItem,
@@ -75,7 +76,13 @@ interface Props {
   originalIsCurrentUser: boolean
   inquiryStatus?: InquiryThreadStatus
   onStatusChange?: (status: InquiryThreadStatus) => void
-  originLook?: { id: string; title: string; coverUrl: string | null } | null
+  originLook?: {
+    id: string
+    title: string
+    coverUrl: string | null
+    imageUrl?: string | null
+    media?: { url: string }[]
+  } | null
 }
 
 const DISCLAIMER = 'Not a contract. You and the other party agree on details outside Djanora.'
@@ -546,6 +553,24 @@ function InspirationLookCard({
   createdAt: string
   onOpen: () => void
 }) {
+  const [coverSrc, setCoverSrc] = useState(() => lookCoverSrc(payload))
+
+  useEffect(() => {
+    setCoverSrc(lookCoverSrc(payload))
+    if (payload.coverUrl) return
+    let cancelled = false
+    proxyClient
+      .get<InspirationDetailItem>(`/inspiration/${payload.inspirationItemId}`)
+      .then(({ data }) => {
+        const src = lookCoverSrc(data)
+        if (!cancelled && src) setCoverSrc(src)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [payload.coverUrl, payload.inspirationItemId])
+
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
       <Avatar name={isMine ? 'You' : senderName} avatarUrl={isMine ? null : avatarUrl} />
@@ -565,9 +590,9 @@ function InspirationLookCard({
             borderBottomLeftRadius: isMine ? undefined : 4,
           }}
         >
-          {payload.coverUrl && (
+          {coverSrc && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={payload.coverUrl} alt={payload.title} className="h-28 w-full object-cover" />
+            <img src={coverSrc} alt={payload.title} className="h-28 w-full object-cover" />
           )}
           <div className="flex items-center justify-between gap-2 px-3 py-2.5">
             <div className="min-w-0">
@@ -630,6 +655,7 @@ export function InquiryThread({
   const [saveLook, setSaveLook] = useState<InspirationDetailItem | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const { on } = useSse()
+  const originCover = lookCoverSrc(originLook)
 
   const markMessagesRead = useCallback(async () => {
     try {
@@ -1022,15 +1048,17 @@ export function InquiryThread({
               type="button"
               onClick={() => {
                 setLookSaved(false)
-                setOpenLook(lookStub(originLook.id, originLook.title, originLook.coverUrl))
+                setOpenLook(
+                  lookStub(originLook.id, originLook.title, originCover ?? originLook.coverUrl),
+                )
               }}
               className="flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-opacity hover:opacity-90"
               style={{ background: 'var(--card-bg)', borderColor: 'var(--color-border)' }}
             >
-              {originLook.coverUrl ? (
+              {originCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={originLook.coverUrl}
+                  src={originCover}
                   alt=""
                   className="h-11 w-11 shrink-0 rounded-lg object-cover"
                 />
@@ -1082,14 +1110,24 @@ export function InquiryThread({
                 [msg.sender.firstName, msg.sender.lastName].filter(Boolean).join(' ') ||
                 'User'
               const kind = msg.kind ?? 'TEXT'
+              const payload =
+                typeof msg.payload === 'string'
+                  ? (() => {
+                      try {
+                        return JSON.parse(msg.payload as unknown as string)
+                      } catch {
+                        return msg.payload
+                      }
+                    })()
+                  : msg.payload
               const canMutate =
                 msg.isCurrentUser &&
                 !msg.unsentAt &&
                 now - new Date(msg.createdAt).getTime() <= MESSAGE_EDIT_WINDOW_MS
-              const quote = kind === 'QUOTE' ? (msg.payload as QuotePayload | null) : null
-              const link = kind === 'LINK' ? (msg.payload as LinkPayload | null) : null
+              const quote = kind === 'QUOTE' ? (payload as QuotePayload | null) : null
+              const link = kind === 'LINK' ? (payload as LinkPayload | null) : null
               const inspiration =
-                kind === 'INSPIRATION' ? (msg.payload as InspirationPayload | null) : null
+                kind === 'INSPIRATION' ? (payload as InspirationPayload | null) : null
 
               if (editingId === msg.id && canMutate && kind === 'TEXT') {
                 return (
@@ -1226,7 +1264,7 @@ export function InquiryThread({
                         lookStub(
                           inspiration.inspirationItemId,
                           inspiration.title,
-                          inspiration.coverUrl,
+                          lookCoverSrc(inspiration) ?? inspiration.coverUrl,
                         ),
                       )
                     }}
@@ -1432,6 +1470,7 @@ export function InquiryThread({
         <InspirationDetail
           item={openLook}
           saved={lookSaved}
+          signedIn
           onClose={() => setOpenLook(null)}
           onSaveClick={() => setSaveLook(openLook)}
           onFindVendors={() => setOpenLook(null)}
