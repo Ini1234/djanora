@@ -1437,7 +1437,6 @@ function AddRow({
     } catch {
       onAdded({ ...optimistic, id: `REMOVE-${tempId}` })
     }
-     
   }, [
     title,
     dueDate,
