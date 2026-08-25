@@ -33,6 +33,8 @@ export async function proxyNest(req: NextRequest, nestPath: string): Promise<Nex
   }
 
   const isReceiptFile = /\/receipts\/[^/]+\/file\/?$/.test(nestPath)
+  const isUploadFile = /^\/uploads\/[^/]+\/?$/.test(nestPath)
+  const isBinary = isReceiptFile || isUploadFile
 
   try {
     const res = await backend.request<string | ArrayBuffer>({
@@ -44,19 +46,21 @@ export async function proxyNest(req: NextRequest, nestPath: string): Promise<Nex
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
       validateStatus: () => true,
-      responseType: isReceiptFile ? 'arraybuffer' : 'text',
+      responseType: isBinary ? 'arraybuffer' : 'text',
       transformResponse: [(body) => body],
     })
 
-    const body = isReceiptFile ? Buffer.from(res.data as ArrayBuffer) : (res.data ?? '')
+    const body = isBinary ? Buffer.from(res.data as ArrayBuffer) : (res.data ?? '')
     const headersOut: Record<string, string> = {
       'Content-Type': String(
-        res.headers['content-type'] ??
-          (isReceiptFile ? 'application/octet-stream' : 'application/json'),
+        res.headers['content-type'] ?? (isBinary ? 'application/octet-stream' : 'application/json'),
       ),
     }
     if (res.headers['content-disposition']) {
       headersOut['Content-Disposition'] = String(res.headers['content-disposition'])
+    }
+    if (isBinary && res.status === 200) {
+      headersOut['Cache-Control'] = 'private, max-age=86400'
     }
 
     return new NextResponse(body, {

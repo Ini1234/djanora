@@ -45,6 +45,19 @@ export function normalizePostCategories(
   return { category: unique[0], categories: unique }
 }
 
+export function coverUrlForLook(row: {
+  imageUrl: string | null
+  media?: { url: string; isCover?: boolean; mediaType?: InspirationMediaType }[]
+}): string | null {
+  if (row.imageUrl) return row.imageUrl
+  const media = row.media ?? []
+  const cover =
+    media.find((m) => m.isCover) ??
+    media.find((m) => m.mediaType !== InspirationMediaType.EXTERNAL) ??
+    media[0]
+  return cover?.url ?? null
+}
+
 export function mapPost<
   T extends {
     id: string
@@ -94,7 +107,7 @@ export function mapPost<
     currency: row.currency,
     costNote: row.costNote ?? null,
     visibility: row.visibility,
-    imageUrl: rewriteAppUploadUrl(row.imageUrl),
+    imageUrl: rewriteAppUploadUrl(coverUrlForLook(row)),
     isAdminCurated: row.isAdminCurated,
     createdAt: row.createdAt,
     tags: tagItems.map((t) => t.label),

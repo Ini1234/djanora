@@ -114,7 +114,8 @@
         padding: 1.25rem 1.5rem;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        justify-content: space-between;
+        gap: 0.75rem;
       }
 
       .logo-mark {
@@ -134,6 +135,24 @@
         font-size: 1.25rem;
         font-weight: 600;
         color: var(--foreground);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .header-sandbox {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--brand-700);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .header-sandbox:hover {
+        color: var(--gold-800);
       }
 
       main {
@@ -177,7 +196,35 @@
         line-height: 1.7;
         color: var(--muted);
         max-width: 36rem;
-        margin: 0 auto;
+        margin: 0 auto 2rem;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        background: var(--brand-700);
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 0.8rem 1.35rem;
+        border-radius: 999px;
+      }
+
+      .cta:hover {
+        background: var(--brand-800);
+      }
+
+      .cta-note {
+        margin-top: 0.85rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
       }
 
       footer {
@@ -201,8 +248,11 @@
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <header>
-      <span class="logo-mark" aria-hidden="true">D</span>
-      <span class="logo-word">Djanora</span>
+      <span class="brand">
+        <span class="logo-mark" aria-hidden="true">D</span>
+        <span class="logo-word">Djanora</span>
+      </span>
+      <a class="header-sandbox" href="https://test.djanora.com">Testing sandbox</a>
     </header>
     <main id="main">
       <div class="pattern" aria-hidden="true"></div>
@@ -219,6 +269,11 @@
         <p class="lede">
           Djanora helps you plan your event — budget, vendors, guests, and the day-of schedule —
           all in one place.
+        </p>
+        <a class="cta" href="https://test.djanora.com">Visit the testing sandbox</a>
+        <p class="cta-note">
+          The sandbox is for trying the tool. It is not the live product, and anything you add there
+          may be reset.
         </p>
       </div>
     </main>

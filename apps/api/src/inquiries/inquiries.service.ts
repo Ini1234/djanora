@@ -20,6 +20,7 @@ import { PostInquiryMessageDto } from './dto/post-inquiry-message.dto'
 import { SseService } from '../sse/sse.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { EventAccessService, allowsAction } from '../events/event-access.service'
+import { coverUrlForLook } from '../inspiration/post-shape'
 
 const SHARE_PREVIEW = {
   calendar: 'Shared a calendar',
@@ -82,6 +83,31 @@ export class InquiriesService {
     return `Quote: $${amount.toLocaleString('en-CA')} ${currency}`
   }
 
+  private lookCoverSelect = {
+    id: true,
+    title: true,
+    imageUrl: true,
+    visibility: true,
+    vendorProfileId: true,
+    media: {
+      orderBy: { sortOrder: 'asc' as const },
+      select: { url: true, isCover: true, mediaType: true },
+    },
+  } as const
+
+  private inspirationPayload(post: {
+    id: string
+    title: string
+    imageUrl: string | null
+    media: { url: string; isCover: boolean; mediaType: 'IMAGE' | 'VIDEO' | 'EXTERNAL' }[]
+  }) {
+    return {
+      inspirationItemId: post.id,
+      title: post.title,
+      coverUrl: coverUrlForLook(post),
+    }
+  }
+
   async createInquiry(clerkId: string, dto: CreateInquiryDto) {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
@@ -102,11 +128,16 @@ export class InquiriesService {
     if (!vendor) throw new NotFoundException('Vendor not found')
     const vendorProfileId = vendor.id
 
-    let originPost: { id: string; title: string; imageUrl: string | null } | null = null
+    let originPost: {
+      id: string
+      title: string
+      imageUrl: string | null
+      media: { url: string; isCover: boolean; mediaType: 'IMAGE' | 'VIDEO' | 'EXTERNAL' }[]
+    } | null = null
     if (dto.inspirationItemId) {
       const post = await this.prisma.inspirationItem.findUnique({
         where: { id: dto.inspirationItemId },
-        select: { id: true, title: true, imageUrl: true, visibility: true, vendorProfileId: true },
+        select: this.lookCoverSelect,
       })
       if (!post || post.visibility === InspirationVisibility.DRAFT) {
         throw new BadRequestException('That look is not available')
@@ -114,7 +145,7 @@ export class InquiriesService {
       if (post.vendorProfileId !== vendorProfileId) {
         throw new BadRequestException('That look does not belong to this vendor')
       }
-      originPost = { id: post.id, title: post.title, imageUrl: post.imageUrl }
+      originPost = post
     }
 
     const existing = await this.prisma.inquiry.findFirst({
@@ -165,11 +196,7 @@ export class InquiriesService {
           senderId: user.id,
           message: `Asked about ${originPost.title}`,
           kind: InquiryMessageKind.INSPIRATION,
-          payload: {
-            inspirationItemId: originPost.id,
-            title: originPost.title,
-            coverUrl: originPost.imageUrl,
-          },
+          payload: this.inspirationPayload(originPost),
         },
       })
     }
@@ -228,7 +255,16 @@ export class InquiriesService {
           select: { id: true, title: true, estimatedDate: true },
         },
         originInspirationItem: {
-          select: { id: true, title: true, imageUrl: true },
+          select: {
+            id: true,
+            title: true,
+            imageUrl: true,
+            media: {
+              orderBy: [{ isCover: 'desc' as const }, { sortOrder: 'asc' as const }],
+              take: 1,
+              select: { url: true },
+            },
+          },
         },
         messages: this.lastMessageSelect,
       },
@@ -278,7 +314,16 @@ export class InquiriesService {
           select: { id: true, title: true, estimatedDate: true },
         },
         originInspirationItem: {
-          select: { id: true, title: true, imageUrl: true },
+          select: {
+            id: true,
+            title: true,
+            imageUrl: true,
+            media: {
+              orderBy: [{ isCover: 'desc' as const }, { sortOrder: 'asc' as const }],
+              take: 1,
+              select: { url: true },
+            },
+          },
         },
         messages: this.lastMessageSelect,
       },
@@ -364,7 +409,7 @@ export class InquiriesService {
       }
       const post = await this.prisma.inspirationItem.findUnique({
         where: { id: dto.inspirationItemId },
-        select: { id: true, title: true, imageUrl: true, visibility: true, vendorProfileId: true },
+        select: this.lookCoverSelect,
       })
       if (!post || post.visibility === InspirationVisibility.DRAFT) {
         throw new BadRequestException('That look is not available')
@@ -373,11 +418,7 @@ export class InquiriesService {
         throw new BadRequestException('That look does not belong to this vendor')
       }
       message = `Asked about ${post.title}`
-      payload = {
-        inspirationItemId: post.id,
-        title: post.title,
-        coverUrl: post.imageUrl,
-      }
+      payload = this.inspirationPayload(post)
     } else {
       if (!isVendor) {
         throw new ForbiddenException('Only the vendor can share quotes and links')
