@@ -553,23 +553,31 @@ function InspirationLookCard({
   createdAt: string
   onOpen: () => void
 }) {
-  const [coverSrc, setCoverSrc] = useState(() => lookCoverSrc(payload))
+  const derivedCover = lookCoverSrc(payload)
+  const [fetchedCover, setFetchedCover] = useState<string | undefined>()
+  const coverKey = `${payload.inspirationItemId}:${payload.coverUrl ?? ''}`
+  const [fetchedForKey, setFetchedForKey] = useState(coverKey)
+  if (fetchedForKey !== coverKey) {
+    setFetchedForKey(coverKey)
+    setFetchedCover(undefined)
+  }
 
   useEffect(() => {
-    setCoverSrc(lookCoverSrc(payload))
-    if (payload.coverUrl) return
+    if (derivedCover) return
     let cancelled = false
     proxyClient
       .get<InspirationDetailItem>(`/inspiration/${payload.inspirationItemId}`)
       .then(({ data }) => {
         const src = lookCoverSrc(data)
-        if (!cancelled && src) setCoverSrc(src)
+        if (!cancelled && src) setFetchedCover(src)
       })
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [payload.coverUrl, payload.inspirationItemId])
+  }, [derivedCover, payload.inspirationItemId])
+
+  const coverSrc = derivedCover ?? fetchedCover
 
   return (
     <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>

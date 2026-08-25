@@ -131,8 +131,6 @@ export function InspirationDetail({
   }
 
   useEffect(() => {
-    setDetail(item)
-    setIdx(0)
     const req =
       signedIn === false
         ? backend.get<InspirationDetailItem>(`/inspiration/${item.id}`)
