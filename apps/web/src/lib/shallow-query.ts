@@ -2,7 +2,7 @@
  * Update query params without a Next.js navigation.
  *
  * App Router has no shallow routing. `router.replace()` is a real navigation:
- * Server Components re-run (layout `getMe()` → `/users/me`) and client pages
+ * Server Components re-run (layout `loadMe()` → `/users/me`) and client pages
  * can remount. The History API does not.
  *
  * @see https://nextjs.org/docs/app/getting-started/linking-and-navigating#using-the-native-history-api

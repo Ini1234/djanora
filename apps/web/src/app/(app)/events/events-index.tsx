@@ -28,10 +28,10 @@ function NextEvent({ event }: { event: Event }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="group flex items-end justify-between gap-6 rounded-2xl border px-6 py-5 transition-opacity hover:opacity-80"
+      className="group flex flex-col items-start justify-between gap-3 rounded-2xl border px-4 py-5 transition-opacity hover:opacity-80 sm:flex-row sm:items-end sm:gap-6 sm:px-6"
       style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
-      <div className="min-w-0">
+      <div className="w-full min-w-0 sm:w-auto">
         <p
           className="mb-2 text-[11px] font-semibold tracking-[0.08em] uppercase"
           style={{ color: 'var(--color-brand-primary)' }}
@@ -39,7 +39,7 @@ function NextEvent({ event }: { event: Event }) {
           Next
         </p>
         <h2
-          className="font-display truncate text-2xl font-semibold sm:text-[28px]"
+          className="font-display text-2xl font-semibold break-words sm:truncate sm:text-[28px]"
           style={{ color: 'var(--color-foreground)' }}
         >
           {event.title}
@@ -129,10 +129,10 @@ export function EventsIndex() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1
-            className="font-display text-3xl font-semibold"
+            className="font-display text-2xl font-semibold sm:text-3xl"
             style={{ color: 'var(--color-foreground)' }}
           >
             My Events
@@ -152,7 +152,7 @@ export function EventsIndex() {
         </div>
         <Link
           href="/events/new"
-          className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+          className="bg-gold-600 hover:bg-gold-500 text-brand-900 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
         >
           <Plus size={16} /> New Event
         </Link>

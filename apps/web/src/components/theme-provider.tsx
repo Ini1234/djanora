@@ -9,7 +9,7 @@ type ResolvedTheme = 'light' | 'dark'
 const STORAGE_KEY = 'theme'
 const DEFAULT_THEME: Theme = 'dark'
 
-const BOOTSTRAP = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}')||'${DEFAULT_THEME}';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;var d=document.documentElement;d.classList.remove('light','dark');d.classList.add(r);d.style.colorScheme=r;}catch(e){}})();`
+const BOOTSTRAP = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}')||'${DEFAULT_THEME}';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;var d=document.documentElement;d.classList.toggle('light',r==='light');d.classList.toggle('dark',r==='dark');d.style.colorScheme=r;}catch(e){}})();`
 
 function systemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -18,8 +18,8 @@ function systemTheme(): ResolvedTheme {
 function apply(theme: Theme) {
   const resolved: ResolvedTheme = theme === 'system' ? systemTheme() : theme
   const root = document.documentElement
-  root.classList.remove('light', 'dark')
-  root.classList.add(resolved)
+  root.classList.toggle('light', resolved === 'light')
+  root.classList.toggle('dark', resolved === 'dark')
   root.style.colorScheme = resolved
   return resolved
 }
@@ -44,9 +44,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = (window.localStorage.getItem(STORAGE_KEY) as Theme | null) ?? DEFAULT_THEME
+    const resolved = apply(stored)
     /* eslint-disable react-hooks/set-state-in-effect -- hydrate theme from localStorage */
-    setThemeState(stored)
-    setResolvedTheme(apply(stored))
+    setThemeState((prev) => (prev === stored ? prev : stored))
+    setResolvedTheme((prev) => (prev === resolved ? prev : resolved))
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 

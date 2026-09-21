@@ -632,6 +632,361 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-radius: 0.75rem;
+  background: var(--foreground);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--background);
+  transform: translateY(calc(-100% - 1.5rem));
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.event-site img,
+.event-site iframe,
+.event-site [style*='--site-card'] {
+  border-radius: var(--site-radius-lg, 1.25rem);
+}
+
+.event-site img.party-face {
+  border-radius: 0;
+  max-width: none;
+}
+
+.event-site-nav {
+  background: var(--site-bg);
+  border-bottom: none;
+}
+
+.event-site-nav[data-border='on'] {
+  border-bottom-color: color-mix(in srgb, var(--site-fg) 28%, transparent);
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+.event-site-nav[data-border='on'][data-border-width='medium'] {
+  border-bottom-width: 2px;
+}
+
+.event-site-nav[data-border='on'][data-border-width='thick'] {
+  border-bottom-width: 4px;
+}
+
+.event-site-nav[data-border='on'][data-border-style='dashed'] {
+  border-bottom-style: dashed;
+}
+
+.event-site-nav[data-border='on'][data-border-style='dotted'] {
+  border-bottom-style: dotted;
+}
+
+.event-site-nav[data-style='solid'] {
+  background: var(--site-card);
+}
+
+.event-site-nav-side {
+  background: var(--site-bg);
+  border-bottom: none;
+}
+
+.event-site-nav .site-nav-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.event-site-nav .site-nav-card-row {
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0 1.25rem;
+}
+
+.event-site-nav .site-nav-card-row .site-nav-brand {
+  flex: 0 0 auto;
+  max-width: 42%;
+  padding-right: 1rem;
+  border-right: 1px solid color-mix(in srgb, var(--site-fg) 22%, transparent);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-site-nav .site-nav-card-row .site-nav-links {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.event-site-nav .site-nav-brand {
+  color: var(--site-fg);
+  font-family: var(--site-heading);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 400;
+  letter-spacing: var(--site-heading-tracking, 0.02em);
+  line-height: 1.25;
+  text-decoration: none;
+  text-wrap: balance;
+}
+
+.event-site-nav .site-nav-rule {
+  width: 2.75rem;
+  height: 1px;
+  margin: 0.15rem 0 0.1rem;
+  background: color-mix(in srgb, var(--site-fg) 28%, transparent);
+}
+
+.event-site-nav .site-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-site-nav .site-nav-links-stack {
+  flex-direction: column;
+}
+
+.event-site-nav .site-nav-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.event-site-nav .site-nav-dot {
+  margin: 0 0.55rem;
+  color: color-mix(in srgb, var(--site-fg) 35%, transparent);
+  font-weight: 400;
+}
+
+.event-site-nav .site-nav-menu {
+  color: var(--site-fg);
+}
+
+.event-site-nav .site-nav-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 0.15rem;
+  color: color-mix(in srgb, var(--site-fg) 78%, var(--site-muted));
+  font-family: var(--site-heading);
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  font-variant: small-caps;
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.event-site-nav .site-nav-link:hover,
+.event-site-nav .site-nav-link:focus-visible {
+  color: var(--site-fg);
+}
+
+.event-site-nav[data-style='pill'] .site-nav-link {
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--site-fg) 5%, transparent);
+}
+
+.event-site-nav[data-style='underline'] .site-nav-link {
+  border-bottom: 1px solid transparent;
+}
+
+.event-site-nav[data-style='underline'] .site-nav-link:hover,
+.event-site-nav[data-style='underline'] .site-nav-link:focus-visible {
+  border-bottom-color: color-mix(in srgb, var(--site-accent) 70%, transparent);
+}
+
+.event-site-nav .site-nav-rsvp {
+  color: var(--site-accent);
+}
+
+.event-site-cover {
+  margin-bottom: 3.5rem;
+  padding-top: 0.5rem;
+}
+
+.event-site-cover[data-layout='split'] {
+  display: grid;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.event-site[data-compact] .event-site-cover[data-layout='split'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (min-width: 640px) {
+  .event-site-cover[data-layout='split'] {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .event-site-cover[data-layout='split'][data-photo-side='right'] .event-site-cover-photo {
+    order: 2;
+  }
+}
+
+.event-site[data-compact]
+  .event-site-cover[data-layout='split'][data-photo-side='right']
+  .event-site-cover-photo {
+  order: 2;
+}
+
+.event-site-cover-photo {
+  width: 100%;
+  height: 20rem;
+  object-fit: cover;
+  border-radius: var(--site-radius-lg);
+}
+
+.event-site-cover[data-layout='centered'] {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-site-cover[data-layout='centered'] .event-site-cover-copy {
+  padding-top: 0.25rem;
+  padding-bottom: 1.25rem;
+}
+
+.event-site-cover[data-layout='centered'] .event-site-cover-photo {
+  height: 16rem;
+  margin-top: 0.25rem;
+}
+
+.event-site-cover-photo-placeholder {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--site-fg) 8%, transparent);
+  color: var(--site-muted);
+  font-size: 0.82rem;
+}
+
+.event-site[data-compact] .event-site-cover[data-layout='full-bleed'] .event-site-cover-photo {
+  height: 11rem;
+}
+
+.event-site[data-compact] .event-site-cover[data-layout='split'] .event-site-cover-photo {
+  height: 12rem;
+}
+
+.event-site[data-compact] .event-site-cover[data-layout='centered'] .event-site-cover-photo {
+  height: 8rem;
+}
+
+.event-site-cover-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.event-site-cover-kicker {
+  margin: 0;
+  color: var(--site-muted);
+  font-family: var(--site-heading);
+  font-size: 0.78rem;
+  font-weight: 400;
+  font-variant: small-caps;
+  letter-spacing: 0.22em;
+}
+
+.event-site-cover-title {
+  margin: 0.7rem 0 0;
+  max-width: 18ch;
+  color: var(--site-fg);
+  font-family: var(--site-heading);
+  font-size: clamp(2.4rem, 8vw, 4.25rem);
+  font-weight: 400;
+  letter-spacing: var(--site-heading-tracking, 0.02em);
+  line-height: 1.1;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.event-site-cover-rule {
+  width: 3rem;
+  height: 1px;
+  margin: 1.15rem 0 1rem;
+  background: color-mix(in srgb, var(--site-fg) 28%, transparent);
+}
+
+.event-site-cover-when {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  color: var(--site-fg);
+}
+
+.event-site-cover-weekday {
+  font-family: var(--site-heading);
+  font-size: 0.78rem;
+  font-variant: small-caps;
+  letter-spacing: 0.2em;
+  color: var(--site-muted);
+}
+
+.event-site-cover-date {
+  font-family: var(--site-heading);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.event-site-cover-place {
+  margin: 0.65rem 0 0;
+  color: var(--site-muted);
+  font-family: var(--site-body);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::selection {
   background: var(--foreground);
   color: var(--background);
@@ -655,4 +1010,74 @@ body {
 
 html[data-sandbox] {
   --sandbox-offset: 2.75rem;
+}
+
+/* Clerk inherits page color-scheme. Without explicit field colors, Google
+   follow-up inputs (OTP, phone, name) disappear on the themed card. */
+.cl-rootBox,
+.cl-cardBox,
+.cl-card {
+  color: var(--foreground);
+}
+
+.cl-formFieldLabel,
+.cl-identityPreviewText,
+.cl-socialButtonsBlockButtonText {
+  color: var(--foreground);
+}
+
+.cl-formFieldHintText,
+.cl-dividerText,
+.cl-footerActionText,
+.cl-headerSubtitle {
+  color: var(--muted);
+}
+
+.cl-headerTitle,
+.cl-footerActionLink,
+.cl-identityPreviewEditButton,
+.cl-navbar,
+.cl-navbarButton,
+.cl-navbarButtonText,
+.cl-navbarMobileMenuButton,
+.cl-logoBox,
+.cl-logo,
+.cl-main,
+.cl-pageScrollBox {
+  color: var(--foreground);
+}
+
+.cl-navbarButton,
+.cl-navbarButtonText,
+.cl-logoBox {
+  color: var(--foreground) !important;
+}
+
+.cl-logoImage {
+  opacity: 1 !important;
+}
+
+.cl-formFieldInput,
+.cl-input,
+.cl-otpCodeFieldInput,
+.cl-phoneInputInput,
+.cl-selectButton,
+.cl-identityPreview,
+.cl-socialButtonsBlockButton,
+.cl-alternativeMethodsBlockButton {
+  background-color: var(--input) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  color-scheme: inherit;
+}
+
+.cl-formFieldInput::placeholder,
+.cl-input::placeholder {
+  color: var(--muted) !important;
+}
+
+.cl-selectOptions,
+.cl-selectOption {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
 }

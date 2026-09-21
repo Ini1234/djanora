@@ -9,5 +9,6 @@ import { EventsModule } from '../events/events.module'
   imports: [NotificationsModule, EventsModule],
   controllers: [GuestsController, RsvpController],
   providers: [GuestsService],
+  exports: [GuestsService],
 })
 export class GuestsModule {}

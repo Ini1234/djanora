@@ -3,7 +3,7 @@ import { createClerkClient } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { EventSurface, UserRole, Tribe } from '@prisma/client'
-import { ALL_SURFACES, EventAccessService } from '../events/event-access.service'
+import { ALL_SURFACES, EventAccessService, type EventAccess } from '../events/event-access.service'
 
 interface UpsertUserDto {
   clerkId: string
@@ -259,6 +259,18 @@ export class UsersService {
       },
     })
 
+    const eventIds = [...new Set(assigned.map((row) => row.eventId))]
+    const accessByEvent = new Map<string, EventAccess | null>()
+    await Promise.all(
+      eventIds.map(async (eventId) => {
+        try {
+          accessByEvent.set(eventId, await this.access.load(clerkId, eventId))
+        } catch {
+          accessByEvent.set(eventId, null)
+        }
+      }),
+    )
+
     const visible: Array<
       ReturnType<UsersService['projectChecklist']> & {
         assigneeUserId: string
@@ -266,16 +278,14 @@ export class UsersService {
       }
     > = []
     for (const row of assigned) {
-      let canSee = false
-      try {
-        const access = await this.access.load(clerkId, row.eventId)
-        canSee =
-          this.access.canSee(access, EventSurface.CHECKLIST) &&
-          this.access.canSeeChecklistRow(access, row.concealments)
-      } catch {
-        canSee = false
+      const access = accessByEvent.get(row.eventId)
+      if (!access) continue
+      if (
+        !this.access.canSee(access, EventSurface.CHECKLIST) ||
+        !this.access.canSeeChecklistRow(access, row.concealments)
+      ) {
+        continue
       }
-      if (!canSee) continue
       visible.push({
         id: row.id,
         title: row.title,

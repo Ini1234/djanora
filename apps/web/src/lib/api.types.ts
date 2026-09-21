@@ -144,6 +144,7 @@ export interface EventScheduleItem {
   startTime: string | null
   endTime: string | null
   location: string | null
+  showOnSite?: boolean
   sortOrder: number
   budgetItems: {
     id: string
@@ -159,8 +160,11 @@ export interface EventScheduleItem {
   }[]
 }
 
-export type EventSurface = 'SCHEDULE' | 'CHECKLIST' | 'BUDGET' | 'MOODBOARD' | 'VENDORS' | 'GUESTS'
+export type EventSurface =
+  'SCHEDULE' | 'CHECKLIST' | 'BUDGET' | 'MOODBOARD' | 'VENDORS' | 'GUESTS' | 'PARTY' | 'SITE'
 export type EventMemberRole = 'HOST' | 'EDITOR' | 'COMMENTER' | 'VIEWER'
+export type EventPartySide = 'BRIDE' | 'GROOM' | 'OTHER'
+export type EventPartyStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED'
 
 export const ALL_EVENT_SURFACES: EventSurface[] = [
   'SCHEDULE',
@@ -169,7 +173,29 @@ export const ALL_EVENT_SURFACES: EventSurface[] = [
   'MOODBOARD',
   'VENDORS',
   'GUESTS',
+  'PARTY',
 ]
+
+export interface EventPartyMember {
+  id: string
+  eventId: string
+  name: string
+  role: string
+  side: EventPartySide
+  group: string | null
+  bio: string | null
+  sortOrder: number
+  showOnSite: boolean
+  status: EventPartyStatus
+  pairedWithId: string | null
+  photoUrl: string | null
+}
+
+export interface EventPartyRoster {
+  enabled: boolean
+  members: EventPartyMember[]
+  canEdit?: boolean
+}
 
 export interface EventViewer {
   isHost: boolean
@@ -200,6 +226,7 @@ export interface Event {
   guestCount: number | null
   notes: string | null
   isCompleted: boolean
+  partyEnabled?: boolean
   parentId?: string | null
   sortOrder?: number
   createdAt: string
@@ -210,6 +237,7 @@ export interface Event {
   viewer?: EventViewer
   parent?: { id: string; title: string } | null
   children?: EventJourneyStop[]
+  site?: { slug: string; status: 'DRAFT' | 'PUBLISHED' } | null
   treeBudget?: {
     pot: number
     envelopesTotal: number
@@ -374,4 +402,184 @@ export interface VendorPost {
     avatarUrl: string | null
     city: string | null
   } | null
+}
+
+export type EventSiteStatus = 'DRAFT' | 'PUBLISHED'
+export type EventSiteAccessMode = 'OPEN' | 'INVITED_ONLY'
+export type EventSiteSectionType =
+  | 'COVER'
+  | 'ABOUT'
+  | 'DRESS_CODE'
+  | 'SCHEDULE'
+  | 'GIFTS'
+  | 'TRAVEL'
+  | 'STAY'
+  | 'FAQ'
+  | 'PEOPLE'
+  | 'WHERE'
+  | 'RSVP'
+  | 'PHOTOS'
+  | 'CUSTOM'
+
+export type EventSiteSectionLayout = 'vertical' | 'horizontal'
+export type EventSitePeopleStyle = 'circles' | 'cards'
+export type EventSiteScheduleStyle = 'list' | 'timeline' | 'cards'
+export type EventSiteMapMode = 'off' | 'link' | 'embed'
+export type EventSiteFaqStyle = 'stack' | 'accordion'
+export type EventSiteGiftsStyle = 'links' | 'buttons'
+export type EventSitePhotosStyle = 'grid' | 'slider'
+export type EventSitePhotosSize = 'small' | 'medium' | 'large'
+
+export interface EventSiteImage {
+  id: string
+  url: string
+  alt?: string
+}
+
+export interface EventSitePerson {
+  id: string
+  name: string
+  role?: string
+  side?: EventPartySide
+  group?: string
+  bio?: string
+  pairedWithId?: string | null
+  image?: EventSiteImage
+}
+
+export interface EventSiteSection {
+  id?: string
+  type: EventSiteSectionType
+  enabled: boolean
+  sortOrder: number
+  layout?: EventSiteSectionLayout
+  title?: string
+  body?: string
+  about?: string
+  dressCode?: string
+  stay?: string
+  people?: EventSitePerson[]
+  peopleStyle?: EventSitePeopleStyle
+  faq?: { question: string; answer: string }[]
+  faqStyle?: EventSiteFaqStyle
+  gifts?: { label: string; url: string }[]
+  giftsStyle?: EventSiteGiftsStyle
+  photosStyle?: EventSitePhotosStyle
+  photosSize?: EventSitePhotosSize
+  travel?: string
+  scheduleStyle?: EventSiteScheduleStyle
+  groupByDay?: boolean
+  showTimes?: boolean
+  showItemDirections?: boolean
+  note?: string
+  map?: EventSiteMapMode
+  intro?: string
+  rsvpOpen?: boolean
+  allowMaybe?: boolean
+  collectPlusOne?: boolean
+  collectDietary?: boolean
+  collectMessage?: boolean
+  deadline?: string
+  image?: EventSiteImage
+}
+
+export type EventSiteCoverPhotoSide = 'left' | 'right'
+export type EventSiteNavPlacement = 'top' | 'side'
+export type EventSiteNavStyle = 'line' | 'pill' | 'underline' | 'solid'
+export type EventSiteNavAlign = 'above' | 'before' | 'below'
+export type EventSiteNavBorder = 'on' | 'off'
+export type EventSiteNavBorderWidth = 'thin' | 'medium' | 'thick'
+export type EventSiteNavBorderStyle = 'solid' | 'dashed' | 'dotted'
+
+export interface EventSiteCustomColors {
+  bg: string
+  fg: string
+  accent: string
+  muted?: string
+  card?: string
+}
+
+export interface EditorEventSite {
+  id: string
+  eventId: string
+  slug: string
+  status: EventSiteStatus
+  publishedAt: string | null
+  ownerAccessMode: EventSiteAccessMode
+  included: {
+    eventId: string
+    accessMode: EventSiteAccessMode
+    hasOwnGuestList: boolean
+  }[]
+  themePreset: string
+  fontPair: string
+  colorPalette: string
+  buttonStyle: string
+  coverLayout: string
+  coverPhotoSide?: EventSiteCoverPhotoSide
+  showEventType?: boolean
+  showEventTitle?: boolean
+  navPlacement: EventSiteNavPlacement
+  navStyle: EventSiteNavStyle
+  navAlign: EventSiteNavAlign
+  navName?: string
+  navBorder?: EventSiteNavBorder
+  navBorderWidth?: EventSiteNavBorderWidth
+  navBorderStyle?: EventSiteNavBorderStyle
+  customColors: EventSiteCustomColors | null
+  coverPhotoUrl: string | null
+  photos: { id: string; url: string; sortOrder: number }[]
+  sections: EventSiteSection[]
+  schedule?: PublicEventSlice['schedule']
+  party?: EventPartyRoster
+}
+
+export interface PublicEventSlice {
+  eventId: string
+  title: string
+  eventType: string
+  estimatedDate: string | null
+  location: string | null
+  accessMode: EventSiteAccessMode
+  hasOwnGuestList: boolean
+  schedule: {
+    id: string
+    title: string
+    date: string | null
+    startTime: string | null
+    endTime: string | null
+    location: string | null
+    directionsUrl?: string | null
+  }[]
+  canRsvp: boolean
+  rsvp?: { status: string; rsvpAt: string | null } | null
+}
+
+export interface PublicEventSite {
+  slug: string
+  status: 'PUBLISHED'
+  look: {
+    themePreset: string
+    fontPair: string
+    colorPalette: string
+    buttonStyle: string
+    coverLayout: string
+    coverPhotoSide?: EventSiteCoverPhotoSide
+    showEventType?: boolean
+    showEventTitle?: boolean
+    navPlacement: EventSiteNavPlacement
+    navStyle?: EventSiteNavStyle
+    navAlign?: EventSiteNavAlign
+    navName?: string
+    navBorder?: EventSiteNavBorder
+    navBorderWidth?: EventSiteNavBorderWidth
+    navBorderStyle?: EventSiteNavBorderStyle
+    customColors: EventSiteCustomColors | null
+    coverPhotoUrl: string | null
+  }
+  sections: EventSiteSection[]
+  photos: { id: string; url: string; sortOrder: number }[]
+  owner: PublicEventSlice
+  children: PublicEventSlice[]
+  robots: 'index' | 'noindex'
 }

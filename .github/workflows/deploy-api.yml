@@ -5,9 +5,11 @@
 # Required GitHub secret:
 #   AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A
 # Runtime env (set on the Azure app, not here): DATABASE_URL, WEB_URL,
-#   NEXT_PUBLIC_API_URL, CLERK_*, RESEND_* (RESEND_FROM_INVITATIONS,
+#   NEXT_PUBLIC_API_URL, CLERK_* (include CLERK_PUBLISHABLE_KEY or
+#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY for MCP OAuth discovery), RESEND_* (RESEND_FROM_INVITATIONS,
 #   RESEND_FROM_NOTIFICATIONS, optional DJANORA_CONTACT_EMAIL),
-#   AZURE_STORAGE_* (account + per-kind containers), etc.
+#   AZURE_STORAGE_* (account + per-kind containers),
+#   EVENT_SITE_SESSION_SECRET (≥32 bytes, HMAC for guest site sessions; do not reuse Clerk keys).
 
 name: Deploy API
 

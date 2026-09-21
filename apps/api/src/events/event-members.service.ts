@@ -33,6 +33,15 @@ const SURFACE_LABELS: Record<EventSurface, string> = {
   MOODBOARD: 'Mood board',
   VENDORS: 'Vendors',
   GUESTS: 'Guests',
+  PARTY: 'Wedding party',
+  SITE: 'Site',
+}
+
+function assertSiteGrant(role: EventMemberRole, surfaces?: EventSurface[]) {
+  if (!surfaces?.includes(EventSurface.SITE)) return
+  if (role !== EventMemberRole.EDITOR) {
+    throw new BadRequestException('Only an editor can be granted site access')
+  }
 }
 
 @Injectable()
@@ -182,6 +191,10 @@ export class EventMembersService {
     if (dto.surfaces.length === 0 && !dto.childGrants?.length) {
       throw new BadRequestException('Pick at least one tab or sub-event')
     }
+    assertSiteGrant(dto.role, dto.surfaces)
+    if (dto.childGrants?.some((g) => g.surfaces.includes(EventSurface.SITE))) {
+      throw new BadRequestException('Site access is granted on the parent invite, not a sub-event')
+    }
     await this.assertChildGrants(eventId, dto.childGrants)
 
     const existing = await this.prisma.eventMember.findFirst({
@@ -281,6 +294,11 @@ export class EventMembersService {
     await this.access.require(clerkId, eventId, { action: 'host' })
     const member = await this.prisma.eventMember.findFirst({ where: { id: memberId, eventId } })
     if (!member) throw new NotFoundException('Member not found')
+    const nextRole = dto.role ?? member.role
+    assertSiteGrant(nextRole, dto.surfaces ?? member.surfaces)
+    if (dto.childGrants?.some((g) => g.surfaces.includes(EventSurface.SITE))) {
+      throw new BadRequestException('Site access is granted on the parent invite, not a sub-event')
+    }
     if (dto.childGrants) await this.assertChildGrants(eventId, dto.childGrants)
 
     const updated = await this.prisma.$transaction(async (tx) => {

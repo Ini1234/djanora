@@ -7,6 +7,7 @@ import {
   Matches,
   ValidateIf,
   IsArray,
+  IsBoolean,
 } from 'class-validator'
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
@@ -54,6 +55,10 @@ export class CreateScheduleItemDto {
   @IsArray()
   @IsString({ each: true })
   inspirationItemIds?: string[]
+
+  @IsOptional()
+  @IsBoolean()
+  showOnSite?: boolean
 }
 
 export class UpdateScheduleItemDto {
@@ -104,4 +109,8 @@ export class UpdateScheduleItemDto {
   @IsInt()
   @Min(0)
   sortOrder?: number
+
+  @IsOptional()
+  @IsBoolean()
+  showOnSite?: boolean
 }

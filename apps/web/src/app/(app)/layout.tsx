@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
-import { getMe } from '@/lib/api.server'
+import { loadMe } from '@/lib/api.server'
 import { AppShell } from '@/components/dashboard/app-shell'
+import { BackendUnavailable } from '@/components/backend-unavailable'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getMe()
+  const { user, unavailable } = await loadMe()
 
-  if (!user) {
-    redirect('/sign-in')
-  }
+  if (unavailable) return <BackendUnavailable asPage />
+  if (!user) redirect('/sign-in')
 
   if (!user.onboardingCompletedAt) {
     redirect('/onboarding')

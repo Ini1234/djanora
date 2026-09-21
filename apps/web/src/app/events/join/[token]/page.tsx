@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import { currentUser } from '@clerk/nextjs/server'
 import { publicGet } from '@/lib/backend'
-import { getMe } from '@/lib/api.server'
+import { loadMe } from '@/lib/api.server'
 import { AppShell } from '@/components/dashboard/app-shell'
 import { JoinInviteActions } from './join-invite-actions'
 import type { EventSurface, UserMe } from '@/lib/api.types'
@@ -36,6 +36,8 @@ const SURFACE_LABELS: Record<EventSurface, string> = {
   MOODBOARD: 'Mood board',
   VENDORS: 'Vendors',
   GUESTS: 'Guests',
+  PARTY: 'Wedding party',
+  SITE: 'Site',
 }
 
 type InvitePreview =
@@ -167,14 +169,17 @@ function withShell(user: UserMe | null, children: ReactNode) {
   }
   return (
     <div className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
-      {children}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   )
 }
 
 export default async function JoinEventPage({ params }: Props) {
   const { token } = await params
-  const [data, clerkUser, me] = await Promise.all([getInvite(token), currentUser(), getMe()])
+  const [data, clerkUser, meResult] = await Promise.all([getInvite(token), currentUser(), loadMe()])
+  const me = meResult.unavailable ? null : meResult.user
   const signedIn = Boolean(clerkUser || me)
 
   if (!data) {

@@ -1,30 +1,35 @@
 'use client'
 
-import { ClerkProvider, UserProfile } from '@clerk/nextjs'
-import { clerkAppearance } from '@/lib/clerk-appearance'
+import { UserProfile } from '@clerk/nextjs'
+import { CLERK_APPEARANCE } from '@/lib/clerk-appearance'
+import { useTheme } from '@/components/theme-provider'
 
 export function SettingsSecurity() {
+  const { resolvedTheme } = useTheme()
+  const appearance = CLERK_APPEARANCE[resolvedTheme]
+
   return (
-    <ClerkProvider appearance={clerkAppearance} afterSignOutUrl="/">
-      <div className="overflow-hidden rounded-xl bg-white">
-        <UserProfile
-          routing="hash"
-          appearance={{
-            ...clerkAppearance,
-            elements: {
-              ...clerkAppearance.elements,
-              rootBox: { width: '100%' },
-              cardBox: { boxShadow: 'none', width: '100%' },
-              card: {
-                ...clerkAppearance.elements.card,
-                boxShadow: 'none',
-                border: 'none',
-                width: '100%',
-              },
+    <div
+      className="overflow-hidden rounded-xl"
+      style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+    >
+      <UserProfile
+        routing="hash"
+        appearance={{
+          ...appearance,
+          elements: {
+            ...appearance.elements,
+            rootBox: { width: '100%', colorScheme: resolvedTheme },
+            cardBox: { boxShadow: 'none', width: '100%' },
+            card: {
+              ...appearance.elements.card,
+              boxShadow: 'none',
+              border: 'none',
+              width: '100%',
             },
-          }}
-        />
-      </div>
-    </ClerkProvider>
+          },
+        }}
+      />
+    </div>
   )
 }

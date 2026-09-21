@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -66,6 +66,15 @@ export function MobileNav({
 
   const nav = isVendorMode ? VENDOR_NAV : HOST_NAV
 
+  useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href)
 
@@ -90,7 +99,8 @@ export function MobileNav({
             onClick={() => setOpen(true)}
             aria-label="Open navigation"
             aria-expanded={open}
-            className="text-brand-500 dark:text-brand-300 hover:text-brand-800 rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
+            aria-controls="mobile-app-nav"
+            className="tap-target text-brand-500 dark:text-brand-300 hover:text-brand-800 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
           >
             <Menu size={20} />
           </button>
@@ -109,11 +119,12 @@ export function MobileNav({
               onClick={() => setOpen(false)}
             />
             <motion.div
+              id="mobile-app-nav"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r shadow-2xl md:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col border-r shadow-2xl md:hidden"
               style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}
             >
               <div
@@ -127,7 +138,7 @@ export function MobileNav({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close navigation"
-                  className="text-brand-400 hover:text-brand-700 rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
+                  className="tap-target text-brand-400 hover:text-brand-700 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
                 >
                   <X size={20} />
                 </button>

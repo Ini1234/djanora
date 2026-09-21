@@ -108,6 +108,46 @@ enum EventSurface {
   MOODBOARD
   VENDORS
   GUESTS
+  PARTY
+  SITE
+}
+
+enum EventPartySide {
+  BRIDE
+  GROOM
+  OTHER
+}
+
+enum EventPartyStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+enum EventSiteStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum EventSiteAccessMode {
+  OPEN
+  INVITED_ONLY
+}
+
+enum EventSiteSectionType {
+  COVER
+  ABOUT
+  DRESS_CODE
+  SCHEDULE
+  GIFTS
+  TRAVEL
+  STAY
+  FAQ
+  PEOPLE
+  WHERE
+  RSVP
+  PHOTOS
+  CUSTOM
 }
 
 enum EventMemberRole {
@@ -188,6 +228,8 @@ model User {
   eventActivities  EventActivity[]   @relation("EventActivityActor")
   surfaceReads     EventSurfaceRead[]
   assignedChecklists EventChecklist[] @relation("ChecklistAssignee")
+  mcpSessions        McpSession[]
+  mcpConfirmTokens   McpConfirmToken[]
 
   @@index([clerkId])
   @@index([email])
@@ -315,6 +357,7 @@ model Event {
   guestCount      Int?          @map("guest_count")
   notes           String?       @db.Text
   isCompleted     Boolean       @default(false) @map("is_completed")
+  partyEnabled    Boolean       @default(false) @map("party_enabled")
   sortOrder       Int           @default(0) @map("sort_order")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -326,6 +369,7 @@ model Event {
   budgetItems     EventBudgetItem[]
   checklist       EventChecklist[]
   schedule        EventScheduleItem[]
+  partyMembers    EventPartyMember[]
   inquiries       Inquiry[]
   guests          Guest[]
   guestInvites    GuestInvite[]
@@ -336,10 +380,37 @@ model Event {
   surfaceReads    EventSurfaceRead[]
   userChecklists  UserChecklist[]
   subGrants       EventSubGrant[]
+  site            EventSite?
+  siteIncludes    EventSiteInclude[]
+  mcpSessions     McpSession[]
 
   @@index([userId])
   @@index([parentId])
   @@map("events")
+}
+
+model EventPartyMember {
+  id           String           @id @default(cuid())
+  eventId      String           @map("event_id")
+  name         String
+  role         String           @default("")
+  side         EventPartySide   @default(OTHER)
+  group        String?
+  bio          String?
+  sortOrder    Int              @default(0) @map("sort_order")
+  showOnSite   Boolean          @default(false) @map("show_on_site")
+  status       EventPartyStatus @default(PENDING)
+  pairedWithId String?          @unique @map("paired_with_id")
+  photoKey     String?          @map("photo_key")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  pairedWith   EventPartyMember? @relation("PartyPair", fields: [pairedWithId], references: [id], onDelete: SetNull)
+  pairOf       EventPartyMember? @relation("PartyPair")
+
+  @@index([eventId])
+  @@map("event_party_members")
 }
 
 // ─────────────────────────────────────────────
@@ -653,6 +724,7 @@ model EventScheduleItem {
   startTime        String?           @map("start_time") @db.VarChar(5)
   endTime          String?           @map("end_time") @db.VarChar(5)
   location         String?
+  showOnSite       Boolean           @default(false) @map("show_on_site")
   sortOrder        Int               @default(0) @map("sort_order")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
@@ -995,6 +1067,91 @@ model VendorFavorite {
 }
 
 // ─────────────────────────────────────────────
+// EVENT SITE (public guest page)
+// ─────────────────────────────────────────────
+
+model EventSite {
+  id              String              @id @default(cuid())
+  eventId         String              @unique @map("event_id")
+  slug            String              @unique
+  status          EventSiteStatus     @default(DRAFT)
+  publishedAt     DateTime?           @map("published_at")
+  ownerAccessMode EventSiteAccessMode @default(INVITED_ONLY) @map("owner_access_mode")
+  themePreset     String              @default("linen") @map("theme_preset") @db.VarChar(32)
+  fontPair        String              @default("serif-sans") @map("font_pair") @db.VarChar(32)
+  colorPalette    String              @default("ivory-gold") @map("color_palette") @db.VarChar(32)
+  buttonStyle     String              @default("pill") @map("button_style") @db.VarChar(32)
+  coverLayout     String              @default("full-bleed") @map("cover_layout") @db.VarChar(32)
+  coverPhotoSide  String              @default("left") @map("cover_photo_side") @db.VarChar(8)
+  showEventType   Boolean             @default(false) @map("show_event_type")
+  showEventTitle  Boolean             @default(false) @map("show_event_title")
+  navPlacement    String              @default("top") @map("nav_placement") @db.VarChar(16)
+  navStyle        String              @default("line") @map("nav_style") @db.VarChar(16)
+  navAlign        String              @default("above") @map("nav_align") @db.VarChar(16)
+  navName         String              @default("") @map("nav_name") @db.VarChar(80)
+  navBorder       String              @default("on") @map("nav_border") @db.VarChar(8)
+  navBorderWidth  String              @default("thin") @map("nav_border_width") @db.VarChar(16)
+  navBorderStyle  String              @default("solid") @map("nav_border_style") @db.VarChar(16)
+  customColors    Json?               @map("custom_colors")
+  coverPhotoKey   String?             @map("cover_photo_key")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  event           Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  includes        EventSiteInclude[]
+  sections        EventSiteSection[]
+  photos          EventSitePhoto[]
+
+  @@map("event_sites")
+}
+
+model EventSiteInclude {
+  siteId           String              @map("site_id")
+  eventId          String              @map("event_id")
+  accessMode       EventSiteAccessMode @default(INVITED_ONLY) @map("access_mode")
+  hasOwnGuestList  Boolean             @default(true) @map("has_own_guest_list")
+
+  site             EventSite           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  event            Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([siteId, eventId])
+  @@index([eventId])
+  @@map("event_site_includes")
+}
+
+model EventSiteSection {
+  id        String               @id @default(cuid())
+  siteId    String               @map("site_id")
+  type      EventSiteSectionType
+  enabled   Boolean              @default(false)
+  sortOrder Int                  @default(0) @map("sort_order")
+  payload   Json                 @default("{}")
+
+  site      EventSite            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  photos    EventSitePhoto[]
+
+  @@index([siteId])
+  @@map("event_site_sections")
+}
+
+model EventSitePhoto {
+  id        String             @id @default(cuid())
+  siteId    String             @map("site_id")
+  sectionId String?            @map("section_id")
+  personId  String?            @map("person_id")
+  filename  String
+  alt       String             @default("") @db.VarChar(200)
+  sortOrder Int                @default(0) @map("sort_order")
+
+  site      EventSite          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  section   EventSiteSection?  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([sectionId])
+  @@map("event_site_photos")
+}
+
+// ─────────────────────────────────────────────
 // NOTIFICATIONS
 // ─────────────────────────────────────────────
 
@@ -1013,4 +1170,42 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+// ─────────────────────────────────────────────
+// MCP CONNECTOR (docs/specs/mcp-connector.md)
+// ─────────────────────────────────────────────
+
+model McpSession {
+  id              String    @id
+  userId          String    @map("user_id")
+  clerkId         String    @map("clerk_id")
+  currentEventId  String?   @map("current_event_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  lastUsedAt      DateTime  @default(now()) @map("last_used_at")
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentEvent    Event?    @relation(fields: [currentEventId], references: [id], onDelete: SetNull)
+  confirmTokens   McpConfirmToken[]
+
+  @@index([userId, lastUsedAt])
+  @@map("mcp_sessions")
+}
+
+model McpConfirmToken {
+  id           String    @id @default(cuid())
+  tokenHash    String    @unique @map("token_hash")
+  sessionId    String    @map("session_id")
+  userId       String    @map("user_id")
+  toolName     String    @map("tool_name")
+  payloadHash  String    @map("payload_hash")
+  expiresAt    DateTime  @map("expires_at")
+  spentAt      DateTime? @map("spent_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  session      McpSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, toolName, spentAt])
+  @@map("mcp_confirm_tokens")
 }

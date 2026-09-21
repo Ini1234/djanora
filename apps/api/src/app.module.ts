@@ -15,6 +15,8 @@ import { VendorContactsModule } from './vendor-contacts/vendor-contacts.module'
 import { SseModule } from './sse/sse.module'
 import { InspirationModule } from './inspiration/inspiration.module'
 import { UploadsModule } from './uploads/uploads.module'
+import { EventSitesModule } from './event-sites/event-sites.module'
+import { McpModule } from './mcp/mcp.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 
@@ -41,6 +43,8 @@ import { AppService } from './app.service'
     SseModule,
     InspirationModule,
     UploadsModule,
+    EventSitesModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

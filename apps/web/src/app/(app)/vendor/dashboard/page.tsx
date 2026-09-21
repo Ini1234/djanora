@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { getMe, getMyVendorProfile } from '@/lib/api.server'
+import { loadMe, getMyVendorProfile } from '@/lib/api.server'
 import { VendorDashboardHome } from './vendor-dashboard-home'
 
 export const metadata: Metadata = { title: 'Vendor Dashboard – Djanora' }
 
 export default async function VendorDashboardPage() {
-  const [user, profile] = await Promise.all([getMe(), getMyVendorProfile()])
+  const [{ user }, profile] = await Promise.all([loadMe(), getMyVendorProfile()])
 
   return (
     <VendorDashboardHome

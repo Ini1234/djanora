@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsDateString, IsInt, Min, Max, MinLength } from 'class-validator'
+import {
+  IsBoolean,
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+  MinLength,
+} from 'class-validator'
 
 export class UpdateEventDto {
   @IsOptional()
@@ -24,4 +33,8 @@ export class UpdateEventDto {
   @IsInt()
   @Min(0)
   totalBudget?: number
+
+  @IsOptional()
+  @IsBoolean()
+  partyEnabled?: boolean
 }
