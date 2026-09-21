@@ -9,6 +9,7 @@ import { proxyClient } from '@/lib/proxy-client'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { signOutToHome } from '@/lib/client-sign-out'
 import { PersonalChecklist } from '@/components/dashboard/personal-checklist'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
 import type { UserMe } from '@/lib/api.types'
 
 const SettingsSecurity = dynamic(
@@ -24,6 +25,7 @@ const SettingsSecurity = dynamic(
 )
 
 export function SettingsClient({ user }: { user: UserMe }) {
+  const { openChat } = useDjanChatLauncher()
   const [firstName, setFirstName] = useState(user.firstName ?? '')
   const [lastName, setLastName] = useState(user.lastName ?? '')
   const [phone, setPhone] = useState(user.phone ?? '')
@@ -175,8 +177,17 @@ export function SettingsClient({ user }: { user: UserMe }) {
           Claude &amp; assistants
         </h2>
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-          Paste this URL as a custom connector. Sign in with your Djanora account. Leave OAuth
-          Client ID blank.
+          Prefer{' '}
+          <button
+            type="button"
+            onClick={() => openChat()}
+            className="underline"
+            style={{ color: 'var(--color-brand-primary)' }}
+          >
+            Djan
+          </button>{' '}
+          in the app (the chat bubble). This URL is only if you still want Claude or another
+          connector. Sign in with your Djanora account. Leave OAuth Client ID blank.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sr-only" htmlFor="mcp-connector-url">

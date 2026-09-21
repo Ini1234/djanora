@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SseProvider } from '@/contexts/sse-context'
+import { DjanChatHost } from '@/components/assistant/djan-chatbot'
 
 export function AppProviders({ children, signedIn }: { children: ReactNode; signedIn: boolean }) {
   const [queryClient] = useState(
@@ -21,7 +22,9 @@ export function AppProviders({ children, signedIn }: { children: ReactNode; sign
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SseProvider enabled={signedIn}>{children}</SseProvider>
+      <SseProvider enabled={signedIn}>
+        <DjanChatHost showLauncher={signedIn}>{children}</DjanChatHost>
+      </SseProvider>
     </QueryClientProvider>
   )
 }

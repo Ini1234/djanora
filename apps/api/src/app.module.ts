@@ -17,6 +17,7 @@ import { InspirationModule } from './inspiration/inspiration.module'
 import { UploadsModule } from './uploads/uploads.module'
 import { EventSitesModule } from './event-sites/event-sites.module'
 import { McpModule } from './mcp/mcp.module'
+import { AssistantModule } from './assistant/assistant.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 
@@ -45,6 +46,7 @@ import { AppService } from './app.service'
     UploadsModule,
     EventSitesModule,
     McpModule,
+    AssistantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

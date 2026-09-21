@@ -230,6 +230,7 @@ model User {
   assignedChecklists EventChecklist[] @relation("ChecklistAssignee")
   mcpSessions        McpSession[]
   mcpConfirmTokens   McpConfirmToken[]
+  assistantThreads   AssistantThread[]
 
   @@index([clerkId])
   @@index([email])
@@ -383,6 +384,7 @@ model Event {
   site            EventSite?
   siteIncludes    EventSiteInclude[]
   mcpSessions     McpSession[]
+  assistantThreads AssistantThread[]
 
   @@index([userId])
   @@index([parentId])
@@ -1208,4 +1210,25 @@ model McpConfirmToken {
 
   @@index([sessionId, toolName, spentAt])
   @@map("mcp_confirm_tokens")
+}
+
+// ─────────────────────────────────────────────
+// IN-APP ASSISTANT
+// ─────────────────────────────────────────────
+
+model AssistantThread {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  title          String?  @db.VarChar(160)
+  transcriptKey  String   @unique @map("transcript_key") @db.VarChar(80)
+  sessionId      String   @unique @map("session_id") @db.VarChar(80)
+  currentEventId String?  @map("current_event_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentEvent   Event?   @relation(fields: [currentEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, updatedAt])
+  @@map("assistant_threads")
 }

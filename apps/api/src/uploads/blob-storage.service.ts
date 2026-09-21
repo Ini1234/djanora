@@ -6,11 +6,12 @@ import { createReadStream, existsSync, mkdirSync, unlinkSync, writeFileSync } fr
 import { extname, join } from 'path'
 import { Readable } from 'stream'
 
-export type BlobKind = 'images' | 'receipts'
+export type BlobKind = 'images' | 'receipts' | 'chats'
 
 const KIND_ENV: Record<BlobKind, string> = {
   images: 'AZURE_STORAGE_CONTAINER_IMAGES',
   receipts: 'AZURE_STORAGE_CONTAINER_RECEIPTS',
+  chats: 'AZURE_STORAGE_CONTAINER_CHATS',
 }
 
 const PLACEHOLDER = /^(your[_-]|changeme)/i
@@ -92,6 +93,16 @@ export class BlobStorageService {
     return this.downloadFromDisk(kind, filename)
   }
 
+  async downloadBuffer(kind: BlobKind, filename: string): Promise<Buffer | null> {
+    const stream = await this.download(kind, filename)
+    if (!stream) return null
+    const chunks: Buffer[] = []
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    }
+    return Buffer.concat(chunks)
+  }
+
   async delete(kind: BlobKind, filename: string) {
     if (!isSafeName(filename)) return
 
@@ -122,7 +133,7 @@ export class BlobStorageService {
   }
 
   private diskDir(kind: BlobKind) {
-    return kind === 'receipts' ? join(this.uploadsDir, 'private') : this.uploadsDir
+    return kind === 'images' ? this.uploadsDir : join(this.uploadsDir, 'private')
   }
 
   private async ensureContainer(container: ContainerClient) {
@@ -157,4 +168,8 @@ export function makeUploadName(originalName: string, prefix = '') {
   const ext = extname(originalName).toLowerCase()
   const safeExt = ALLOWED_EXT.has(ext) ? ext : ''
   return `${prefix}${randomBytes(16).toString('hex')}${safeExt}`
+}
+
+export function makeChatBlobName() {
+  return `${randomBytes(16).toString('hex')}.json`
 }

@@ -23,6 +23,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { signOutToHome } from '@/lib/client-sign-out'
 import { useModeSwitch } from './use-mode-switch'
 import { useTranslations } from 'next-intl'
+import { DjanNavIcon } from '@/components/assistant/djan-mark'
 
 interface MobileNavProps {
   displayName: string
@@ -53,12 +54,14 @@ export function MobileNav({
     { href: '/inspiration', label: t('inspiration'), icon: Sparkles },
     { href: '/likes', label: t.has('liked') ? t('liked') : 'Liked', icon: Heart },
     { href: '/vendors', label: t('findVendors'), icon: Search },
+    { href: '/assistant', label: t.has('assistant') ? t('assistant') : 'Djan', icon: DjanNavIcon },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/settings', label: t('settings'), icon: Settings },
   ]
 
   const VENDOR_NAV = [
     { href: '/vendor/dashboard', label: t('overview'), icon: LayoutDashboard, exact: true },
+    { href: '/assistant', label: t.has('assistant') ? t('assistant') : 'Djan', icon: DjanNavIcon },
     { href: '/inquiries', label: t('inquiries'), icon: MessageSquare },
     { href: '/portfolio', label: t('portfolio'), icon: Search },
     { href: '/settings', label: t('settings'), icon: Settings },

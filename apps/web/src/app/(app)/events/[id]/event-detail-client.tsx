@@ -35,6 +35,8 @@ import { EventItemComments } from './event-item-comments'
 import { EventActivityFeed } from './event-activity-feed'
 import { proxyClient } from '@/lib/proxy-client'
 import { useSse } from '@/contexts/sse-context'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
+import { DjanMark } from '@/components/assistant/djan-mark'
 import type { Event, EventSurface } from '@/lib/api.types'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 import { isPastEvent } from '@/lib/event-timing'
@@ -336,6 +338,7 @@ export function EventDetailClient({ event }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { on } = useSse()
+  const { openChat } = useDjanChatLauncher()
   const urlTab = tabFromParam(searchParams.get('tab'))
   const urlItem = searchParams.get('item')
   const [tab, setTab] = useState<Tab>(urlTab ?? 'overview')
@@ -624,6 +627,20 @@ export function EventDetailClient({ event }: Props) {
 
               {/* Action buttons */}
               <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => openChat({ eventId: event.id })}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-all hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[.98]"
+                  style={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                    outlineColor: 'var(--ring)',
+                  }}
+                >
+                  <DjanMark className="h-5 w-5 text-[10px]" />
+                  Djan
+                </button>
                 {canEditSite && (
                   <Link
                     href={`/events/${event.id}/site`}
