@@ -6,6 +6,8 @@ import { corsOrigins } from './common/clerk-auth'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true })
 
+  const http = app.getHttpAdapter().getInstance() as { set: (key: string, value: unknown) => void }
+  http.set('trust proxy', 1)
   app.setGlobalPrefix('api')
 
   app.useGlobalPipes(

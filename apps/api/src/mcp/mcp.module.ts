@@ -12,6 +12,7 @@ import { VendorContactsModule } from '../vendor-contacts/vendor-contacts.module'
 import { VendorsModule } from '../vendors/vendors.module'
 import { McpBootstrap } from './mcp.bootstrap'
 import { McpConfirmService } from './mcp.confirm.service'
+import { McpOAuthService } from './mcp.oauth'
 import { McpJobsService } from './mcp.jobs'
 import { McpRateLimitService } from './mcp.rate-limit'
 import { McpRegistry } from './mcp.registry'
@@ -38,6 +39,7 @@ import { McpSessionService } from './mcp.session.service'
     McpScopeService,
     McpRateLimitService,
     McpJobsService,
+    McpOAuthService,
     McpRegistry,
     McpBootstrap,
   ],

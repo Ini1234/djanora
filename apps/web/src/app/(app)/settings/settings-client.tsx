@@ -175,7 +175,8 @@ export function SettingsClient({ user }: { user: UserMe }) {
           Claude &amp; assistants
         </h2>
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-          Paste this URL as a custom connector. Sign in with your Djanora account.
+          Paste this URL as a custom connector. Sign in with your Djanora account. Leave OAuth
+          Client ID blank.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sr-only" htmlFor="mcp-connector-url">
