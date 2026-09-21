@@ -1,16 +1,10 @@
-import {
-  Controller,
-  Headers,
-  Query,
-  UnauthorizedException,
-  MessageEvent,
-  Sse,
-} from '@nestjs/common'
+import { Controller, Headers, UnauthorizedException, MessageEvent, Sse } from '@nestjs/common'
 import { Observable, map } from 'rxjs'
 import { verifyToken } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService } from './sse.service'
+import { clerkVerifyOptions } from '../common/clerk-auth'
 
 function bearerToken(authorization?: string): string | undefined {
   if (!authorization) return undefined
@@ -29,19 +23,16 @@ export class SseController {
 
   /**
    * GET /api/sse/stream
-   * The Next BFF sends Authorization. Query `token` is a fallback only.
+   * The Next BFF sends Authorization. Query tokens are not accepted.
    */
   @Sse('stream')
   async stream(
     @Headers('authorization') authorization?: string,
-    @Query('token') queryToken?: string,
   ): Promise<Observable<MessageEvent>> {
-    const token = bearerToken(authorization) ?? queryToken
+    const token = bearerToken(authorization)
     if (!token) throw new UnauthorizedException('Missing token')
 
-    const payload = await verifyToken(token, {
-      secretKey: this.config.get<string>('CLERK_SECRET_KEY')!,
-    }).catch(() => {
+    const payload = await verifyToken(token, clerkVerifyOptions(this.config)).catch(() => {
       throw new UnauthorizedException('Invalid token')
     })
 

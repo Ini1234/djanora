@@ -22,6 +22,19 @@ import {
   ImportGuestsDto,
 } from './dto/guests.dto'
 
+/** List/mutate responses must never include the RSVP capability token. */
+export const GUEST_INVITE_LIST_SELECT = {
+  id: true,
+  rsvpStatus: true,
+  rsvpAt: true,
+  plusOneName: true,
+  dietaryNote: true,
+  guestMessage: true,
+  sentAt: true,
+  sentVia: true,
+  expiresAt: true,
+} as const
+
 @Injectable()
 export class GuestsService {
   constructor(
@@ -48,7 +61,7 @@ export class GuestsService {
     await this.assertEventAccess(clerkId, eventId, 'view')
     return this.prisma.guest.findMany({
       where: { eventId },
-      include: { invite: true },
+      include: { invite: { select: GUEST_INVITE_LIST_SELECT } },
       orderBy: { createdAt: 'asc' },
     })
   }
@@ -66,7 +79,7 @@ export class GuestsService {
         plusOneAllowed: dto.plusOneAllowed ?? false,
         tableNumber: dto.tableNumber ?? null,
       },
-      include: { invite: true },
+      include: { invite: { select: GUEST_INVITE_LIST_SELECT } },
     })
     void this.activity.touchEvent(eventId)
     return guest
@@ -126,7 +139,7 @@ export class GuestsService {
     }
     const guests = await this.prisma.guest.findMany({
       where: { eventId },
-      include: { invite: true },
+      include: { invite: { select: GUEST_INVITE_LIST_SELECT } },
       orderBy: { createdAt: 'asc' },
     })
     return { created: toCreate.length, skipped, guests }
@@ -148,7 +161,7 @@ export class GuestsService {
         ...(dto.plusOneAllowed !== undefined && { plusOneAllowed: dto.plusOneAllowed }),
         ...(dto.tableNumber !== undefined && { tableNumber: dto.tableNumber }),
       },
-      include: { invite: true },
+      include: { invite: { select: GUEST_INVITE_LIST_SELECT } },
     })
     void this.activity.touchEvent(eventId)
     return updated
@@ -238,7 +251,9 @@ export class GuestsService {
       })
     }
 
-    return { ...invite, rsvpUrl }
+    const safeInvite = { ...invite, rsvpUrl }
+    delete (safeInvite as { token?: string }).token
+    return safeInvite
   }
 
   async bulkSendInvites(clerkId: string, eventId: string, dto: BulkSendInviteDto) {

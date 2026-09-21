@@ -113,6 +113,7 @@ export class InspirationService {
     const rows = await this.prisma.inspirationItem.findMany({
       where: { ...this.feedWhere(category, tag), embedding: { not: null } },
       include: POST_INCLUDE,
+      take: 200,
     })
     const embeddings = await this.prisma.inspirationItem.findMany({
       where: { id: { in: rows.map((r) => r.id) } },
@@ -235,7 +236,10 @@ export class InspirationService {
   // ─── Create ───────────────────────────────────────────────────────────────────
 
   async create(clerkId: string, dto: CreateInspirationDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findUnique({
+      where: { clerkId },
+      include: { vendorProfile: { select: { id: true } } },
+    })
     if (!user) throw new NotFoundException('User not found')
 
     const text = [dto.title, dto.description, ...(dto.tags ?? [])].join(' ')
@@ -254,7 +258,7 @@ export class InspirationService {
         priceRangeFrom: dto.priceRangeFrom,
         priceRangeTo: dto.priceRangeTo,
         currency: dto.currency ?? 'CAD',
-        vendorProfileId: dto.vendorProfileId,
+        vendorProfileId: user.vendorProfile?.id ?? null,
         isAdminCurated: false,
         visibility: InspirationVisibility.INSPIRATION,
         createdById: user.id,
@@ -650,6 +654,7 @@ export class InspirationService {
       const vendors = await this.prisma.vendorProfile.findMany({
         where: { isActive: true, embedding: { not: null } },
         select: { ...VENDOR_SELECT, embedding: true },
+        take: 200,
       })
 
       if (vendors.length > 0) {

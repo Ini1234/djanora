@@ -42,8 +42,4 @@ export class CreateInspirationDto {
   @IsOptional()
   @IsString()
   currency?: string
-
-  @IsOptional()
-  @IsString()
-  vendorProfileId?: string
 }

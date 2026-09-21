@@ -261,6 +261,8 @@ describe('custom section payload', () => {
     expect(sanitizeRichText('<p>Hi</p><img src="https://evil.test/x.jpg" alt="x">', 8000)).toBe(
       '<p>Hi</p>',
     )
+    expect(sanitizeRichText('<scr<script>ipt>alert(1)</script>', 8000)).not.toMatch(/script/i)
+    expect(sanitizeRichText('<p>ok\u0000<script>x</script></p>', 8000)).toBe('<p>ok</p>')
   })
 
   it('sanitizes party rows and RSVP rules', () => {
@@ -496,8 +498,8 @@ describe('site visibility (AC-11, AC-12)', () => {
     )
     expect(sealed.eventId).toBe('')
     expect(sealed.title).toBe('Secret wedding')
-    expect(sealed.location).toBe('Lagos')
-    expect(sealed.estimatedDate).toBe('2026-09-01')
+    expect(sealed.location).toBeNull()
+    expect(sealed.estimatedDate).toBeNull()
     expect(sealed.schedule).toEqual([])
     expect(sealed.canRsvp).toBe(false)
   })
@@ -540,7 +542,8 @@ describe('site visibility (AC-11, AC-12)', () => {
     )
     expect(hidden.title).toBe('')
     expect(hidden.eventType).toBe('')
-    expect(hidden.location).toBe('Lagos')
+    expect(hidden.location).toBeNull()
+    expect(hidden.estimatedDate).toBeNull()
     const timed = redactPublicSchedule(
       [
         {

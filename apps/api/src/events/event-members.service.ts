@@ -20,6 +20,13 @@ const MEMBER_USER_SELECT = {
   avatarUrl: true,
 } as const
 
+function redactMemberUser<T extends { email: string }>(user: T | null, revealEmail: boolean) {
+  if (!user) return user
+  if (revealEmail) return user
+  const { email: _email, ...rest } = user
+  return rest
+}
+
 const ROLE_LABELS: Record<EventMemberRole, string> = {
   EDITOR: 'Editor',
   COMMENTER: 'Commenter',
@@ -83,24 +90,24 @@ export class EventMembersService {
       host: host
         ? {
             id: host.id,
-            email: host.email,
+            email: access.isHost ? host.email : undefined,
             role: 'HOST' as const,
             surfaces: ALL_SURFACES,
             acceptedAt: access.event.createdAt,
             isHost: true,
-            user: host,
+            user: redactMemberUser(host, access.isHost),
           }
         : null,
       members: members.map((m) => ({
         id: m.id,
-        email: m.email,
+        email: access.isHost ? m.email : undefined,
         role: m.role,
         surfaces: m.surfaces,
         childGrants: access.isHost ? m.subGrants : [],
         acceptedAt: m.acceptedAt,
         createdAt: m.createdAt,
         isHost: false,
-        user: m.user,
+        user: redactMemberUser(m.user, access.isHost),
         inviteUrl:
           access.isHost && !m.acceptedAt ? `${this.webUrl}/events/join/${m.token}` : undefined,
       })),
@@ -142,22 +149,23 @@ export class EventMembersService {
     }> = []
 
     const skipSelf = (userId: string) => !includeSelf && userId === access.user.id
+    const emailOf = (email: string) => (access.isHost ? email : '')
 
     if (host && !skipSelf(host.id)) {
-      people.push({ ...host, role: 'HOST' })
+      people.push({ ...host, email: emailOf(host.email), role: 'HOST' })
     }
 
     for (const member of members) {
       if (!member.user || skipSelf(member.user.id)) continue
       if (surface && !member.surfaces.includes(surface)) continue
-      people.push({ ...member.user, role: member.role })
+      people.push({ ...member.user, email: emailOf(member.user.email), role: member.role })
     }
 
     for (const grant of parentGrants) {
       const person = grant.member.user
       if (!person || skipSelf(person.id)) continue
       if (surface && !grant.surfaces.includes(surface)) continue
-      people.push({ ...person, role: grant.member.role })
+      people.push({ ...person, email: emailOf(person.email), role: grant.member.role })
     }
 
     const seen = new Set<string>()

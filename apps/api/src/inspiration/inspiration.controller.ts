@@ -16,9 +16,16 @@ import { CreateInspirationCommentDto } from './dto/create-inspiration-comment.dt
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { InspirationSearchThrottleGuard } from '../common/guards/inspiration-search-throttle.guard'
+import { ThrottlerGuard } from '@nestjs/throttler'
 
 interface ClerkPayload {
   sub: string
+}
+
+function parseLimit(raw: string | undefined, fallback: number, max = 40) {
+  const parsed = raw ? parseInt(raw, 10) : fallback
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(Math.max(parsed, 1), max)
 }
 
 @Controller('inspiration')
@@ -33,7 +40,7 @@ export class InspirationController {
     @Query('tag') tag?: string,
     @Query('limit') limit?: string,
   ) {
-    const lim = limit ? parseInt(limit) : undefined
+    const lim = parseLimit(limit, q?.trim() ? 20 : 40)
     const slug = tag?.trim() || undefined
     if (q?.trim()) return this.svc.search(q, category, lim, slug)
     return this.svc.findAll(category, lim, slug)
@@ -82,7 +89,7 @@ export class InspirationController {
 
   @Get(':id/matching-vendors')
   getMatchingVendors(@Param('id') id: string, @Query('limit') limit?: string) {
-    return this.svc.getMatchingVendors(id, limit ? parseInt(limit) : undefined)
+    return this.svc.getMatchingVendors(id, parseLimit(limit, 8, 20))
   }
 
   @Get(':id/comments')
@@ -91,7 +98,7 @@ export class InspirationController {
   }
 
   @Post(':id/comments')
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(ClerkAuthGuard, ThrottlerGuard)
   addComment(
     @CurrentUser() user: ClerkPayload,
     @Param('id') id: string,

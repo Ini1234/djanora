@@ -353,17 +353,13 @@ export function sanitizeSiteHref(raw: string) {
   return null
 }
 
-/** Allow a writing subset (bold, lists, links). Strip scripts, styles, and event handlers. */
-export function sanitizeRichText(raw: string, max: number) {
-  let html = String(raw ?? '')
+function stripRichOnce(html: string) {
+  return html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<textarea[\s\S]*?<\/textarea>/gi, '')
-
-  html = html.replace(
-    /<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
-    (full, tag: string, attrs: string) => {
+    .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (full, tag: string, attrs: string) => {
       const name = tag.toLowerCase()
       const closing = full.startsWith('</')
       if (!RICH_TAGS.has(name)) return ''
@@ -378,9 +374,17 @@ export function sanitizeRichText(raw: string, max: number) {
           : '<a>'
       }
       return `<${name}>`
-    },
-  )
+    })
+}
 
+/** Allow a writing subset (bold, lists, links). Strip scripts, styles, and event handlers. */
+export function sanitizeRichText(raw: string, max: number) {
+  let html = String(raw ?? '').replace(/\0/g, '')
+  for (let i = 0; i < 8; i++) {
+    const next = stripRichOnce(html)
+    if (next === html) break
+    html = next
+  }
   return html.slice(0, max)
 }
 

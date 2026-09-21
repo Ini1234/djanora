@@ -32,7 +32,7 @@ interface Mentionable {
   id: string
   firstName: string | null
   lastName: string | null
-  email: string
+  email?: string
 }
 
 function displayName(person: {
@@ -522,8 +522,8 @@ function Composer({
     return mentionable
       .filter((p) => {
         const name = displayName(p).toLowerCase()
-        const email = p.email.toLowerCase()
-        return name.includes(q) || email.includes(q)
+        const email = p.email?.toLowerCase() ?? ''
+        return name.includes(q) || (email ? email.includes(q) : false)
       })
       .slice(0, 8)
   }, [mentionable, mentionQuery])
@@ -602,9 +602,11 @@ function Composer({
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   <span className="font-medium">{displayName(p)}</span>
-                  <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>
-                    {p.email}
-                  </span>
+                  {p.email ? (
+                    <span className="ml-1.5" style={{ color: 'var(--color-muted)' }}>
+                      {p.email}
+                    </span>
+                  ) : null}
                 </button>
               ))
             ) : (
