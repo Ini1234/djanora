@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import type { Request } from 'express'
 import { AppModule } from './app.module'
-import { corsOrigins } from './common/clerk-auth'
+import { corsOptionsForPath } from './common/clerk-auth'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true })
@@ -18,10 +19,8 @@ async function bootstrap() {
     }),
   )
 
-  app.enableCors({
-    origin: corsOrigins(),
-    credentials: true,
-    exposedHeaders: ['WWW-Authenticate', 'Mcp-Session-Id'],
+  app.enableCors((req: Request, callback: (err: Error | null, options?: object) => void) => {
+    callback(null, corsOptionsForPath(req.originalUrl || req.url || ''))
   })
 
   const port = Number(process.env.PORT ?? 3001)

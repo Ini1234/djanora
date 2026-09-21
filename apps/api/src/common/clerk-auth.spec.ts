@@ -1,4 +1,10 @@
-import { clerkAuthorizedParties, clerkVerifyOptions, corsOrigins } from './clerk-auth'
+import {
+  clerkAuthorizedParties,
+  clerkVerifyOptions,
+  corsOptionsForPath,
+  corsOrigins,
+  isMcpPublicPath,
+} from './clerk-auth'
 
 describe('clerkAuthorizedParties', () => {
   it('splits CLERK_AUTHORIZED_PARTIES', () => {
@@ -44,5 +50,20 @@ describe('corsOrigins', () => {
       'http://localhost:3000',
       'http://127.0.0.1:3000',
     ])
+  })
+})
+
+describe('MCP CORS', () => {
+  it('treats MCP and OAuth discovery as public CORS surfaces', () => {
+    expect(isMcpPublicPath('/mcp')).toBe(true)
+    expect(isMcpPublicPath('/.well-known/oauth-protected-resource/mcp')).toBe(true)
+    expect(isMcpPublicPath('/.well-known/oauth-authorization-server')).toBe(true)
+    expect(isMcpPublicPath('/oauth/register')).toBe(true)
+    expect(isMcpPublicPath('/api/events')).toBe(false)
+  })
+
+  it('reflects any origin on MCP paths so Claude preflight can succeed', () => {
+    expect(corsOptionsForPath('/mcp').origin).toBe(true)
+    expect(corsOptionsForPath('/api/events').origin).not.toBe(true)
   })
 })

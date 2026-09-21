@@ -1,4 +1,5 @@
 import {
+  clerkFrontendApi,
   DcrError,
   isSafeRedirectUri,
   McpOAuthService,
@@ -6,6 +7,8 @@ import {
   toRfc7591Client,
   withNestRegistration,
 } from './mcp.oauth'
+
+const TEST_PK = `pk_test_${Buffer.from('sterling-jennet-2985.clerk.accounts.dev$').toString('base64')}`
 
 describe('mcp.oauth helpers', () => {
   it('accepts https and localhost redirects only', () => {
@@ -45,6 +48,11 @@ describe('mcp.oauth helpers', () => {
         .registration_endpoint,
     ).toBe('https://api.example/oauth/register')
   })
+
+  it('decodes Clerk frontend API from a publishable key', () => {
+    expect(clerkFrontendApi(TEST_PK)).toBe('https://sterling-jennet-2985.clerk.accounts.dev')
+    expect(clerkFrontendApi('not-a-key')).toBeNull()
+  })
 })
 
 describe('McpOAuthService.register', () => {
@@ -53,7 +61,6 @@ describe('McpOAuthService.register', () => {
 
   afterEach(() => {
     global.fetch = originalFetch
-    jest.resetModules()
     jest.clearAllMocks()
   })
 
@@ -99,5 +106,27 @@ describe('McpOAuthService.register', () => {
     })
     const svc = new McpOAuthService(config as never)
     await expect(svc.discoverOAuthMode()).resolves.toBe('nest')
+  })
+
+  it('uses Clerk AS metadata when the settings API is unavailable', async () => {
+    global.fetch = jest.fn((input: RequestInfo | URL) => {
+      const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (href.includes('oauth_application_settings')) {
+        return Promise.resolve({ ok: false, status: 403 } as Response)
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ client_id_metadata_document_supported: true }),
+      } as Response)
+    })
+    const svc = new McpOAuthService({
+      get: (key: string) =>
+        key === 'CLERK_SECRET_KEY'
+          ? 'sk_test'
+          : key === 'CLERK_PUBLISHABLE_KEY'
+            ? TEST_PK
+            : undefined,
+    } as never)
+    await expect(svc.discoverOAuthMode()).resolves.toBe('clerk')
   })
 })

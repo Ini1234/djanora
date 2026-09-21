@@ -30,3 +30,30 @@ export function corsOrigins(): string[] {
     .filter(Boolean)
   return [...new Set([web, 'http://localhost:3000', 'http://127.0.0.1:3000', ...extras])]
 }
+
+/** MCP resource, OAuth discovery, and optional Nest DCR — probed by Claude from the browser. */
+export function isMcpPublicPath(path: string) {
+  const p = (path.split('?')[0] ?? '').replace(/\/+$/, '') || '/'
+  return (
+    p === '/mcp' ||
+    p.startsWith('/mcp/') ||
+    p.startsWith('/.well-known/oauth-protected-resource') ||
+    p.startsWith('/.well-known/oauth-authorization-server') ||
+    p === '/oauth/register'
+  )
+}
+
+export function corsOptionsForPath(path: string) {
+  if (isMcpPublicPath(path)) {
+    return {
+      origin: true as const,
+      credentials: true,
+      exposedHeaders: ['WWW-Authenticate', 'Mcp-Session-Id'],
+    }
+  }
+  return {
+    origin: corsOrigins(),
+    credentials: true,
+    exposedHeaders: ['WWW-Authenticate', 'Mcp-Session-Id'],
+  }
+}
