@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { EventMemberRole, EventSurface, type Event, type User } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
@@ -14,6 +9,7 @@ export const ALL_SURFACES: EventSurface[] = [
   EventSurface.MOODBOARD,
   EventSurface.VENDORS,
   EventSurface.GUESTS,
+  EventSurface.PARTY,
 ]
 
 export type AccessAction = 'view' | 'comment' | 'edit' | 'host'
@@ -278,13 +274,18 @@ export class EventAccessService {
   ): Promise<EventAccess> {
     const access = await this.load(clerkId, eventId)
     const action = opts?.action ?? 'view'
-    if (!allowsAction(access, action, opts?.surface)) {
-      if (opts?.surface && !memberCanSee(access, opts.surface)) {
-        throw new ForbiddenException('You cannot access this tab')
-      }
-      deny()
-    }
+    if (!allowsAction(access, action, opts?.surface)) deny()
     return access
+  }
+
+  /** Host, or EDITOR with SITE grant. Fail closed (404). SITE is not a planning tab. */
+  async requireSite(clerkId: string, eventId: string): Promise<EventAccess> {
+    const access = await this.load(clerkId, eventId)
+    if (access.isHost) return access
+    if (access.role === EventMemberRole.EDITOR && access.surfaces.includes(EventSurface.SITE)) {
+      return access
+    }
+    deny()
   }
 
   /** Events this user hosts or has accepted membership on. */

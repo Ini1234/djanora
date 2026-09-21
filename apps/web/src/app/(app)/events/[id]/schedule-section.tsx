@@ -469,6 +469,14 @@ function ScheduleRow({
                 )}
                 <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                   {item.title}
+                  {item.showOnSite && (
+                    <span
+                      className="ml-2 align-middle text-[10px] font-semibold tracking-wide uppercase"
+                      style={{ color: 'var(--color-brand-primary)' }}
+                    >
+                      On site
+                    </span>
+                  )}
                 </p>
                 {item.location && (
                   <p
@@ -810,6 +818,7 @@ function ScheduleForm({
     endTime: string | null
     location: string | null
     notes: string | null
+    showOnSite: boolean
     budgetItemIds: string[]
     checklistItemIds: string[]
     inspirationItemIds: string[]
@@ -823,6 +832,7 @@ function ScheduleForm({
   const [endTime, setEndTime] = useState(initial?.endTime ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [showOnSite, setShowOnSite] = useState(initial?.showOnSite ?? false)
   const [budgetItemIds, setBudgetItemIds] = useState(
     () => initial?.budgetItems?.map((item) => item.id) ?? [],
   )
@@ -869,6 +879,7 @@ function ScheduleForm({
           endTime: endTime || null,
           location: location.trim() || null,
           notes: notes.trim() || null,
+          showOnSite,
           budgetItemIds,
           checklistItemIds,
           inspirationItemIds,
@@ -942,6 +953,17 @@ function ScheduleForm({
         className="w-full resize-none rounded-lg px-3 py-2 text-sm focus:outline-none"
         style={fieldStyle}
       />
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: 'var(--color-text-primary)' }}
+      >
+        <input
+          type="checkbox"
+          checked={showOnSite}
+          onChange={(e) => setShowOnSite(e.target.checked)}
+        />
+        Show this block on the event site
+      </label>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <LinkPicker
           label="Budget lines"

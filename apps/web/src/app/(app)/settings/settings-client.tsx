@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import dynamic from 'next/dynamic'
-import { LogOut, Mail } from 'lucide-react'
+import { Check, Copy, LogOut, Mail } from 'lucide-react'
+import { API_URL } from '@/lib/backend'
 import { CONTACT_EMAIL, CONTACT_MAILTO } from '@/lib/contact'
 import { proxyClient } from '@/lib/proxy-client'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -30,6 +31,8 @@ export function SettingsClient({ user }: { user: UserMe }) {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
+  const [copied, setCopied] = useState(false)
+  const connectorUrl = `${API_URL.replace(/\/$/, '')}/mcp`
 
   useEffect(() => {
     if (window.location.hash !== '#checklist') return
@@ -162,6 +165,49 @@ export function SettingsClient({ user }: { user: UserMe }) {
           </p>
         </div>
         <PersonalChecklist variant="all" />
+      </section>
+
+      <section
+        className="space-y-3 rounded-2xl p-5"
+        style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
+      >
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          Claude &amp; assistants
+        </h2>
+        <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+          Paste this URL as a custom connector. Sign in with your Djanora account.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="sr-only" htmlFor="mcp-connector-url">
+            Connector URL
+          </label>
+          <input
+            id="mcp-connector-url"
+            readOnly
+            value={connectorUrl}
+            className="h-9 min-w-0 flex-1 rounded-lg px-3 font-mono text-xs focus:outline-none"
+            style={fieldStyle}
+          />
+          <button
+            type="button"
+            aria-label={copied ? 'Connector URL copied' : 'Copy connector URL'}
+            onClick={() => {
+              void navigator.clipboard.writeText(connectorUrl).then(() => {
+                setCopied(true)
+                window.setTimeout(() => setCopied(false), 2000)
+              })
+            }}
+            className="flex h-9 items-center gap-2 rounded-xl px-3 text-sm font-medium"
+            style={{
+              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+            }}
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
       </section>
 
       <section

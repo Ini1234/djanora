@@ -18,6 +18,8 @@ import {
   ArrowRight,
   Share2,
   ChevronRight,
+  Globe,
+  Heart,
 } from 'lucide-react'
 import { ChecklistSection } from './checklist-section'
 import { BudgetSection } from './budget-section'
@@ -28,6 +30,7 @@ import { ScheduleSection } from './schedule-section'
 import { EventAccessProvider } from './event-access-context'
 import { EventPeopleSection } from './event-people-section'
 import { EventSubEventsSection } from './event-subevents-section'
+import { PartySection } from './party-section'
 import { EventItemComments } from './event-item-comments'
 import { EventActivityFeed } from './event-activity-feed'
 import { proxyClient } from '@/lib/proxy-client'
@@ -45,7 +48,7 @@ function daysUntil(dateStr: string | null): number | null {
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'schedule' | 'checklist' | 'budget' | 'vendors' | 'moodboard'
+type Tab = 'overview' | 'schedule' | 'checklist' | 'budget' | 'vendors' | 'moodboard' | 'party'
 
 const TAB_SURFACE: Partial<Record<Tab, EventSurface>> = {
   schedule: 'SCHEDULE',
@@ -53,6 +56,7 @@ const TAB_SURFACE: Partial<Record<Tab, EventSurface>> = {
   budget: 'BUDGET',
   vendors: 'VENDORS',
   moodboard: 'MOODBOARD',
+  party: 'PARTY',
 }
 
 const TABS: { id: Tab; label: string }[] = [
@@ -62,6 +66,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'budget', label: 'Budget' },
   { id: 'vendors', label: 'Vendors' },
   { id: 'moodboard', label: '✦ Mood Board' },
+  { id: 'party', label: 'Wedding party' },
 ]
 
 const TAB_UNREAD: Record<Tab, string> = {
@@ -71,6 +76,7 @@ const TAB_UNREAD: Record<Tab, string> = {
   budget: 'BUDGET',
   vendors: 'VENDORS',
   moodboard: 'MOODBOARD',
+  party: 'PARTY',
 }
 
 const TAB_IDS = new Set<Tab>(TABS.map((t) => t.id))
@@ -347,14 +353,23 @@ export function EventDetailClient({ event }: Props) {
     if (urlTab) setTab(urlTab)
     if (urlTab && urlItem) setFocusItem({ tab: urlTab, id: urlItem })
   }
-  const [open, setOpen] = useState({ schedule: false, budget: false, checklist: false })
+  const [open, setOpen] = useState({
+    schedule: false,
+    budget: false,
+    checklist: false,
+    party: false,
+  })
+  const [modulePending, setModulePending] = useState(false)
   const tabListRef = useRef<HTMLDivElement>(null)
   const peopleRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
 
   const viewer = localEvent.viewer ?? { isHost: false, role: 'VIEWER' as const, surfaces: [] }
   const canSee = (surface: EventSurface) => viewer.isHost || viewer.surfaces.includes(surface)
+  const canEditSite =
+    viewer.isHost || (viewer.role === 'EDITOR' && viewer.surfaces.includes('SITE'))
   const visibleTabs = TABS.filter((t) => {
+    if (t.id === 'party') return localEvent.partyEnabled === true && canSee('PARTY')
     const surface = TAB_SURFACE[t.id]
     return !surface || canSee(surface)
   })
@@ -533,21 +548,23 @@ export function EventDetailClient({ event }: Props) {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <h1
-                    className="font-display text-3xl leading-tight font-bold tracking-tight sm:text-4xl"
+                    className="font-display min-w-0 text-2xl leading-tight font-bold tracking-tight break-words sm:text-4xl"
                     style={{ color: 'var(--color-text-primary)' }}
                   >
                     {localEvent.title}
                   </h1>
                   {viewer.isHost && (
                     <button
+                      type="button"
                       onClick={() => setEditOpen(true)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+                      className="tap-target flex shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-black/8 dark:hover:bg-white/8"
                       style={{
                         color: 'var(--color-muted)',
                         border: '1px solid var(--color-border)',
                       }}
+                      aria-label="Edit event details"
                       title="Edit event details"
                     >
                       <Pencil size={13} />
@@ -606,7 +623,21 @@ export function EventDetailClient({ event }: Props) {
               </div>
 
               {/* Action buttons */}
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+                {canEditSite && (
+                  <Link
+                    href={`/events/${event.id}/site`}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-all hover:opacity-80 active:scale-[.98]"
+                    style={{
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-text-primary)',
+                    }}
+                  >
+                    <Globe size={13} />
+                    {localEvent.site ? 'Edit site' : 'Create site'}
+                  </Link>
+                )}
                 {event.viewer?.isHost !== false && (
                   <button
                     type="button"
@@ -715,6 +746,45 @@ export function EventDetailClient({ event }: Props) {
 
           <EventSubEventsSection event={localEvent} onEventChange={setLocalEvent} />
 
+          {viewer.isHost && !localEvent.partyEnabled && (
+            <div
+              className="mb-8 rounded-2xl px-5 py-4"
+              style={{ background: 'var(--card-bg)', border: '1px solid var(--color-border)' }}
+            >
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                Add to this event
+              </p>
+              <p className="mt-1 text-xs" style={{ color: 'var(--color-muted)' }}>
+                Optional pieces you can turn on when you need them.
+              </p>
+              <button
+                type="button"
+                disabled={modulePending}
+                onClick={async () => {
+                  setModulePending(true)
+                  try {
+                    await proxyClient.patch(`/events/${localEvent.id}`, { partyEnabled: true })
+                    setLocalEvent((prev) => ({ ...prev, partyEnabled: true }))
+                    setTab('party')
+                    setOpen((prev) => ({ ...prev, party: true }))
+                    router.replace(`/events/${localEvent.id}?tab=party`, { scroll: false })
+                  } finally {
+                    setModulePending(false)
+                  }
+                }}
+                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium disabled:opacity-50"
+                style={{
+                  background: 'var(--color-card)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                <Heart size={14} />
+                Wedding party
+              </button>
+            </div>
+          )}
+
           {/* ── Tab navigation ────────────────────────────────────────────── */}
           <div
             className="mb-6 overflow-x-auto"
@@ -735,7 +805,7 @@ export function EventDetailClient({ event }: Props) {
                       setTab(id)
                       setFocusItem(null)
                     }}
-                    className="relative shrink-0 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors"
+                    className="relative min-h-11 shrink-0 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors"
                     style={{
                       color: active ? 'var(--color-brand-primary)' : 'var(--color-muted)',
                       background: 'none',
@@ -826,6 +896,13 @@ export function EventDetailClient({ event }: Props) {
                     onOpen={() => toggleOpen('checklist')}
                   />
                 ))}
+              {localEvent.partyEnabled &&
+                canSee('PARTY') &&
+                (open.party ? (
+                  <PartySection eventId={localEvent.id} onCollapse={() => toggleOpen('party')} />
+                ) : (
+                  <OverviewChip title="Wedding party" onOpen={() => toggleOpen('party')} />
+                ))}
               <EventActivityFeed key={localEvent.id} eventId={localEvent.id} />
               <div
                 className="rounded-2xl px-5 py-4"
@@ -912,6 +989,8 @@ export function EventDetailClient({ event }: Props) {
               focusEntryId={focusItem?.tab === 'moodboard' ? focusItem.id : undefined}
             />
           )}
+
+          {tab === 'party' && localEvent.partyEnabled && <PartySection eventId={localEvent.id} />}
 
           {/* Edit modal */}
           {editOpen && (

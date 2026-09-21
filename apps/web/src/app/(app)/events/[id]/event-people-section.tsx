@@ -14,6 +14,8 @@ const SURFACE_LABELS: Record<EventSurface, string> = {
   MOODBOARD: 'Mood board',
   VENDORS: 'Vendors',
   GUESTS: 'Guests',
+  PARTY: 'Wedding party',
+  SITE: 'Site',
 }
 
 const ROLE_LABELS: Record<Exclude<EventMemberRole, 'HOST'>, string> = {
@@ -190,6 +192,36 @@ function SurfacePicker({
         )
       })}
     </div>
+  )
+}
+
+function SiteGrantToggle({
+  role,
+  value,
+  onToggle,
+}: {
+  role: MemberRole
+  value: EventSurface[]
+  onToggle: (next: EventSurface[]) => void
+}) {
+  if (role !== 'EDITOR') return null
+  const on = value.includes('SITE')
+  return (
+    <label
+      className="flex items-center gap-2 text-[12px]"
+      style={{ color: 'var(--color-text-primary)' }}
+    >
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={() =>
+          onToggle(
+            on ? value.filter((s) => s !== 'SITE') : [...value.filter((s) => s !== 'SITE'), 'SITE'],
+          )
+        }
+      />
+      Can create and publish the event site
+    </label>
   )
 }
 
@@ -402,11 +434,18 @@ export function EventPeopleSection({
                     color: 'var(--color-text-primary)',
                   }}
                 />
-                <RolePicker value={role} onChange={setRole} />
+                <RolePicker
+                  value={role}
+                  onChange={(next) => {
+                    setRole(next)
+                    if (next !== 'EDITOR') setSurfaces((prev) => prev.filter((s) => s !== 'SITE'))
+                  }}
+                />
                 <SurfacePicker
                   value={surfaces}
                   onToggle={(s) => setSurfaces((prev) => toggleIn(prev, s))}
                 />
+                <SiteGrantToggle role={role} value={surfaces} onToggle={setSurfaces} />
                 {(subEvents?.length ?? 0) > 0 && (
                   <ChildGrantPicker
                     subEvents={subEvents ?? []}
@@ -533,10 +572,23 @@ export function EventPeopleSection({
 
                   {isHost && editing && (
                     <div className="space-y-2.5 pl-11">
-                      <RolePicker value={editRole} onChange={setEditRole} />
+                      <RolePicker
+                        value={editRole}
+                        onChange={(next) => {
+                          setEditRole(next)
+                          if (next !== 'EDITOR') {
+                            setEditSurfaces((prev) => prev.filter((s) => s !== 'SITE'))
+                          }
+                        }}
+                      />
                       <SurfacePicker
                         value={editSurfaces}
                         onToggle={(s) => setEditSurfaces((prev) => toggleIn(prev, s))}
+                      />
+                      <SiteGrantToggle
+                        role={editRole}
+                        value={editSurfaces}
+                        onToggle={setEditSurfaces}
                       />
                       {(subEvents?.length ?? 0) > 0 && (
                         <ChildGrantPicker

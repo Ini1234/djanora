@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/proxy(.*)',
   '/api/sse(.*)',
   '/rsvp(.*)',
+  '/e(.*)',
   '/events/join(.*)',
   '/vendors/:slug',
 ])

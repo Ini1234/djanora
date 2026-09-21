@@ -4,12 +4,14 @@ import { Playfair_Display } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { JsonLd } from '@/components/json-ld'
 import { AppProviders } from '@/components/app-providers'
+import { ClerkAuthProvider } from '@/components/clerk-auth-provider'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { cookies, headers } from 'next/headers'
 import { isSessionCookieName } from '@/lib/clerk-token'
 import { isSandboxHost } from '@/lib/is-sandbox-host'
 import { SandboxBanner } from '@/components/sandbox-banner'
+import { SkipLink } from '@/components/skip-link'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -98,15 +100,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={locale}
       className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
       data-sandbox={sandbox ? '' : undefined}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-[var(--color-background)] text-[var(--color-foreground)]">
+        <SkipLink />
         <SandboxBanner />
         <JsonLd data={websiteJsonLd} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
-            <AppProviders signedIn={signedIn}>{children}</AppProviders>
+            <ClerkAuthProvider>
+              <AppProviders signedIn={signedIn}>{children}</AppProviders>
+            </ClerkAuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

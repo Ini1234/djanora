@@ -25,7 +25,10 @@
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",
     "@clerk/backend": "^3.16.0",
+    "@clerk/express": "^2.1.69",
+    "@clerk/mcp-tools": "^0.6.0",
     "@clerk/nextjs": "^7.7.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@neondatabase/serverless": "^1.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -42,6 +45,7 @@
     "@types/multer": "^2.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "multer": "^2.2.0",
     "pg": "^8.23.0",
@@ -50,7 +54,8 @@
     "resend": "^6.18.1",
     "rxjs": "^7.8.1",
     "svix": "^1.99.1",
-    "twilio": "^6.0.2"
+    "twilio": "^6.0.2",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -58,6 +63,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",

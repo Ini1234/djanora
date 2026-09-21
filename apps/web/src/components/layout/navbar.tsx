@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,15 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileOpen])
 
   return (
     <header className="fixed top-[var(--sandbox-offset,0px)] right-0 left-0 z-50 border-b border-[var(--nav-border)] bg-[var(--nav-bg)]">
@@ -58,7 +67,8 @@ export function Navbar() {
 
         {/* Mobile menu toggle */}
         <button
-          className="rounded-md p-2 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-foreground)] md:hidden"
+          type="button"
+          className="tap-target inline-flex items-center justify-center rounded-md p-2 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-foreground)] md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"

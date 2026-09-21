@@ -1,0 +1,16 @@
+---
+description: WCAG 2.2 AA and responsive layout rules for apps/web. Use when changing UI, layout, forms, or navigation.
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Web accessibility
+
+Follow `docs/standards/accessibility.md`.
+
+- One `#main-content` per route. Do not drop the root skip link.
+- Visible labels on inputs. Placeholders are not labels. Errors use `role="alert"`.
+- Hit targets ≥ 44×44px. Icon-only controls need `aria-label`.
+- No desktop-only reserved space below `lg` (side rails, `paddingLeft: 12.5rem`). Wrap with `min-w-0`.
+- Honor `prefers-reduced-motion`. Do not remove `:focus-visible` without a replacement ring.
+- Guest-site palettes must keep body text ≥ 4.5:1.

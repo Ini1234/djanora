@@ -10,6 +10,6 @@ import { UploadsModule } from '../uploads/uploads.module'
   imports: [PrismaModule, UploadsModule],
   controllers: [VendorsController],
   providers: [VendorsService, VendorPostsService, ClerkAuthGuard],
-  exports: [VendorsService],
+  exports: [VendorsService, VendorPostsService],
 })
 export class VendorsModule {}

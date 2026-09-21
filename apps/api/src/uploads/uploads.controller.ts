@@ -1,6 +1,7 @@
 import { Controller, Get, NotFoundException, Param, StreamableFile } from '@nestjs/common'
 import { extname } from 'path'
 import { BlobStorageService, isSafeName } from './blob-storage.service'
+import { PublicUploadService } from './public-upload.service'
 
 const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -12,11 +13,17 @@ const MIME: Record<string, string> = {
 
 @Controller('uploads')
 export class UploadsController {
-  constructor(private readonly storage: BlobStorageService) {}
+  constructor(
+    private readonly storage: BlobStorageService,
+    private readonly publicUploads: PublicUploadService,
+  ) {}
 
   @Get(':filename')
   async serve(@Param('filename') filename: string) {
     if (!isSafeName(filename) || filename.startsWith('receipt-')) {
+      throw new NotFoundException()
+    }
+    if (!(await this.publicUploads.isPublicImage(filename))) {
       throw new NotFoundException()
     }
 

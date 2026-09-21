@@ -32,3 +32,45 @@ describe('ensureFromClerk', () => {
     })
   })
 })
+
+describe('listChecklists assigned access', () => {
+  it('loads event access once per event, not once per item', async () => {
+    const load = jest.fn().mockResolvedValue({
+      isHost: true,
+      role: 'HOST',
+      surfaces: ['CHECKLIST'],
+    })
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 'u1', email: 'a@b.c' }) },
+      userChecklist: { findMany: jest.fn().mockResolvedValue([]) },
+      eventChecklist: {
+        findMany: jest.fn().mockResolvedValue([checklistRow('c1', 'e1'), checklistRow('c2', 'e1')]),
+      },
+    }
+    const access = {
+      load,
+      canSee: () => true,
+      canSeeChecklistRow: () => true,
+    }
+    const svc = new UsersService(prisma as never, unusedConfig, access as never)
+    const result = await svc.listChecklists('clerk_1')
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledWith('clerk_1', 'e1')
+    expect(result.items).toHaveLength(2)
+  })
+})
+
+function checklistRow(id: string, eventId: string) {
+  const now = new Date('2026-09-17T00:00:00.000Z')
+  return {
+    id,
+    title: id,
+    isCompleted: false,
+    dueDate: null,
+    eventId,
+    createdAt: now,
+    updatedAt: now,
+    event: { id: eventId, title: 'Wedding' },
+    concealments: [],
+  }
+}

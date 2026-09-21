@@ -14,17 +14,28 @@ export class NotificationsService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } })
     if (!user) throw new NotFoundException('User not found')
 
-    const notifications = await this.prisma.notification.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    })
-
-    const unreadCount = await this.prisma.notification.count({
-      where: { userId: user.id, isRead: false },
-    })
+    const [notifications, unreadCount] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+      this.prisma.notification.count({
+        where: { userId: user.id, isRead: false },
+      }),
+    ])
 
     return { notifications, unreadCount }
+  }
+
+  async findOne(clerkId: string, notificationId: string) {
+    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    if (!user) throw new NotFoundException('User not found')
+    const notification = await this.prisma.notification.findFirst({
+      where: { id: notificationId, userId: user.id },
+    })
+    if (!notification) throw new NotFoundException('Notification not found')
+    return notification
   }
 
   async markRead(clerkId: string, notificationId: string) {

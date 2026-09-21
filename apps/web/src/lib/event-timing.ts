@@ -1,6 +1,10 @@
-export function eventDateKey(dateStr: string | null | undefined): string | null {
-  if (!dateStr) return null
-  return dateStr.slice(0, 10)
+export function eventDateKey(dateStr: string | Date | null | undefined): string | null {
+  if (dateStr == null || dateStr === '') return null
+  if (dateStr instanceof Date && !Number.isNaN(dateStr.getTime())) {
+    return dateStr.toISOString().slice(0, 10)
+  }
+  const day = String(dateStr).slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null
 }
 
 export function todayKey(): string {

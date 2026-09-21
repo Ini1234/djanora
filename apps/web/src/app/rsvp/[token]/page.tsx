@@ -82,7 +82,9 @@ export default async function RsvpPage({ params }: Props) {
     : null
 
   return (
-    <div
+    <main
+      id="main-content"
+      tabIndex={-1}
       className="flex min-h-screen items-center justify-center px-4 py-12"
       style={{ background: 'var(--page-bg)' }}
     >
@@ -130,6 +132,6 @@ export default async function RsvpPage({ params }: Props) {
           Powered by Djanora · Event Planning
         </p>
       </div>
-    </div>
+    </main>
   )
 }

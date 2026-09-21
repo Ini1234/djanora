@@ -289,14 +289,21 @@ function InvitePanel({
 
   return (
     <div className="space-y-3 rounded-xl border border-white/10 bg-white/4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-white">Send invite to {guestDisplayName(guest)}</p>
-        <button onClick={onClose} className="text-brand-500 hover:text-brand-300">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-sm font-medium break-words text-white">
+          Send invite to {guestDisplayName(guest)}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="tap-target text-brand-500 hover:text-brand-300 inline-flex shrink-0 items-center justify-center"
+        >
           <X size={14} />
         </button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['email', 'sms', 'both'] as const).map((opt) => {
           const disabled =
             (opt === 'email' && !canEmail) ||

@@ -18,7 +18,9 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { EventCommentSubject, EventSurface } from '@prisma/client'
 import { EventsService } from './events.service'
+import { EventPartyService } from './event-party.service'
 import { EventMembersService } from './event-members.service'
+import { CreatePartyMemberDto, PairPartyMemberDto, UpdatePartyMemberDto } from './dto/party.dto'
 import { EventCommentsService } from './event-comments.service'
 import { EventActivityService } from './event-activity.service'
 import { CreateEventDto } from './dto/create-event.dto'
@@ -42,6 +44,7 @@ interface ClerkPayload {
 export class EventsController {
   constructor(
     private readonly eventsService: EventsService,
+    private readonly partyService: EventPartyService,
     private readonly membersService: EventMembersService,
     private readonly commentsService: EventCommentsService,
     private readonly activityService: EventActivityService,
@@ -144,6 +147,93 @@ export class EventsController {
     @Param('itemId') itemId: string,
   ) {
     return this.eventsService.deleteScheduleItem(user.sub, eventId, itemId)
+  }
+
+  // ─── Wedding party ────────────────────────────────────────────────────────
+
+  @Get(':id/party')
+  listParty(@CurrentUser() user: ClerkPayload, @Param('id') eventId: string) {
+    return this.partyService.list(user.sub, eventId)
+  }
+
+  @Post(':id/party')
+  addPartyMember(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: CreatePartyMemberDto,
+  ) {
+    return this.partyService.add(user.sub, eventId, dto)
+  }
+
+  @Patch(':id/party/:memberId')
+  updatePartyMember(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdatePartyMemberDto,
+  ) {
+    return this.partyService.update(user.sub, eventId, memberId, dto)
+  }
+
+  @Delete(':id/party/:memberId')
+  deletePartyMember(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.partyService.remove(user.sub, eventId, memberId)
+  }
+
+  @Post(':id/party/:memberId/pair')
+  pairPartyMember(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: PairPartyMemberDto,
+  ) {
+    return this.partyService.pair(user.sub, eventId, memberId, dto.partnerId)
+  }
+
+  @Delete(':id/party/:memberId/pair')
+  unpairPartyMember(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.partyService.unpair(user.sub, eventId, memberId)
+  }
+
+  @Post(':id/party/:memberId/photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp']
+        if (allowed.includes(file.mimetype)) cb(null, true)
+        else cb(new BadRequestException('Use a JPEG, PNG, or WebP photo'), false)
+      },
+      limits: { fileSize: 8 * 1024 * 1024 },
+    }),
+  )
+  async partyPhoto(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded')
+    const storedName = makeUploadName(file.originalname)
+    await this.storage.upload('images', storedName, file.buffer, file.mimetype)
+    return this.partyService.setPhoto(user.sub, eventId, memberId, storedName)
+  }
+
+  @Delete(':id/party/:memberId/photo')
+  deletePartyPhoto(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.partyService.deletePhoto(user.sub, eventId, memberId)
   }
 
   // ─── Budget items ─────────────────────────────────────────────────────────

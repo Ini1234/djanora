@@ -21,6 +21,7 @@ import {
   type EventAccess,
 } from './event-access.service'
 import { EventActivityService, OPENED_SURFACE } from './event-activity.service'
+import { importLegacyParty } from './event-party.helpers'
 
 const SCHEDULE_INCLUDE = {
   budgetLinks: {
@@ -155,6 +156,7 @@ const CHECKLIST_ITEM_INCLUDE = {
 
 const EVENT_SHELL_INCLUDE = {
   parent: { select: { id: true, title: true } },
+  site: { select: { slug: true, status: true } },
 } as const
 
 const BUDGET_ITEM_INCLUDE = {
@@ -393,6 +395,10 @@ export class EventsService {
   async updateEvent(clerkId: string, eventId: string, dto: UpdateEventDto) {
     await this.access.require(clerkId, eventId, { action: 'host' })
 
+    if (dto.partyEnabled === true) {
+      await importLegacyParty(this.prisma, eventId)
+    }
+
     return this.prisma.event.update({
       where: { id: eventId },
       data: {
@@ -403,6 +409,7 @@ export class EventsService {
         ...(dto.location !== undefined && { location: dto.location }),
         ...(dto.guestCount !== undefined && { guestCount: dto.guestCount }),
         ...(dto.totalBudget !== undefined && { totalBudget: dto.totalBudget }),
+        ...(dto.partyEnabled !== undefined && { partyEnabled: dto.partyEnabled }),
       },
     })
   }
@@ -1631,6 +1638,7 @@ export class EventsService {
         startTime: this.normalizeTime(dto.startTime),
         endTime: this.normalizeTime(dto.endTime),
         location: this.emptyToNull(dto.location),
+        showOnSite: dto.showOnSite ?? false,
         sortOrder: (last?.sortOrder ?? 0) + 1,
         budgetLinks: {
           create: budgetItemIds.map((budgetItemId) => ({ budgetItemId })),
@@ -1696,6 +1704,7 @@ export class EventsService {
         ...(dto.endTime !== undefined && { endTime: this.normalizeTime(dto.endTime) }),
         ...(dto.location !== undefined && { location: this.emptyToNull(dto.location) }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+        ...(dto.showOnSite !== undefined && { showOnSite: dto.showOnSite }),
         ...(budgetItemIds !== undefined && {
           budgetLinks: {
             deleteMany: {},

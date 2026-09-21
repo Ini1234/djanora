@@ -240,7 +240,11 @@ export function OnboardingWizard({
       </header>
 
       {/* Step content */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="relative z-10 flex flex-1 items-center justify-center px-4 py-12"
+      >
         <div className="w-full max-w-lg">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div

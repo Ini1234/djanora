@@ -11,7 +11,8 @@ import { NotificationDeliveryService } from '../notifications/notification-deliv
 import { ConfigService } from '@nestjs/config'
 import { EventAccessService } from '../events/event-access.service'
 import { EventActivityService } from '../events/event-activity.service'
-import { EventSurface } from '@prisma/client'
+import { EventSiteStatus, EventSurface } from '@prisma/client'
+import { eventSiteInviteUrl } from '../event-sites/event-site.constants'
 import {
   CreateGuestDto,
   UpdateGuestDto,
@@ -202,7 +203,7 @@ export class GuestsService {
       },
     })
 
-    const rsvpUrl = `${this.webUrl}/rsvp/${invite.token}`
+    const rsvpUrl = await this.inviteLink(eventId, invite.token)
     const guestName = [guest.firstName, guest.lastName].filter(Boolean).join(' ')
     const eventDate = event.estimatedDate
       ? new Date(event.estimatedDate).toLocaleDateString('en-CA', {
@@ -259,6 +260,24 @@ export class GuestsService {
     return results
   }
 
+  private async inviteLink(eventId: string, token: string) {
+    const row = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        site: { select: { slug: true, status: true } },
+        parent: { select: { site: { select: { slug: true, status: true } } } },
+      },
+    })
+    const slug =
+      row?.site?.status === EventSiteStatus.PUBLISHED
+        ? row.site.slug
+        : row?.parent?.site?.status === EventSiteStatus.PUBLISHED
+          ? row.parent.site.slug
+          : null
+    if (slug) return eventSiteInviteUrl(this.webUrl, slug, token)
+    return `${this.webUrl}/rsvp/${token}`
+  }
+
   // ─── Public RSVP (no auth) ─────────────────────────────────────────────────
 
   async getInviteByToken(token: string) {
@@ -293,7 +312,7 @@ export class GuestsService {
       throw new ForbiddenException('This invite has expired')
     }
 
-    return this.prisma.guestInvite.update({
+    const updated = await this.prisma.guestInvite.update({
       where: { token },
       data: {
         rsvpStatus: dto.status,
@@ -302,8 +321,20 @@ export class GuestsService {
         dietaryNote: dto.dietaryNote ?? null,
         guestMessage: dto.guestMessage ?? null,
       },
-      include: { guest: true, event: { select: { title: true } } },
+      include: {
+        guest: { select: { firstName: true, lastName: true, plusOneAllowed: true } },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            eventType: true,
+            estimatedDate: true,
+            location: true,
+          },
+        },
+      },
     })
+    return toPublicRsvp(updated)
   }
 
   // ─── Email template ────────────────────────────────────────────────────────
