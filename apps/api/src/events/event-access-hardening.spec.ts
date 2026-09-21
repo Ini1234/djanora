@@ -6,6 +6,7 @@ import { escapeHtml } from '../common/escape-html'
 import { toPublicRsvp } from '../guests/guests.service'
 import { EmbeddingService } from '../inspiration/embedding.service'
 import { CreateInspirationDto } from '../inspiration/dto/create-inspiration.dto'
+import { UpdateInquiryStatusDto } from '../inquiries/dto/update-inquiry-status.dto'
 import { InspirationService } from '../inspiration/inspiration.service'
 import { CompleteOnboardingDto } from '../users/dto/complete-onboarding.dto'
 import { UsersService } from '../users/users.service'
@@ -300,11 +301,32 @@ describe('hardening: members childGrants (FR-22)', () => {
   it('strips childGrants for a non-host', async () => {
     const listed = await membersService({ isHost: false }, grants).list('clerk', 'evt1')
     expect(listed.members[0].childGrants).toEqual([])
+    expect(listed.host?.email).toBeUndefined()
+    expect(listed.members[0].email).toBeUndefined()
+    expect(listed.members[0].user).not.toHaveProperty('email')
   })
 
   it('keeps childGrants for the host', async () => {
     const listed = await membersService({ isHost: true }, grants).list('clerk', 'evt1')
     expect(listed.members[0].childGrants).toEqual(grants)
+    expect(listed.host?.email).toBe('h@x.com')
+    expect(listed.members[0].email).toBe('m@x.com')
+  })
+})
+
+describe('hardening: inquiry status allowlist', () => {
+  it('rejects BOOKED and other non-vendor-door statuses', async () => {
+    const dto = Object.assign(new UpdateInquiryStatusDto(), { status: 'BOOKED' })
+    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true })
+    expect(errors.some((error) => error.property === 'status')).toBe(true)
+  })
+
+  it('accepts ACCEPTED and DECLINED', async () => {
+    for (const status of ['ACCEPTED', 'DECLINED'] as const) {
+      const dto = Object.assign(new UpdateInquiryStatusDto(), { status })
+      const errors = await validate(dto)
+      expect(errors).toHaveLength(0)
+    }
   })
 })
 
@@ -326,11 +348,24 @@ describe('hardening: admin, onboarding, inspiration (FR-15–FR-17)', () => {
     expect(errors.some((error) => error.property === 'isAdminCurated')).toBe(true)
   })
 
+  it('create-inspiration DTO rejects client vendorProfileId', async () => {
+    const dto = Object.assign(new CreateInspirationDto(), {
+      title: 'Look',
+      description: 'A look',
+      category: InspirationCategory.DECOR,
+      vendorProfileId: 'other-vendor',
+    })
+    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true })
+    expect(errors.some((error) => error.property === 'vendorProfileId')).toBe(true)
+  })
+
   it('create always stores isAdminCurated false', async () => {
     const create = jest.fn().mockResolvedValue({ id: 'i1' })
     const svc = new InspirationService(
       {
-        user: { findUnique: jest.fn().mockResolvedValue({ id: 'u1' }) },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'u1', vendorProfile: { id: 'vp-mine' } }),
+        },
         inspirationItem: { create },
       } as any,
       { embedDocument: jest.fn().mockResolvedValue(null) } as any,
@@ -343,10 +378,14 @@ describe('hardening: admin, onboarding, inspiration (FR-15–FR-17)', () => {
       description: 'A look',
       category: InspirationCategory.DECOR,
       isAdminCurated: true,
+      vendorProfileId: 'attacker-vendor',
     } as any)
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ isAdminCurated: false }),
+        data: expect.objectContaining({
+          isAdminCurated: false,
+          vendorProfileId: 'vp-mine',
+        }),
       }),
     )
   })

@@ -5,6 +5,38 @@ import { PrismaService } from '../prisma/prisma.service'
 import { EventSurface, UserRole, Tribe } from '@prisma/client'
 import { ALL_SURFACES, EventAccessService, type EventAccess } from '../events/event-access.service'
 
+const VENDOR_PROFILE_SAFE_SELECT = {
+  id: true,
+  userId: true,
+  slug: true,
+  businessName: true,
+  bio: true,
+  category: true,
+  categories: true,
+  tribesServed: true,
+  estimatedPriceFrom: true,
+  estimatedPriceTo: true,
+  currency: true,
+  websiteUrl: true,
+  instagramUrl: true,
+  facebookUrl: true,
+  externalPortfolioUrl: true,
+  externalPortfolioLabel: true,
+  avatarUrl: true,
+  city: true,
+  isVerified: true,
+  isActive: true,
+  averageRating: true,
+  totalReviews: true,
+  profileViews: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
+
+const ME_INCLUDE = {
+  vendorProfile: { select: VENDOR_PROFILE_SAFE_SELECT },
+} as const
+
 interface UpsertUserDto {
   clerkId: string
   email: string
@@ -43,6 +75,10 @@ export class UsersService {
     })
 
     this.logger.log(`Upserted user ${user.id} (clerkId: ${dto.clerkId})`)
+    await this.prisma.eventMember.updateMany({
+      where: { userId: user.id },
+      data: { email: dto.email },
+    })
     return user
   }
 
@@ -59,7 +95,7 @@ export class UsersService {
   async findByClerkId(clerkId: string) {
     return this.prisma.user.findUnique({
       where: { clerkId },
-      include: { vendorProfile: true },
+      include: ME_INCLUDE,
     })
   }
 
@@ -70,7 +106,7 @@ export class UsersService {
   async ensureFromClerk(clerkId: string) {
     const existing = await this.prisma.user.findUnique({
       where: { clerkId },
-      include: { vendorProfile: true },
+      include: ME_INCLUDE,
     })
     if (existing) return existing
 
@@ -104,7 +140,7 @@ export class UsersService {
 
     return this.prisma.user.findUniqueOrThrow({
       where: { clerkId },
-      include: { vendorProfile: true },
+      include: ME_INCLUDE,
     })
   }
 
@@ -322,7 +358,7 @@ export class UsersService {
         where: {
           member: {
             acceptedAt: { not: null },
-            OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
+            userId: user.id,
             event: { deletedAt: null },
           },
           event: { deletedAt: null },

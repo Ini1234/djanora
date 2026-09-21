@@ -9,10 +9,12 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common'
+import { ThrottlerGuard } from '@nestjs/throttler'
 import { InquiriesService } from './inquiries.service'
 import { CreateInquiryDto } from './dto/create-inquiry.dto'
 import { PostInquiryMessageDto } from './dto/post-inquiry-message.dto'
 import { BookQuoteDto } from './dto/book-quote.dto'
+import { UpdateInquiryStatusDto } from './dto/update-inquiry-status.dto'
 import { ClerkAuthGuard, type AuthedRequest } from '../common/guards/clerk-auth.guard'
 
 @Controller('inquiries')
@@ -37,9 +39,9 @@ export class InquiriesController {
   updateStatus(
     @Request() req: AuthedRequest,
     @Param('id') id: string,
-    @Body('status') status: 'ACCEPTED' | 'DECLINED',
+    @Body() dto: UpdateInquiryStatusDto,
   ) {
-    return this.inquiriesService.updateInquiryStatus(req.userId, id, status)
+    return this.inquiriesService.updateInquiryStatus(req.userId, id, dto.status)
   }
 
   /** List all inquiries sent by the current user, across all events. */
@@ -56,6 +58,7 @@ export class InquiriesController {
 
   /** Post a reply or vendor share card (sender or vendor). */
   @Post(':id/messages')
+  @UseGuards(ThrottlerGuard)
   postMessage(
     @Request() req: AuthedRequest,
     @Param('id') id: string,

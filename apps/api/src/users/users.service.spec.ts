@@ -28,8 +28,13 @@ describe('ensureFromClerk', () => {
     await expect(svc.ensureFromClerk('clerk_1')).resolves.toEqual(existing)
     expect(findUnique).toHaveBeenCalledWith({
       where: { clerkId: 'clerk_1' },
-      include: { vendorProfile: true },
+      include: {
+        vendorProfile: {
+          select: expect.not.objectContaining({ embedding: true }),
+        },
+      },
     })
+    expect(findUnique.mock.calls[0][0].include.vendorProfile.select.embedding).toBeUndefined()
   })
 })
 

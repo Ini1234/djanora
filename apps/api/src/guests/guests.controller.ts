@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common'
+import { ThrottlerGuard } from '@nestjs/throttler'
 import { GuestsService } from './guests.service'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
@@ -62,6 +63,7 @@ export class GuestsController {
   }
 
   @Post(':guestId/invite')
+  @UseGuards(ThrottlerGuard)
   sendInvite(
     @CurrentUser() user: ClerkPayload,
     @Param('eventId') eventId: string,
@@ -72,6 +74,7 @@ export class GuestsController {
   }
 
   @Post('bulk-invite')
+  @UseGuards(ThrottlerGuard)
   bulkInvite(
     @CurrentUser() user: ClerkPayload,
     @Param('eventId') eventId: string,

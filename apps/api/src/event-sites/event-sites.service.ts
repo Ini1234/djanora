@@ -401,9 +401,11 @@ export class EventSitesService {
     if (!secret) throw new ServiceUnavailableException('Site sessions are not configured')
     const site = await this.publishedSite(slug)
     const eventIds = this.siteEventIds(site)
+    const code = (dto.code ?? dto.inviteeId)?.trim()
+    if (!code) throw new UnauthorizedException(GENERIC_INVITE)
     const guestIds = await this.resolveGuests(eventIds, {
       email: dto.email,
-      code: dto.code ?? dto.inviteeId,
+      code,
     })
     if (guestIds.length === 0) throw new UnauthorizedException(GENERIC_INVITE)
     const expiresAt = Date.now() + SESSION_TTL_MS
@@ -556,8 +558,9 @@ export class EventSitesService {
       showItemDirections: schedulePayload.showItemDirections !== false,
     }
     const rsvpOn = sectionIsOn(site.sections, EventSiteSectionType.RSVP)
-    const photosOn = sectionIsOn(site.sections, EventSiteSectionType.PHOTOS)
-    const peopleOn = sectionIsOn(site.sections, EventSiteSectionType.PEOPLE)
+    const unlocked = guestIds.length > 0 || site.ownerAccessMode === EventSiteAccessMode.OPEN
+    const photosOn = unlocked && sectionIsOn(site.sections, EventSiteSectionType.PHOTOS)
+    const peopleOn = unlocked && sectionIsOn(site.sections, EventSiteSectionType.PEOPLE)
     await importLegacyParty(this.prisma, site.eventId)
     const partyMembers: PartyRow[] = peopleOn
       ? await this.prisma.eventPartyMember.findMany({
@@ -608,10 +611,16 @@ export class EventSitesService {
       coverFlags,
     )
 
-    const children = visible
-      .filter((c) => c.eventId !== site.eventId)
-      .map(toSlice)
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
+    const children = unlocked
+      ? visible
+          .filter((c) => c.eventId !== site.eventId)
+          .map(toSlice)
+          .filter((s): s is NonNullable<typeof s> => Boolean(s))
+      : []
+
+    const publicSections = unlocked
+      ? site.sections.filter((s) => s.enabled)
+      : site.sections.filter((s) => s.enabled && s.type === EventSiteSectionType.COVER)
 
     return {
       slug: site.slug,
@@ -636,14 +645,14 @@ export class EventSitesService {
         ),
       },
       sections: this.decorateSections(
-        site.sections.filter((s) => s.enabled).sort((a, b) => a.sortOrder - b.sortOrder),
-        site.photos,
+        publicSections.sort((a, b) => a.sortOrder - b.sortOrder),
+        unlocked ? site.photos : [],
         peopleOn ? publicPartyDtos(partyMembers) : [],
       ).map((section) => this.omitPublicSwitches(section)),
       photos: photosOn ? this.galleryPhotos(site.photos) : [],
       owner,
       children,
-      robots: publicRobots(visible),
+      robots: unlocked ? publicRobots(visible) : 'noindex',
     }
   }
 
@@ -667,20 +676,16 @@ export class EventSitesService {
   }
 
   private async resolveGuests(eventIds: string[], dto: { email?: string; code?: string }) {
-    if (dto.code?.trim()) {
-      const invite = await this.prisma.guestInvite.findFirst({
-        where: { token: dto.code.trim(), eventId: { in: eventIds } },
-        select: { guestId: true, expiresAt: true },
-      })
-      return invite && inviteIsActive(invite.expiresAt) ? [invite.guestId] : []
-    }
-    const email = dto.email?.trim()
-    if (!email) return []
-    const guests = await this.prisma.guest.findMany({
-      where: { eventId: { in: eventIds }, email: { equals: email, mode: 'insensitive' } },
-      select: { id: true, invite: { select: { expiresAt: true } } },
+    const code = dto.code?.trim()
+    if (!code) return []
+    const invite = await this.prisma.guestInvite.findFirst({
+      where: { token: code, eventId: { in: eventIds } },
+      select: { guestId: true, expiresAt: true, guest: { select: { email: true } } },
     })
-    return guests.filter((g) => inviteIsActive(g.invite?.expiresAt)).map((g) => g.id)
+    if (!invite || !inviteIsActive(invite.expiresAt)) return []
+    const email = dto.email?.trim()
+    if (email && invite.guest.email?.toLowerCase() !== email.toLowerCase()) return []
+    return [invite.guestId]
   }
 
   private async guestEventMap(guestIds: string[]) {

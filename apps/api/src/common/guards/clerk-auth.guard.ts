@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
 import { verifyToken } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
+import { clerkVerifyOptions } from '../clerk-auth'
 
 export type AuthedRequest = {
   headers: Record<string, unknown>
@@ -40,9 +41,7 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await verifyToken(token, {
-        secretKey: this.config.get<string>('CLERK_SECRET_KEY')!,
-      })
+      const payload = await verifyToken(token, clerkVerifyOptions(this.config))
       request.auth = { sub: payload.sub }
       request.userId = payload.sub
       return true

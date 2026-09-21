@@ -189,20 +189,8 @@ export class EventAccessService {
       }
     }
 
-    const member = await this.prisma.eventMember.findFirst({
-      where: {
-        eventId,
-        acceptedAt: { not: null },
-        OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
-      },
-    })
+    const member = await this.findAcceptedMember(eventId, user.id, user.email)
     if (member) {
-      if (!member.userId) {
-        await this.prisma.eventMember.update({
-          where: { id: member.id },
-          data: { userId: user.id },
-        })
-      }
       return {
         user,
         event,
@@ -228,13 +216,7 @@ export class EventAccessService {
         }
       }
 
-      const parentMember = await this.prisma.eventMember.findFirst({
-        where: {
-          eventId: event.parentId,
-          acceptedAt: { not: null },
-          OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
-        },
-      })
+      const parentMember = await this.findAcceptedMember(event.parentId, user.id, user.email)
       if (!parentMember) deny()
 
       const grant = await this.prisma.eventSubGrant.findUnique({
@@ -247,13 +229,6 @@ export class EventAccessService {
       })
       if (!grant) deny()
 
-      if (!parentMember.userId) {
-        await this.prisma.eventMember.update({
-          where: { id: parentMember.id },
-          data: { userId: user.id },
-        })
-      }
-
       return {
         user,
         event,
@@ -265,6 +240,32 @@ export class EventAccessService {
     }
 
     deny()
+  }
+
+  /**
+   * Accepted membership is bound to userId. Email is only used to finish
+   * linking a row that was accepted before userId was written.
+   */
+  private async findAcceptedMember(eventId: string, userId: string, email: string) {
+    const byUser = await this.prisma.eventMember.findFirst({
+      where: { eventId, acceptedAt: { not: null }, userId },
+    })
+    if (byUser) return byUser
+
+    const orphan = await this.prisma.eventMember.findFirst({
+      where: {
+        eventId,
+        acceptedAt: { not: null },
+        userId: null,
+        email: { equals: email, mode: 'insensitive' },
+      },
+    })
+    if (!orphan) return null
+
+    return this.prisma.eventMember.update({
+      where: { id: orphan.id },
+      data: { userId },
+    })
   }
 
   async require(

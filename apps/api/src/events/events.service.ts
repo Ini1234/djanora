@@ -650,7 +650,7 @@ export class EventsService {
         where: {
           member: {
             acceptedAt: { not: null },
-            OR: [{ userId: user.id }, { email: { equals: user.email, mode: 'insensitive' } }],
+            userId: user.id,
             event: { deletedAt: null },
           },
           event: { deletedAt: null },

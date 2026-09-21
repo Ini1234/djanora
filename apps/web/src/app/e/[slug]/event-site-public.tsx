@@ -24,7 +24,6 @@ export function EventSitePublic({
 }) {
   const [site, setSite] = useState(initial)
   const [token, setToken] = useState<string | null>(null)
-  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [booting, setBooting] = useState(Boolean(inviteeId))
@@ -79,7 +78,6 @@ export function EventSitePublic({
       setError('')
       try {
         const { data } = await backend.post<{ token: string }>(`/event-sites/${slug}/session`, {
-          email: email.trim() || undefined,
           code: code.trim() || undefined,
         })
         window.localStorage.setItem(storageKey(slug), data.token)
@@ -124,22 +122,9 @@ export function EventSitePublic({
               Have an invite?
             </h2>
             <p className="mt-1 text-sm" style={{ color: 'var(--site-muted)' }}>
-              Enter the email on the guest list, or your unique code.
+              Enter the unique code from your invite.
             </p>
             <div className="mt-4 space-y-2">
-              <label className="block space-y-1">
-                <span className="text-xs font-medium" style={{ color: 'var(--site-muted)' }}>
-                  Email
-                </span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="min-h-11 w-full rounded-xl border px-3 py-2 text-sm"
-                  style={{ borderColor: 'var(--site-muted)', background: 'transparent' }}
-                />
-              </label>
               <label className="block space-y-1">
                 <span className="text-xs font-medium" style={{ color: 'var(--site-muted)' }}>
                   Unique code
@@ -159,7 +144,7 @@ export function EventSitePublic({
               )}
               <button
                 type="button"
-                disabled={pending || (!email.trim() && !code.trim())}
+                disabled={pending || !code.trim()}
                 onClick={unlock}
                 className={buttonClass(site.look.buttonStyle)}
                 style={{

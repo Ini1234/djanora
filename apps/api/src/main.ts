@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
+import { corsOrigins } from './common/clerk-auth'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true })
@@ -16,7 +17,7 @@ async function bootstrap() {
   )
 
   app.enableCors({
-    origin: true,
+    origin: corsOrigins(),
     credentials: true,
     exposedHeaders: ['WWW-Authenticate', 'Mcp-Session-Id'],
   })

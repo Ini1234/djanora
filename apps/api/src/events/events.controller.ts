@@ -34,6 +34,7 @@ import { CreateCommentDto, UpdateCommentDto } from './dto/comments.dto'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.service'
+import { ThrottlerGuard } from '@nestjs/throttler'
 
 interface ClerkPayload {
   sub: string
@@ -204,6 +205,7 @@ export class EventsController {
   }
 
   @Post(':id/party/:memberId/photo')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -283,6 +285,7 @@ export class EventsController {
   // ─── Receipts ─────────────────────────────────────────────────────────────
 
   @Post(':id/budget/:itemId/receipts')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -360,6 +363,7 @@ export class EventsController {
   }
 
   @Post(':id/members')
+  @UseGuards(ThrottlerGuard)
   inviteMember(
     @CurrentUser() user: ClerkPayload,
     @Param('id') eventId: string,
@@ -473,6 +477,7 @@ export class EventsController {
   }
 
   @Post(':id/comments')
+  @UseGuards(ThrottlerGuard)
   createComment(
     @CurrentUser() user: ClerkPayload,
     @Param('id') eventId: string,

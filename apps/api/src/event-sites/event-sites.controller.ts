@@ -19,6 +19,7 @@ import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.serv
 import { EventSitesService } from './event-sites.service'
 import { CreateSiteDto, PatchSiteDto } from './dto/event-site.dto'
 import { MAX_PHOTO_BYTES } from './event-site.constants'
+import { ThrottlerGuard } from '@nestjs/throttler'
 
 type ClerkPayload = { sub: string }
 
@@ -78,6 +79,7 @@ export class EventSitesController {
   }
 
   @Post('cover')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(imageUpload)
   async cover(
     @CurrentUser() user: ClerkPayload,
@@ -91,6 +93,7 @@ export class EventSitesController {
   }
 
   @Post('photos')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(imageUpload)
   async photos(
     @CurrentUser() user: ClerkPayload,
@@ -113,6 +116,7 @@ export class EventSitesController {
   }
 
   @Post('sections/:sectionId/photo')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(imageUpload)
   async sectionPhoto(
     @CurrentUser() user: ClerkPayload,
@@ -137,6 +141,7 @@ export class EventSitesController {
   }
 
   @Post('sections/:sectionId/people/:personId/photo')
+  @UseGuards(ThrottlerGuard)
   @UseInterceptors(imageUpload)
   async personPhoto(
     @CurrentUser() user: ClerkPayload,

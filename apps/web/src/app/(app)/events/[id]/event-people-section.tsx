@@ -28,38 +28,38 @@ type MemberRole = Exclude<EventMemberRole, 'HOST'>
 
 interface MemberRow {
   id: string
-  email: string
+  email?: string
   role: MemberRole
   surfaces: EventSurface[]
   childGrants?: ChildGrant[]
   acceptedAt: string | null
   createdAt: string
   inviteUrl?: string
-  user: { id: string; firstName: string | null; lastName: string | null; email: string } | null
+  user: { id: string; firstName: string | null; lastName: string | null; email?: string } | null
 }
 
 interface HostRow {
   id: string
-  email: string
-  user: { firstName: string | null; lastName: string | null; email: string } | null
+  email?: string
+  user: { firstName: string | null; lastName: string | null; email?: string } | null
 }
 
 function displayName(person: {
-  email: string
+  email?: string
   user: { firstName: string | null; lastName: string | null } | null
 }) {
   const name = [person.user?.firstName, person.user?.lastName].filter(Boolean).join(' ')
-  return name || person.email
+  return name || person.email || 'Collaborator'
 }
 
 function initials(person: {
-  email: string
+  email?: string
   user: { firstName: string | null; lastName: string | null } | null
 }) {
   const first = person.user?.firstName?.[0]
   const last = person.user?.lastName?.[0]
   if (first || last) return `${first ?? ''}${last ?? ''}`.toUpperCase()
-  return person.email.slice(0, 2).toUpperCase()
+  return (person.email ?? 'CO').slice(0, 2).toUpperCase()
 }
 
 function toggleIn<T>(list: T[], value: T) {
@@ -228,7 +228,7 @@ function SiteGrantToggle({
 function Avatar({
   person,
 }: {
-  person: { email: string; user: { firstName: string | null; lastName: string | null } | null }
+  person: { email?: string; user: { firstName: string | null; lastName: string | null } | null }
 }) {
   return (
     <span
@@ -484,9 +484,11 @@ export function EventPeopleSection({
                   <p className="truncate text-sm" style={{ color: 'var(--color-text-primary)' }}>
                     {displayName(host)}
                   </p>
-                  <p className="truncate text-[11px]" style={{ color: 'var(--color-muted)' }}>
-                    {host.email}
-                  </p>
+                  {host.email ? (
+                    <p className="truncate text-[11px]" style={{ color: 'var(--color-muted)' }}>
+                      {host.email}
+                    </p>
+                  ) : null}
                 </div>
                 <span
                   className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
@@ -531,8 +533,13 @@ export function EventPeopleSection({
                         </span>
                       </div>
                       <p className="truncate text-[11px]" style={{ color: 'var(--color-muted)' }}>
-                        {m.email} · {ROLE_LABELS[m.role]}
-                        {!editing && ` · ${m.surfaces.map((s) => SURFACE_LABELS[s]).join(', ')}`}
+                        {[
+                          m.email,
+                          ROLE_LABELS[m.role],
+                          !editing ? m.surfaces.map((s) => SURFACE_LABELS[s]).join(', ') : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                     </div>
                     {isHost && !editing && (
