@@ -21,6 +21,7 @@ export type AuthServerMetadata = Record<string, unknown> & {
   registration_endpoint?: string
   authorization_endpoint?: string
   token_endpoint?: string
+  client_id_metadata_document_supported?: boolean
 }
 
 export class DcrError extends Error {
@@ -94,6 +95,21 @@ export function withNestRegistration(
 export function asAuthServerMetadata(value: unknown): AuthServerMetadata {
   if (!value || typeof value !== 'object') return {}
   return { ...(value as AuthServerMetadata) }
+}
+
+/** Clerk publishable keys encode `{frontendApi}$` after the `pk_test_` / `pk_live_` prefix. */
+export function clerkFrontendApi(publishableKey: string) {
+  const encoded = publishableKey.replace(/^pk_(?:test|live)_/, '')
+  if (!encoded || encoded === publishableKey) return null
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8')
+    const host = decoded.split('$')[0]?.trim()
+    if (!host) return null
+    if (host.startsWith('https://') || host.startsWith('http://')) return host.replace(/\/$/, '')
+    return `https://${host}`
+  } catch {
+    return null
+  }
 }
 
 @Injectable()
@@ -217,10 +233,16 @@ export class McpOAuthService {
       const res = await fetch(CLERK_OAUTH_SETTINGS, {
         headers: { Authorization: `Bearer ${secretKey}` },
       })
-      if (!res.ok) return false
-      const data = (await res.json()) as ClerkOAuthSettings
-      if (data.client_id_metadata_documents_advertised || data.dynamic_oauth_client_registration) {
-        return true
+      if (res.ok) {
+        const data = (await res.json()) as ClerkOAuthSettings
+        if (
+          data.client_id_metadata_documents_advertised ||
+          data.dynamic_oauth_client_registration
+        ) {
+          return true
+        }
+      } else {
+        this.log.warn(`Clerk OAuth settings ${res.status} — falling back to AS metadata`)
       }
     } catch (err) {
       this.log.warn(
@@ -233,14 +255,16 @@ export class McpOAuthService {
   private async fromAuthServerMetadata() {
     const publishableKey =
       this.config.get<string>('CLERK_PUBLISHABLE_KEY') ||
-      this.config.get<string>('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY')
+      this.config.get<string>('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY') ||
+      process.env.CLERK_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
     if (!publishableKey) return false
+    const frontendApi = clerkFrontendApi(publishableKey)
+    if (!frontendApi) return false
     try {
-      const { fetchClerkAuthorizationServerMetadata } = await import('@clerk/mcp-tools/server')
-      const metadata = (await fetchClerkAuthorizationServerMetadata({ publishableKey })) as {
-        client_id_metadata_document_supported?: boolean
-        registration_endpoint?: string
-      }
+      const res = await fetch(`${frontendApi}/.well-known/oauth-authorization-server`)
+      if (!res.ok) return false
+      const metadata = asAuthServerMetadata(await res.json())
       return Boolean(
         metadata.client_id_metadata_document_supported || metadata.registration_endpoint,
       )

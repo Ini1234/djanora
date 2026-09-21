@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { HttpAdapterHost } from '@nestjs/core'
 import cors from 'cors'
 import type { Application, Request, RequestHandler, Response } from 'express'
+import { streamableHttpHandler } from './mcp.http'
 import { asAuthServerMetadata, DcrError, McpOAuthService, withNestRegistration } from './mcp.oauth'
 import { McpRegistry } from './mcp.registry'
 
@@ -31,29 +32,12 @@ export class McpBootstrap implements OnModuleInit {
     const app: Application = this.adapterHost.httpAdapter.getInstance()
     const mcpCors = cors({
       origin: true,
+      credentials: true,
       exposedHeaders: ['WWW-Authenticate', 'Mcp-Session-Id'],
     })
-    const clerkResource = clerkMcp.protectedResourceHandlerClerk({
+    const resource = clerkMcp.protectedResourceHandlerClerk({
       scopes_supported: ['email', 'profile', 'openid'],
     })
-    const resource: RequestHandler = (req, res) => {
-      if (oauthMode === 'clerk') {
-        clerkResource(req, res)
-        return
-      }
-      const publishableKey = process.env.CLERK_PUBLISHABLE_KEY
-      if (!publishableKey) throw new Error('CLERK_PUBLISHABLE_KEY environment variable is required')
-      res.json(
-        clerkServer.generateClerkProtectedResourceMetadata({
-          publishableKey,
-          resourceUrl: `${origin}/mcp`,
-          properties: {
-            scopes_supported: ['email', 'profile', 'openid'],
-            authorization_servers: [origin],
-          },
-        }),
-      )
-    }
     const authServer: RequestHandler = async (_req: Request, res: Response) => {
       const publishableKey = process.env.CLERK_PUBLISHABLE_KEY
       if (!publishableKey) throw new Error('CLERK_PUBLISHABLE_KEY environment variable is required')
@@ -81,7 +65,7 @@ export class McpBootstrap implements OnModuleInit {
         res.status(500).json({ error: 'server_error', error_description: 'Registration failed' })
       }
     }
-    const mcp = clerkMcp.streamableHttpHandler(this.registry.server as never)
+    const mcp = streamableHttpHandler(this.registry)
 
     app.use('/.well-known', mcpCors as RequestHandler)
     app.get('/.well-known/oauth-protected-resource', resource)

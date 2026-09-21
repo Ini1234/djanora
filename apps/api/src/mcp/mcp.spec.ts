@@ -4,8 +4,10 @@ import { mcpCtx } from './mcp.context'
 import { nestToMcp } from './mcp.errors'
 import { decodeUpload } from './mcp.files'
 import { payloadHash } from './mcp.hash'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { McpJobsService } from './mcp.jobs'
 import { McpRateLimitService } from './mcp.rate-limit'
+import { McpRegistry } from './mcp.registry'
 import { McpScopeService } from './mcp.scope'
 import { McpSessionService } from './mcp.session.service'
 
@@ -49,6 +51,19 @@ describe('mcp.context', () => {
         sendRequest: () => ({}),
       } as never),
     ).toThrow(/Sign in/)
+  })
+
+  it('sticks current-event to the Clerk user when MCP has no session id', () => {
+    expect(
+      mcpCtx({
+        authInfo: { extra: { userId: 'user_abc' } },
+        sessionId: undefined,
+        signal: new AbortController().signal,
+        requestId: '1',
+        sendNotification: () => undefined,
+        sendRequest: () => ({}),
+      } as never).sessionId,
+    ).toBe('user:user_abc')
   })
 })
 
@@ -266,5 +281,22 @@ describe('mcp.rate-limit', () => {
     const rate = new McpRateLimitService()
     for (let i = 0; i < 60; i++) rate.hit('u', false)
     expect(() => rate.hit('u', false)).toThrow()
+  })
+})
+
+describe('mcp.registry', () => {
+  it('uses a new McpServer per connection so a second request does not throw', async () => {
+    const registry = new McpRegistry({ run: jest.fn() } as never)
+    const first = registry.createServer()
+    const second = registry.createServer()
+    const t1 = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+    const t2 = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+    await first.connect(t1)
+    await expect(first.connect(t2)).rejects.toThrow(/Already connected/)
+    await expect(second.connect(t2)).resolves.toBeUndefined()
+    await t1.close()
+    await t2.close()
+    await first.close()
+    await second.close()
   })
 })
