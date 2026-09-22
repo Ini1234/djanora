@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowLeftRight,
   Heart,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NotificationBell } from './notification-bell'
@@ -23,6 +24,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { signOutToHome } from '@/lib/client-sign-out'
 import { useModeSwitch } from './use-mode-switch'
 import { useTranslations } from 'next-intl'
+import { DjanNavIcon } from '@/components/assistant/djan-mark'
 
 interface MobileNavProps {
   displayName: string
@@ -53,18 +55,25 @@ export function MobileNav({
     { href: '/inspiration', label: t('inspiration'), icon: Sparkles },
     { href: '/likes', label: t.has('liked') ? t('liked') : 'Liked', icon: Heart },
     { href: '/vendors', label: t('findVendors'), icon: Search },
+    { href: '/assistant', label: t.has('assistant') ? t('assistant') : 'Djan', icon: DjanNavIcon },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/settings', label: t('settings'), icon: Settings },
   ]
 
   const VENDOR_NAV = [
     { href: '/vendor/dashboard', label: t('overview'), icon: LayoutDashboard, exact: true },
+    { href: '/assistant', label: t.has('assistant') ? t('assistant') : 'Djan', icon: DjanNavIcon },
     { href: '/inquiries', label: t('inquiries'), icon: MessageSquare },
     { href: '/portfolio', label: t('portfolio'), icon: Search },
     { href: '/settings', label: t('settings'), icon: Settings },
   ]
 
-  const nav = isVendorMode ? VENDOR_NAV : HOST_NAV
+  const nav = [
+    ...(isVendorMode ? VENDOR_NAV : HOST_NAV),
+    ...(role === 'ADMIN'
+      ? [{ href: '/admin', label: t.has('admin') ? t('admin') : 'Admin', icon: Shield }]
+      : []),
+  ]
 
   useEffect(() => {
     if (!open) return
@@ -83,7 +92,11 @@ export function MobileNav({
       {/* Top bar */}
       <div
         className="flex shrink-0 items-center justify-between border-b px-4 py-3.5 md:hidden"
-        style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}
+        style={{
+          background: 'var(--nav-bg)',
+          borderColor: 'var(--nav-border)',
+          paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))',
+        }}
       >
         <Link href={isVendorMode ? '/vendor/dashboard' : '/'} className="flex items-center gap-2">
           <div className="bg-gold-600 flex h-7 w-7 items-center justify-center rounded-lg">
@@ -129,7 +142,10 @@ export function MobileNav({
             >
               <div
                 className="flex items-center justify-between border-b px-5 py-5"
-                style={{ borderColor: 'var(--nav-border)' }}
+                style={{
+                  borderColor: 'var(--nav-border)',
+                  paddingTop: 'max(1.25rem, env(safe-area-inset-top, 0px))',
+                }}
               >
                 <span className="font-display text-brand-900 text-lg font-semibold dark:text-white">
                   Djanora
@@ -184,7 +200,10 @@ export function MobileNav({
 
               <div
                 className="space-y-3 border-t px-3 pt-3 pb-6"
-                style={{ borderColor: 'var(--nav-border)' }}
+                style={{
+                  borderColor: 'var(--nav-border)',
+                  paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
+                }}
               >
                 <div className="px-3">
                   <ThemeToggle />

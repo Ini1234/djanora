@@ -33,7 +33,10 @@ export function corsOrigins(): string[] {
 
 /** MCP resource, OAuth discovery, and optional Nest DCR — probed by Claude from the browser. */
 export function isMcpPublicPath(path: string) {
-  const p = (path.split('?')[0] ?? '').replace(/\/+$/, '') || '/'
+  const raw = path.split('?')[0] ?? ''
+  let end = raw.length
+  while (end > 0 && raw[end - 1] === '/') end -= 1
+  const p = raw.slice(0, end) || '/'
   return (
     p === '/mcp' ||
     p.startsWith('/mcp/') ||

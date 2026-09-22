@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, useTransition, type ReactNode } from 'react'
 import { backend } from '@/lib/backend'
 import { getErrorMessage } from '@/lib/errors'
 import type {
@@ -155,6 +155,7 @@ export function EventSiteView({
   compact = false,
   className = 'min-h-screen',
   rsvp,
+  afterCover,
   footer,
 }: {
   look: PublicEventSite['look']
@@ -170,6 +171,7 @@ export function EventSiteView({
     token: string | null
     onDone: (eventId: string, next: { status: string; rsvpAt: string | null }) => void
   }
+  afterCover?: ReactNode
   footer?: ReactNode
 }) {
   const enabled = [...sections].filter((s) => s.enabled).sort((a, b) => a.sortOrder - b.sortOrder)
@@ -191,17 +193,20 @@ export function EventSiteView({
       className={mainClass}
     >
       {enabled.map((section) => (
-        <SiteSection
-          key={sectionKey(section)}
-          section={section}
-          look={look}
-          photos={photos}
-          owner={owner}
-          events={events}
-          preview={preview}
-          rsvp={rsvp}
-        />
+        <Fragment key={sectionKey(section)}>
+          <SiteSection
+            section={section}
+            look={look}
+            photos={photos}
+            owner={owner}
+            events={events}
+            preview={preview}
+            rsvp={rsvp}
+          />
+          {section.type === 'COVER' ? afterCover : null}
+        </Fragment>
       ))}
+      {enabled.some((section) => section.type === 'COVER') ? null : afterCover}
       {footer}
     </main>
   )

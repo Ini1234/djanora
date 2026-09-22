@@ -3,20 +3,20 @@
     {
       "route": "/",
       "rewrite": "/index.html"
+    },
+    {
+      "route": "/robots.txt",
+      "rewrite": "/robots.txt"
     }
   ],
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/staticwebapp.config.json"]
-  },
   "responseOverrides": {
     "404": {
-      "rewrite": "/index.html",
-      "statusCode": 200
+      "statusCode": 404
     }
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Robots-Tag": "noindex, nofollow"
   }
 }

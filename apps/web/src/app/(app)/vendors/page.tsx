@@ -128,7 +128,7 @@ export default function VendorsPage() {
           Find Vendors
         </h1>
         <p className="mt-0.5 text-sm" style={{ color: 'var(--color-muted)' }}>
-          Browse vetted service providers for your event
+          Browse approved service providers for your event
         </p>
       </div>
 

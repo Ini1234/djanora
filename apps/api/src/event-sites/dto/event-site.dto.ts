@@ -3,6 +3,7 @@ import { Type } from 'class-transformer'
 import {
   IsArray,
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsIn,
   IsInt,
@@ -333,7 +334,7 @@ export class PatchSiteDto {
 
 export class SiteSessionDto {
   @IsOptional()
-  @IsString()
+  @IsEmail()
   @MaxLength(MAX_EMAIL)
   email?: string
 
@@ -384,4 +385,26 @@ export class SiteRsvpDto {
   @IsString()
   @MaxLength(MAX_GUEST_MESSAGE)
   guestMessage?: string
+}
+
+export class DraftSiteCopyDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  about?: string
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  travel?: string
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  stay?: string
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  dressCode?: string
 }

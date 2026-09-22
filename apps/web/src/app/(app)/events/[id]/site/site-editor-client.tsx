@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { getErrorMessage } from '@/lib/errors'
+import { newId } from '@/lib/id'
 import type {
   EditorEventSite,
   Event,
@@ -22,7 +23,6 @@ import type {
   EventSitePhotosSize,
   EventSitePhotosStyle,
   EventSiteSection,
-  EventSiteSectionLayout,
   EventSiteSectionType,
   EventPartyMember,
   EventPartyRoster,
@@ -39,6 +39,14 @@ import { SectionImageField, canHaveHero } from './section-image-field'
 import { SiteFileButton } from './site-file-button'
 import { StoryEditor } from './story-editor'
 import { SITE_PALETTES, bodyContrastOk, normalizeHex, themePack } from '@/app/e/[slug]/site-look'
+import {
+  CatalogToggle,
+  HexField,
+  LabeledField,
+  LayoutToggle,
+  LookChoice,
+  fieldStyle,
+} from './site-editor-fields'
 import { eventDateKey } from '@/lib/event-timing'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 
@@ -151,12 +159,6 @@ const EDITOR_STEPS = [
   { id: 'site-pages', label: 'Pages' },
 ] as const
 const MAX_CUSTOM_SECTIONS = 10
-
-const fieldStyle = {
-  background: 'var(--color-card)',
-  border: '1px solid var(--color-border)',
-  color: 'var(--color-text-primary)',
-} as const
 
 function emptySection(type: Exclude<EventSiteSectionType, 'CUSTOM'>, i: number): EventSiteSection {
   return { type, enabled: type === 'COVER', sortOrder: i, layout: 'vertical' }
@@ -349,7 +351,7 @@ function SiteUrlField({
           </>
         ) : (
           <>
-            Like {host}/e/izien-and-lois{hint || ' — add some letters or numbers'}.
+            Like {host}/e/ada-and-chidi{hint || ' — add some letters or numbers'}.
           </>
         )}
       </p>
@@ -770,7 +772,7 @@ export function EventSiteEditor({ event }: { event: Event }) {
   }
 
   function addCustomSection() {
-    const id = crypto.randomUUID()
+    const id = newId()
     setSections((prev) => {
       const customCount = prev.filter((s) => s.type === 'CUSTOM').length
       if (customCount >= MAX_CUSTOM_SECTIONS) return prev
@@ -823,7 +825,7 @@ export function EventSiteEditor({ event }: { event: Event }) {
         title="Start the page"
         hint="Guests will not see this until you publish. Pick a web address and who may open it."
       >
-        <SiteUrlField host={host} value={slug} onChange={setSlug} placeholder="izien-and-lois" />
+        <SiteUrlField host={host} value={slug} onChange={setSlug} placeholder="ada-and-chidi" />
         <AccessModePicker value={ownerAccessMode} onChange={setOwnerAccessMode} />
         {error && (
           <p className="text-sm" role="alert" style={{ color: 'var(--color-error, #c45c4a)' }}>
@@ -990,6 +992,10 @@ export function EventSiteEditor({ event }: { event: Event }) {
           <SiteUrlField host={host} value={slug} onChange={setSlug} />
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
             If you change a live address, the old one stops working. There is no redirect.
+          </p>
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            Signed in on this event, you can open the live page without a code. Guests unlock with
+            the email on the list, or a site link you copy from the Guests tab.
           </p>
           <AccessModePicker value={ownerAccessMode} onChange={setOwnerAccessMode} />
           {children.length > 0 && !event.parentId && (
@@ -1860,7 +1866,7 @@ export function EventSiteEditor({ event }: { event: Event }) {
         </button>
       </div>
 
-      <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+      <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(var(--app-vh)-2rem)]">
         <div
           className="overflow-hidden rounded-2xl"
           style={{ border: '1px solid var(--color-border)', background: 'var(--color-card)' }}
@@ -1878,7 +1884,7 @@ export function EventSiteEditor({ event }: { event: Event }) {
           </div>
           <div
             ref={previewPaneRef}
-            className="max-h-[min(70vh,44rem)] min-w-0 overflow-auto lg:max-h-[calc(100vh-6rem)]"
+            className="max-h-[min(70vh,44rem)] min-w-0 overflow-auto lg:max-h-[calc(var(--app-vh)-6rem)]"
           >
             <EventSiteView
               preview
@@ -2000,17 +2006,6 @@ function coverDateLabel(value: string | Date | null | undefined) {
     day: 'numeric',
     year: 'numeric',
   })
-}
-
-function LabeledField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {label}
-      </span>
-      {children}
-    </label>
-  )
 }
 
 function CoverFact({
@@ -2274,171 +2269,6 @@ function GalleryDisplayOptions({
         </div>
       </fieldset>
     </div>
-  )
-}
-
-function CatalogToggle<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label?: string
-  value: T
-  options: readonly (readonly [T, string])[]
-  onChange: (next: T) => void
-}) {
-  const pills = (
-    <div
-      className="flex flex-wrap rounded-full border p-0.5"
-      style={{ borderColor: 'var(--color-border)' }}
-    >
-      {options.map(([id, title]) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={value === id}
-          onClick={() => onChange(id)}
-          className="min-h-11 rounded-full px-3 text-sm font-medium"
-          style={{
-            background: value === id ? 'var(--color-brand-primary)' : 'transparent',
-            color: value === id ? 'var(--color-primary-foreground)' : 'var(--color-muted)',
-          }}
-        >
-          {title}
-        </button>
-      ))}
-    </div>
-  )
-  if (!label) return pills
-  return (
-    <div>
-      <p className="mb-1 text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {label}
-      </p>
-      {pills}
-    </div>
-  )
-}
-
-function LayoutToggle({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: EventSiteSectionLayout
-  onChange: (next: EventSiteSectionLayout) => void
-}) {
-  return (
-    <div>
-      <p className="mb-1 text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {label}
-      </p>
-      <div
-        className="flex flex-wrap rounded-full border p-0.5"
-        style={{ borderColor: 'var(--color-border)' }}
-      >
-        {(
-          [
-            ['vertical', 'Stacked'],
-            ['horizontal', 'Side by side'],
-          ] as const
-        ).map(([layout, title]) => (
-          <button
-            key={layout}
-            type="button"
-            aria-pressed={value === layout}
-            onClick={() => onChange(layout)}
-            className="min-h-11 rounded-full px-3 text-sm font-medium"
-            style={{
-              background: value === layout ? 'var(--color-brand-primary)' : 'transparent',
-              color: value === layout ? 'var(--color-primary-foreground)' : 'var(--color-muted)',
-            }}
-          >
-            {title}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function LookChoice<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: T
-  options: readonly (readonly [T, string])[]
-  onChange: (next: T) => void
-}) {
-  return (
-    <div>
-      <p className="mb-1.5 text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map(([id, title]) => {
-          const selected = value === id
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => onChange(id)}
-              className="min-h-11 rounded-full border px-3 text-sm"
-              style={{
-                borderColor: selected ? 'var(--color-brand-primary)' : 'var(--color-border)',
-                color: selected ? 'var(--color-brand-primary)' : 'var(--color-muted)',
-              }}
-            >
-              {title}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function HexField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string
-  onChange: (next: string) => void
-}) {
-  const picker = normalizeHex(value) ?? '#000000'
-  return (
-    <label className="block space-y-1">
-      <span className="text-[11px] font-medium" style={{ color: 'var(--color-muted)' }}>
-        {label}
-      </span>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={picker}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label={`${label} color`}
-          className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border"
-          style={{ borderColor: 'var(--color-border)', background: 'transparent' }}
-        />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="#1a1a1a"
-          maxLength={7}
-          spellCheck={false}
-          className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm focus:outline-none"
-          style={fieldStyle}
-        />
-      </div>
-    </label>
   )
 }
 

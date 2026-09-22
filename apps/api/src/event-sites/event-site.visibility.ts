@@ -18,6 +18,15 @@ export function canSeeEventOnSite(
   return guestEventIds.has(config.eventId)
 }
 
+/** True when at least one Event on the site is still hidden from this identity. */
+export function siteNeedsInvite(
+  configs: SiteEventConfig[],
+  ownerEventId: string,
+  guestEventIds: Set<string>,
+) {
+  return configs.some((config) => !canSeeEventOnSite(config, ownerEventId, guestEventIds))
+}
+
 export function publicRobots(visible: SiteEventConfig[]): 'index' | 'noindex' {
   return visible.some((c) => c.accessMode === EventSiteAccessMode.OPEN) ? 'index' : 'noindex'
 }

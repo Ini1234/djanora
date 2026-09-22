@@ -234,7 +234,7 @@
     border: 1px solid var(--border);
     background: var(--input);
     color: var(--foreground);
-    font-size: 0.9375rem;
+    font-size: 1rem;
     color-scheme: inherit;
     transition:
       border-color 0.15s ease,
@@ -590,17 +590,20 @@
 
 .btn-primary {
   color: var(--primary-foreground) !important;
-  input[type='date'],
-  input[type='time'],
-  input[type='datetime-local'] {
-    color-scheme: light;
-  }
+}
 
-  .dark input[type='date'],
-  .dark input[type='time'],
-  .dark input[type='datetime-local'] {
-    color-scheme: dark;
-  }
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  color-scheme: inherit;
+  min-height: 2.75rem;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+input[type='date']::-webkit-date-and-time-value {
+  text-align: start;
+  min-height: 1.25em;
 }
 
 .panel-inverse,
@@ -619,6 +622,26 @@
 }
 
 /* ─── Base ─────────────────────────────────────────────────────────── */
+:root {
+  --app-vh: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-vh: 100dvh;
+  }
+}
+
+.h-app {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.min-h-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 html {
   scroll-behavior: smooth;
   color-scheme: light dark;

@@ -1,4 +1,16 @@
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import { Type } from 'class-transformer'
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator'
 import { EventPartySide, EventPartyStatus } from '@prisma/client'
 
 export class CreatePartyMemberDto {
@@ -78,4 +90,12 @@ export class UpdatePartyMemberDto {
 export class PairPartyMemberDto {
   @IsString()
   partnerId: string
+}
+
+export class ImportPartyDto {
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => CreatePartyMemberDto)
+  members: CreatePartyMemberDto[]
 }

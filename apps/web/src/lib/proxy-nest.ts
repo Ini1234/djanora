@@ -42,7 +42,7 @@ export async function proxyNest(req: NextRequest, nestPath: string): Promise<Nex
       method,
       headers,
       data,
-      timeout: 60_000,
+      timeout: nestPath.startsWith('/assistant/') ? 120_000 : 60_000,
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
       validateStatus: () => true,

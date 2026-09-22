@@ -26,7 +26,7 @@
     "exportCsv": "Exporter en CSV",
     "exportExcel": "Exporter en Excel",
     "exportNotion": "Modèle Notion",
-    "import": "Importer un tableur",
+    "import": "Importer avec Djan",
     "importPreview": "Aperçu de l’import",
     "importDone": "Import terminé",
     "previewCount": "{count} lignes trouvées",
@@ -36,7 +36,7 @@
     "emptyFile": "Ce fichier ne contient aucune ligne.",
     "parseFailed": "Impossible de lire ce fichier.",
     "importFailed": "L’import a échoué.",
-    "tooManyRows": "Seules les 500 premières lignes ont été importées."
+    "tooManyRows": "Djan lit 100 lignes à la fois. Séparez le reste."
   },
   "vendorCategories": {
     "CATERER": "Traiteur / Alimentation",
@@ -58,6 +58,7 @@
     "inspiration": "Inspiration",
     "liked": "Aimés",
     "findVendors": "Trouver des prestataires",
+    "assistant": "Djan",
     "messages": "Messages",
     "settings": "Paramètres",
     "overview": "Vue d'ensemble",
@@ -68,7 +69,41 @@
     "switchTo": "Passer en mode {mode}",
     "signOut": "Se déconnecter",
     "planning": "Planification",
-    "vendor": "Prestataire"
+    "vendor": "Prestataire",
+    "admin": "Admin"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Examinez les prestataires avant qu’ils apparaissent aux hôtes.",
+    "queue": "File d’examen",
+    "vendors": "Prestataires",
+    "users": "Utilisateurs",
+    "empty": "Rien dans cette liste.",
+    "business": "Entreprise",
+    "category": "Catégorie",
+    "status": "Statut",
+    "applied": "Candidature",
+    "city": "Ville",
+    "bio": "Bio",
+    "price": "Fourchette de prix",
+    "links": "Liens",
+    "reason": "Motif (obligatoire pour refuser ou suspendre)",
+    "lastNote": "Dernière note",
+    "approve": "Approuver",
+    "reject": "Refuser",
+    "suspend": "Suspendre",
+    "restore": "Rétablir",
+    "person": "Personne",
+    "role": "Rôle",
+    "actions": "Actions",
+    "promote": "Nommer admin",
+    "demote": "Retirer admin",
+    "actionFailed": "Cette action a échoué.",
+    "status_PENDING": "En attente",
+    "status_APPROVED": "Approuvé",
+    "status_REJECTED": "Refusé",
+    "status_SUSPENDED": "Suspendu",
+    "pendingCount": "{count} en attente"
   },
   "dashboard": {
     "welcome": "Bon retour",
@@ -310,5 +345,22 @@
     "generic": "Une erreur s'est produite. Veuillez réessayer.",
     "networkError": "Erreur réseau. Vérifiez votre connexion.",
     "notFound": "Introuvable."
+  },
+  "contact": {
+    "title": "Nous contacter",
+    "subtitle": "Compte, examen prestataire et questions produit. Nous lisons cette boîte.",
+    "name": "Nom",
+    "email": "E-mail",
+    "reason": "De quoi s’agit-il ?",
+    "reason_general": "Question générale",
+    "reason_vendor_review": "Examen prestataire",
+    "reason_account": "Compte",
+    "reason_bug": "Quelque chose ne fonctionne pas",
+    "reason_other": "Autre",
+    "message": "Message",
+    "failed": "Impossible d’envoyer ce message. Réessayez.",
+    "sentTitle": "Message envoyé",
+    "sentBody": "Nous vous répondrons à cette adresse. Vous pouvez aussi écrire à {email}.",
+    "reviewLink": "Une question sur cet examen ? Contactez-nous"
   }
 }

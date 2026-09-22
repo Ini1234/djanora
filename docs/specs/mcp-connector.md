@@ -95,7 +95,7 @@ Azure already hosts Nest (`deploy-api.yml`). The connector URL is that API origi
 ### Writes and confirms
 
 - **FR-25.** Cheap writes MUST execute on the first valid call: checklist, schedule, party fields, guest field edits, budget lines, site **draft** PATCH (catalogs, copy, enable/disable sections), comments, personal checklist, `update_me`, `set_active_mode`, save/favorite vendor, mood-board add/remove (non-spatial), notification mark-read.
-- **FR-26.** The following jobs MUST be two-step. First call (no valid `confirm_token`, or `dry_run` / omitted token) MUST NOT mutate. It MUST return a preview `{ summary, blast_radius, confirm_token, expires_at }` and refuse the write. Second call MUST send that `confirm_token` and the **same** arguments. Token mismatch, expiry, reuse, or payload hash mismatch MUST refuse and MUST NOT mutate.
+- **FR-26.** The following jobs MUST be two-step. First call (no valid `confirm_token`, or `dry_run` / omitted token) MUST NOT mutate. It MUST return a preview `{ summary, blast_radius, confirm_token, expires_at }` and refuse the write. Second call MUST send that `confirm_token` and the **same** arguments. Token mismatch MUST refuse `invalid`. Expiry MUST refuse `expired`. Reuse MUST refuse `already_done` and MUST NOT mutate a second time.
 
   Confirm-gated jobs:
 
@@ -221,6 +221,8 @@ type McpErrorCode =
   | 'forbidden'
   | 'invalid'
   | 'conflict'
+  | 'already_done'
+  | 'expired'
   | 'needs_confirm'
   | 'needs_event'
   | 'rate_limited'

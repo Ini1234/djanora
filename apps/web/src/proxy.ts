@@ -9,7 +9,14 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/about(.*)',
   '/contact(.*)',
-  '/blog(.*)',
+  '/for-vendors(.*)',
+  '/privacy(.*)',
+  '/terms(.*)',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/llms.txt',
+  '/icon',
+  '/opengraph-image',
   '/api/webhooks(.*)',
   '/api/auth/sign-out',
   '/api/proxy(.*)',
@@ -20,12 +27,10 @@ const isPublicRoute = createRouteMatcher([
   '/vendors/:slug',
 ])
 
-const isAdminRoute = createRouteMatcher(['/admin(.*)'])
-
 export default clerkMiddleware(async (auth, request) => {
   if (isPublicRoute(request)) return
 
-  const { userId, sessionClaims } = await auth()
+  const { userId } = await auth()
 
   if (!userId) {
     // Clerk JWTs last 60s. Client navigations are RSC fetches, so Clerk's
@@ -50,19 +55,13 @@ export default clerkMiddleware(async (auth, request) => {
     return (await auth()).redirectToSignIn()
   }
 
-  const roles = (sessionClaims?.metadata as { roles?: string[] })?.roles ?? []
-
-  if (isAdminRoute(request) && !roles.includes('admin')) {
-    return Response.redirect(new URL('/', request.url))
-  }
-
-  // Vendor and user route access is enforced at the page level using
-  // our database (hasVendorProfile / activeMode), not Clerk session claims.
+  // Vendor, user, and admin access is enforced at the page level using
+  // our database (hasVendorProfile / activeMode / role), not Clerk session claims.
 })
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|txt|xml)).*)',
     '/(api|trpc)(.*)',
   ],
 }

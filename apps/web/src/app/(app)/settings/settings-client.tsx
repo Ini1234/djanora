@@ -2,14 +2,17 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { Check, Copy, LogOut, Mail } from 'lucide-react'
 import { API_URL } from '@/lib/backend'
-import { CONTACT_EMAIL, CONTACT_MAILTO } from '@/lib/contact'
+import { CONTACT_EMAIL, CONTACT_PATH } from '@/lib/contact'
 import { proxyClient } from '@/lib/proxy-client'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { signOutToHome } from '@/lib/client-sign-out'
 import { PersonalChecklist } from '@/components/dashboard/personal-checklist'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
 import type { UserMe } from '@/lib/api.types'
+import { copyText } from '@/lib/clipboard'
 
 const SettingsSecurity = dynamic(
   () => import('./settings-security').then((m) => m.SettingsSecurity),
@@ -24,6 +27,7 @@ const SettingsSecurity = dynamic(
 )
 
 export function SettingsClient({ user }: { user: UserMe }) {
+  const { openChat } = useDjanChatLauncher()
   const [firstName, setFirstName] = useState(user.firstName ?? '')
   const [lastName, setLastName] = useState(user.lastName ?? '')
   const [phone, setPhone] = useState(user.phone ?? '')
@@ -175,8 +179,17 @@ export function SettingsClient({ user }: { user: UserMe }) {
           Claude &amp; assistants
         </h2>
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-          Paste this URL as a custom connector. Sign in with your Djanora account. Leave OAuth
-          Client ID blank.
+          Prefer{' '}
+          <button
+            type="button"
+            onClick={() => openChat()}
+            className="underline"
+            style={{ color: 'var(--color-brand-primary)' }}
+          >
+            Djan
+          </button>{' '}
+          in the app (the chat bubble). This URL is only if you still want Claude or another
+          connector. Sign in with your Djanora account. Leave OAuth Client ID blank.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sr-only" htmlFor="mcp-connector-url">
@@ -186,14 +199,15 @@ export function SettingsClient({ user }: { user: UserMe }) {
             id="mcp-connector-url"
             readOnly
             value={connectorUrl}
-            className="h-9 min-w-0 flex-1 rounded-lg px-3 font-mono text-xs focus:outline-none"
+            className="h-9 min-w-0 flex-1 rounded-lg px-3 font-mono text-base focus:outline-none"
             style={fieldStyle}
           />
           <button
             type="button"
             aria-label={copied ? 'Connector URL copied' : 'Copy connector URL'}
             onClick={() => {
-              void navigator.clipboard.writeText(connectorUrl).then(() => {
+              void copyText(connectorUrl).then((ok) => {
+                if (!ok) return
                 setCopied(true)
                 window.setTimeout(() => setCopied(false), 2000)
               })
@@ -231,8 +245,8 @@ export function SettingsClient({ user }: { user: UserMe }) {
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
           Event invites and reminders are automated and cannot be replied to. Email us instead.
         </p>
-        <a
-          href={CONTACT_MAILTO}
+        <Link
+          href={CONTACT_PATH}
           className="flex h-9 w-fit items-center gap-2 rounded-xl px-3 text-sm font-medium"
           style={{
             color: 'var(--color-text-secondary)',
@@ -242,7 +256,7 @@ export function SettingsClient({ user }: { user: UserMe }) {
         >
           <Mail size={14} />
           {CONTACT_EMAIL}
-        </a>
+        </Link>
       </section>
 
       <section

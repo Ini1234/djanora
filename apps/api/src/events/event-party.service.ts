@@ -15,7 +15,7 @@ import {
   publicPartyDtos,
   type PartyRow,
 } from './event-party.helpers'
-import type { CreatePartyMemberDto, UpdatePartyMemberDto } from './dto/party.dto'
+import type { CreatePartyMemberDto, ImportPartyDto, UpdatePartyMemberDto } from './dto/party.dto'
 
 @Injectable()
 export class EventPartyService {
@@ -82,9 +82,78 @@ export class EventPartyService {
     return this.list(clerkId, eventId)
   }
 
+  async importMembers(clerkId: string, eventId: string, dto: ImportPartyDto) {
+    const access = await this.access.require(clerkId, eventId, {
+      surface: EventSurface.PARTY,
+      action: 'edit',
+    })
+    await this.prisma.event.update({
+      where: { id: eventId },
+      data: { partyEnabled: true },
+    })
+    await importLegacyParty(this.prisma, eventId)
+    const existing = await this.prisma.eventPartyMember.findMany({
+      where: { eventId },
+      select: { name: true, sortOrder: true },
+    })
+    const seen = new Set(existing.map((row) => row.name.trim().toLowerCase()))
+    let sortOrder = existing.reduce((max, row) => Math.max(max, row.sortOrder), 0)
+    const room = Math.max(0, MAX_PARTY_MEMBERS - existing.length)
+    const toCreate: {
+      eventId: string
+      name: string
+      role: string
+      side: EventPartySide
+      showOnSite: boolean
+      status: EventPartyStatus
+      sortOrder: number
+    }[] = []
+    let skipped = 0
+    const members = Array.isArray(dto.members) ? dto.members : []
+    for (const raw of members) {
+      const name = clipPartyName(raw.name)
+      if (!name) {
+        skipped += 1
+        continue
+      }
+      const key = name.toLowerCase()
+      if (seen.has(key)) {
+        skipped += 1
+        continue
+      }
+      if (toCreate.length >= room) {
+        skipped += 1
+        continue
+      }
+      seen.add(key)
+      sortOrder += 1
+      toCreate.push({
+        eventId,
+        name,
+        role: clipPartyRole(raw.role),
+        side: raw.side ?? EventPartySide.OTHER,
+        showOnSite: false,
+        status: EventPartyStatus.PENDING,
+        sortOrder,
+      })
+    }
+    if (toCreate.length > 0) {
+      await this.prisma.eventPartyMember.createMany({ data: toCreate })
+      this.track(
+        eventId,
+        access.user.id,
+        EventActivityAction.CREATED,
+        `Imported ${toCreate.length} wedding party member${toCreate.length === 1 ? '' : 's'}`,
+        eventId,
+      )
+    }
+    const roster = await this.list(clerkId, eventId)
+    return { created: toCreate.length, skipped, eventId, ...roster }
+  }
+
   async update(clerkId: string, eventId: string, memberId: string, dto: UpdatePartyMemberDto) {
     const access = this.isShowOnSiteOnly(dto)
-      ? await this.requireShowOnSite(clerkId, eventId)
+      ? await this.requireSiteOrPartyEdit(clerkId, eventId)
       : await this.requireEnabledEdit(clerkId, eventId)
     const existing = await this.mustMember(eventId, memberId)
     const name = dto.name !== undefined ? clipPartyName(dto.name) : existing.name
@@ -162,7 +231,7 @@ export class EventPartyService {
   }
 
   async setPhoto(clerkId: string, eventId: string, memberId: string, filename: string) {
-    const access = await this.requirePhotoEdit(clerkId, eventId)
+    const access = await this.requireSiteOrPartyEdit(clerkId, eventId)
     const existing = await this.mustMember(eventId, memberId)
     if (existing.photoKey) {
       await this.storage.delete('images', existing.photoKey).catch(() => undefined)
@@ -182,7 +251,7 @@ export class EventPartyService {
   }
 
   async deletePhoto(clerkId: string, eventId: string, memberId: string) {
-    const access = await this.requirePhotoEdit(clerkId, eventId)
+    const access = await this.requireSiteOrPartyEdit(clerkId, eventId)
     const existing = await this.mustMember(eventId, memberId)
     if (existing.photoKey) {
       await this.storage.delete('images', existing.photoKey).catch(() => undefined)
@@ -231,15 +300,7 @@ export class EventPartyService {
     )
   }
 
-  private async requireShowOnSite(clerkId: string, eventId: string) {
-    try {
-      return await this.access.requireSite(clerkId, eventId)
-    } catch {
-      return this.requireEnabledEdit(clerkId, eventId)
-    }
-  }
-
-  private async requirePhotoEdit(clerkId: string, eventId: string) {
+  private async requireSiteOrPartyEdit(clerkId: string, eventId: string) {
     try {
       return await this.access.requireSite(clerkId, eventId)
     } catch {

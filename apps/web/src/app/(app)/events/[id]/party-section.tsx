@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Heart, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
 import { getErrorMessage } from '@/lib/errors'
-import { useLazyGet } from '@/lib/use-lazy-get'
+import { useEventGet } from '@/lib/use-event-get'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import type {
   EventPartyMember,
@@ -65,7 +65,7 @@ export function PartySection({
   eventId: string
   onCollapse?: () => void
 }) {
-  const { data, setData, loading } = useLazyGet<EventPartyRoster>(`/events/${eventId}/party`)
+  const { data, setData, loading } = useEventGet<EventPartyRoster>(`/events/${eventId}/party`)
   const [draft, setDraft] = useState(emptyDraft)
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)

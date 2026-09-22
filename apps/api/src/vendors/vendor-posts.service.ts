@@ -11,18 +11,23 @@ import {
   slugifyTag,
 } from '../inspiration/post-shape'
 import type { CreateVendorPostDto, UpdateVendorPostDto } from './dto/vendor-post.dto'
+import { liveUserWhere } from '../common/active-user'
 
 @Injectable()
 export class VendorPostsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async requireProfile(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true, vendorProfile: { select: { id: true } } },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
+      select: { id: true, vendorProfile: { select: { id: true, reviewStatus: true } } },
     })
     if (!user?.vendorProfile) throw new NotFoundException('No vendor profile found')
-    return { userId: user.id, vendorProfileId: user.vendorProfile.id }
+    return {
+      userId: user.id,
+      vendorProfileId: user.vendorProfile.id,
+      reviewStatus: user.vendorProfile.reviewStatus,
+    }
   }
 
   private async requireOwnedPost(clerkId: string, postId: string) {
@@ -70,8 +75,18 @@ export class VendorPostsService {
     ])
   }
 
-  private async assertCanBeInspiration(postId: string, visibility: InspirationVisibility) {
+  private async assertCanBeInspiration(
+    clerkId: string,
+    postId: string,
+    visibility: InspirationVisibility,
+  ) {
     if (visibility !== InspirationVisibility.INSPIRATION) return
+    const { reviewStatus } = await this.requireProfile(clerkId)
+    if (reviewStatus !== 'APPROVED') {
+      throw new BadRequestException(
+        'Your profile must be approved before you can publish to Inspiration',
+      )
+    }
     const post = await this.prisma.inspirationItem.findUnique({
       where: { id: postId },
       select: { title: true, _count: { select: { media: true } } },
@@ -139,7 +154,7 @@ export class VendorPostsService {
 
   async update(clerkId: string, postId: string, dto: UpdateVendorPostDto) {
     await this.requireOwnedPost(clerkId, postId)
-    if (dto.visibility) await this.assertCanBeInspiration(postId, dto.visibility)
+    if (dto.visibility) await this.assertCanBeInspiration(clerkId, postId, dto.visibility)
 
     const data: Prisma.InspirationItemUpdateInput = {
       ...(dto.title !== undefined && { title: dto.title?.trim() ?? '' }),

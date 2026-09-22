@@ -18,6 +18,8 @@ import { EventPartyService } from '../events/event-party.service'
 import { EventsService } from '../events/events.service'
 import { EventSitesService } from '../event-sites/event-sites.service'
 import type { CreateSiteDto, PatchSiteDto } from '../event-sites/dto/event-site.dto'
+import { AttachChildEventDto, ReorderChildrenDto } from '../events/dto/children.dto'
+import { UpdateEventDto } from '../events/dto/update-event.dto'
 import { GuestsService } from '../guests/guests.service'
 import type { BulkSendInviteDto, CreateGuestDto, SendInviteDto } from '../guests/dto/guests.dto'
 import { InquiriesService } from '../inquiries/inquiries.service'
@@ -36,6 +38,23 @@ import { decodeUpload } from './mcp.files'
 import { McpRateLimitService } from './mcp.rate-limit'
 import { McpScopeService } from './mcp.scope'
 import { McpSessionService } from './mcp.session.service'
+import {
+  IMPORT_ROW_CAP,
+  budgetLabel,
+  checklistLabel,
+  guestLabel,
+  importPreview,
+  parseImportBudget,
+  parseImportChecklist,
+  parseImportGuests,
+  parseImportParty,
+  parseImportSchedule,
+  partyLabel,
+  scheduleLabel,
+} from '../assistant/assistant.import'
+import { parseApplyWeekend, weekendHints, weekendPreview } from '../assistant/assistant.weekend'
+import { parseDraftSiteCopy, siteCopyDto, siteCopyPreview } from '../assistant/assistant.site-copy'
+import { parseToolDto } from './mcp.validate'
 
 type Args = Record<string, unknown>
 
@@ -46,6 +65,13 @@ const GATED = new Set([
   'delete_site',
   'invite_guest',
   'bulk_invite_guests',
+  'import_guests',
+  'import_budget',
+  'import_checklist',
+  'import_schedule',
+  'import_party',
+  'apply_weekend',
+  'draft_site_copy',
   'inquire_vendor',
   'accept_quote',
   'reject_quote',
@@ -96,6 +122,13 @@ export class McpJobsService {
       event_id: str(args.event_id),
       event_title: str(args.event_title),
     })
+  }
+
+  private assertImportRows(count: number) {
+    if (count < 1) mcpError('invalid', 'No rows I could read. Ask the host to clarify the list.')
+    if (count > IMPORT_ROW_CAP) {
+      mcpError('invalid', `Paste at most ${IMPORT_ROW_CAP} rows at a time and split the rest.`)
+    }
   }
 
   private async needConfirm(ctx: McpCtx, tool: string, args: Args, summary: string, blast: string) {
@@ -155,16 +188,18 @@ export class McpJobsService {
           location: str(args.location),
         })
       case 'update_event':
-        return this.events.updateEvent(ctx.clerkId, await this.eventId(ctx, args), {
-          title: str(args.title),
-          estimatedDate: str(args.estimated_date),
-          location: str(args.location),
-          notes: str(args.notes),
-          totalBudget: num(args.total_budget),
-          guestCount: num(args.guest_count),
-          isCompleted: bool(args.is_completed),
-          partyEnabled: bool(args.party_enabled),
-        } as never)
+        return this.events.updateEvent(
+          ctx.clerkId,
+          await this.eventId(ctx, args),
+          await parseToolDto(UpdateEventDto, {
+            title: str(args.title),
+            estimatedDate: str(args.estimated_date),
+            location: str(args.location),
+            totalBudget: num(args.total_budget),
+            guestCount: num(args.guest_count),
+            partyEnabled: bool(args.party_enabled),
+          }),
+        )
       case 'delete_event': {
         const id = await this.eventId(ctx, args)
         const preview = await this.needConfirm(
@@ -182,10 +217,34 @@ export class McpJobsService {
           title: req(args.title, 'title'),
           eventType: args.event_type as EventType,
         } as never)
+      case 'apply_weekend': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseApplyWeekend(args.ceremonies, {
+          includeBridePrice: args.include_bride_price === true,
+        })
+        this.assertImportRows(parsed.ceremonies.length)
+        const parent = (await this.events.findById(ctx.clerkId, eventId)) as {
+          title?: string
+          tribes?: string[]
+        } | null
+        const hints = weekendHints(
+          Array.isArray(parent?.tribes) ? parent.tribes : [],
+          parsed.ceremonies,
+        )
+        const card = weekendPreview(parent?.title || 'this event', parsed, hints)
+        const preview = await this.needConfirm(ctx, tool, args, card.summary, card.blast)
+        if (preview) return preview
+        return this.events.applyWeekend(ctx.clerkId, eventId, {
+          ceremonies: parsed.ceremonies,
+          includeBridePrice: parsed.includeBridePrice,
+        })
+      }
       case 'attach_child_event':
-        return this.events.attachChild(ctx.clerkId, await this.eventId(ctx, args), {
-          childId: req(args.child_id, 'child_id'),
-        } as never)
+        return this.events.attachChild(
+          ctx.clerkId,
+          await this.eventId(ctx, args),
+          await parseToolDto(AttachChildEventDto, { eventId: req(args.child_id, 'child_id') }),
+        )
       case 'detach_child_event':
         return this.events.detachChild(
           ctx.clerkId,
@@ -193,9 +252,11 @@ export class McpJobsService {
           req(args.child_id, 'child_id'),
         )
       case 'reorder_children':
-        return this.events.reorderChildren(ctx.clerkId, await this.eventId(ctx, args), {
-          childIds: arr(args.child_ids) ?? [],
-        } as never)
+        return this.events.reorderChildren(
+          ctx.clerkId,
+          await this.eventId(ctx, args),
+          await parseToolDto(ReorderChildrenDto, { eventIds: arr(args.child_ids) ?? [] }),
+        )
       case 'list_checklist':
         return this.events.listChecklist(ctx.clerkId, await this.eventId(ctx, args))
       case 'add_checklist_item':
@@ -222,8 +283,34 @@ export class McpJobsService {
           await this.eventId(ctx, args),
           req(args.item_id, 'item_id'),
         )
+      case 'import_checklist': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseImportChecklist(args.items)
+        this.assertImportRows(parsed.rows.length)
+        const preview = await this.needConfirm(
+          ctx,
+          tool,
+          args,
+          ...previewPair('checklist', parsed, parsed.rows.map(checklistLabel)),
+        )
+        if (preview) return preview
+        return this.events.importChecklistItems(ctx.clerkId, eventId, { items: parsed.rows })
+      }
       case 'list_schedule':
         return this.events.listSchedule(ctx.clerkId, await this.eventId(ctx, args))
+      case 'import_schedule': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseImportSchedule(args.items)
+        this.assertImportRows(parsed.rows.length)
+        const preview = await this.needConfirm(
+          ctx,
+          tool,
+          args,
+          ...previewPair('schedule', parsed, parsed.rows.map(scheduleLabel)),
+        )
+        if (preview) return preview
+        return this.events.importScheduleItems(ctx.clerkId, eventId, { items: parsed.rows })
+      }
       case 'add_schedule_item':
         return this.events.addScheduleItem(ctx.clerkId, await this.eventId(ctx, args), {
           title: req(args.title, 'title'),
@@ -257,6 +344,19 @@ export class McpJobsService {
         )
       case 'list_party':
         return this.party.list(ctx.clerkId, await this.eventId(ctx, args))
+      case 'import_party': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseImportParty(args.members)
+        this.assertImportRows(parsed.rows.length)
+        const preview = await this.needConfirm(
+          ctx,
+          tool,
+          args,
+          ...previewPair('party', parsed, parsed.rows.map(partyLabel)),
+        )
+        if (preview) return preview
+        return this.party.importMembers(ctx.clerkId, eventId, { members: parsed.rows })
+      }
       case 'add_party_member':
         return this.party.add(ctx.clerkId, await this.eventId(ctx, args), {
           name: req(args.name, 'name'),
@@ -336,10 +436,19 @@ export class McpJobsService {
           await this.eventId(ctx, args),
           req(args.guest_id, 'guest_id'),
         )
-      case 'import_guests':
-        return this.guests.importGuests(ctx.clerkId, await this.eventId(ctx, args), {
-          guests: (args.guests as CreateGuestDto[]) ?? [],
-        })
+      case 'import_guests': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseImportGuests(args.guests)
+        this.assertImportRows(parsed.rows.length)
+        const preview = await this.needConfirm(
+          ctx,
+          tool,
+          args,
+          ...previewPair('guests', parsed, parsed.rows.map(guestLabel)),
+        )
+        if (preview) return preview
+        return this.guests.importGuests(ctx.clerkId, eventId, { guests: parsed.rows })
+      }
       case 'invite_guest': {
         const eventId = await this.eventId(ctx, args)
         const guestId = req(args.guest_id, 'guest_id')
@@ -359,12 +468,27 @@ export class McpJobsService {
       case 'bulk_invite_guests': {
         const eventId = await this.eventId(ctx, args)
         const ids = arr(args.guest_ids) ?? []
+        const guests = (await this.guests.listGuests(ctx.clerkId, eventId)) as Array<{
+          id: string
+          firstName: string
+          lastName?: string | null
+          invite?: { sentAt?: Date | string | null } | null
+        }>
+        const byId = new Map(guests.map((guest) => [guest.id, guest]))
+        const names = ids.map((id) => {
+          const guest = byId.get(id)
+          const name = guest
+            ? [guest.firstName, guest.lastName].filter(Boolean).join(' ')
+            : `Unknown guest`
+          const sent = guest?.invite?.sentAt ? ' — already invited' : ''
+          return `${name}${sent}`
+        })
         const preview = await this.needConfirm(
           ctx,
           tool,
           args,
-          `Send RSVP invites to ${ids.length} guests`,
-          `Email or text goes to those guests on event ${eventId}.`,
+          `Send RSVP invites to ${ids.length} guest${ids.length === 1 ? '' : 's'}`,
+          `Email or text leaves Djanora to these people:\n\n${names.join('\n')}`,
         )
         if (preview) return preview
         return this.guests.bulkSendInvites(ctx.clerkId, eventId, {
@@ -402,10 +526,19 @@ export class McpJobsService {
           await this.eventId(ctx, args),
           req(args.item_id, 'item_id'),
         )
-      case 'import_budget':
-        return this.events.importBudgetItems(ctx.clerkId, await this.eventId(ctx, args), {
-          items: args.items,
-        } as never)
+      case 'import_budget': {
+        const eventId = await this.eventId(ctx, args)
+        const parsed = parseImportBudget(args.items)
+        this.assertImportRows(parsed.rows.length)
+        const preview = await this.needConfirm(
+          ctx,
+          tool,
+          args,
+          ...previewPair('budget', parsed, parsed.rows.map(budgetLabel)),
+        )
+        if (preview) return preview
+        return this.events.importBudgetItems(ctx.clerkId, eventId, { items: parsed.rows })
+      }
       case 'add_budget_receipt': {
         const eventId = await this.eventId(ctx, args)
         const file = decodeUpload({
@@ -494,6 +627,17 @@ export class McpJobsService {
         return this.users.deleteChecklist(ctx.clerkId, req(args.item_id, 'item_id'))
       case 'get_site':
         return this.sites.getEditor(ctx.clerkId, await this.eventId(ctx, args))
+      case 'draft_site_copy': {
+        const eventId = await this.eventId(ctx, args)
+        const sections = parseDraftSiteCopy(args)
+        if (!sections.length) {
+          mcpError('invalid', 'Add at least one of About, Travel, Stay, or Dress code.')
+        }
+        const card = siteCopyPreview(sections)
+        const preview = await this.needConfirm(ctx, tool, args, card.summary, card.blast)
+        if (preview) return preview
+        return this.sites.draftCopy(ctx.clerkId, eventId, siteCopyDto(sections))
+      }
       case 'create_site':
         return this.sites.create(ctx.clerkId, await this.eventId(ctx, args), {
           slug: req(args.slug, 'slug'),
@@ -657,12 +801,12 @@ export class McpJobsService {
       case 'book_vendor': {
         const inquiryId = req(args.inquiry_id, 'inquiry_id')
         const messageId = req(args.message_id, 'message_id')
-        const label =
-          tool === 'book_vendor'
-            ? 'Book this vendor'
-            : tool === 'accept_quote'
-              ? 'Accept quote'
-              : 'Reject quote'
+        const labels: Record<string, string> = {
+          book_vendor: 'Book this vendor',
+          accept_quote: 'Accept quote',
+          reject_quote: 'Reject quote',
+        }
+        const label = labels[tool] ?? 'Reject quote'
         const preview = await this.needConfirm(
           ctx,
           tool,
@@ -931,6 +1075,15 @@ function modeArg(v: unknown): 'user' | 'vendor' {
   if (v === 'vendor') return 'vendor'
   if (v === 'host' || v === 'user') return 'user'
   mcpError('invalid', 'mode must be host, user, or vendor')
+}
+
+function previewPair(
+  kind: 'guests' | 'budget' | 'checklist' | 'schedule' | 'party',
+  parsed: { rows: unknown[]; dropped: number },
+  labels: string[],
+): [string, string] {
+  const preview = importPreview(kind, parsed, labels)
+  return [preview.summary, preview.blast]
 }
 
 function guestDto(args: Args): CreateGuestDto {

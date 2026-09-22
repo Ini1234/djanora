@@ -35,7 +35,16 @@ import { EventItemComments } from './event-item-comments'
 import { EventActivityFeed } from './event-activity-feed'
 import { proxyClient } from '@/lib/proxy-client'
 import { useSse } from '@/contexts/sse-context'
-import type { Event, EventSurface } from '@/lib/api.types'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
+import { DJAN_EVENT_REFRESH } from '@/components/assistant/djan-nav'
+import { DjanMark } from '@/components/assistant/djan-mark'
+import type {
+  Event,
+  EventBudgetItem,
+  EventChecklistItem,
+  EventScheduleItem,
+  EventSurface,
+} from '@/lib/api.types'
 import { EVENT_TYPE_LABELS } from '@/lib/event-type-labels'
 import { isPastEvent } from '@/lib/event-timing'
 
@@ -330,29 +339,36 @@ function EditEventModal({
 
 interface Props {
   event: Event
+  initialChecklist?: EventChecklistItem[]
+  initialBudget?: EventBudgetItem[]
+  initialSchedule?: EventScheduleItem[]
 }
 
-export function EventDetailClient({ event }: Props) {
+export function EventDetailClient({
+  event,
+  initialChecklist,
+  initialBudget,
+  initialSchedule,
+}: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { on } = useSse()
+  const { openChat } = useDjanChatLauncher()
   const urlTab = tabFromParam(searchParams.get('tab'))
   const urlItem = searchParams.get('item')
+  const urlKey = `${urlTab ?? ''}|${urlItem ?? ''}`
   const [tab, setTab] = useState<Tab>(urlTab ?? 'overview')
+  const [urlSnapshot, setUrlSnapshot] = useState(urlKey)
   const [editOpen, setEditOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [lifeCyclePending, setLifeCyclePending] = useState(false)
-  const [localEvent, setLocalEvent] = useState(event)
+  const [eventEdits, setEventEdits] = useState<Event | null>(null)
+  const localEvent = eventEdits?.id === event.id ? eventEdits : event
   const [unread, setUnread] = useState<Record<string, number>>({})
+  const [surfaceError, setSurfaceError] = useState<string | null>(null)
   const [focusItem, setFocusItem] = useState<{ tab: Tab; id: string } | null>(
     urlTab && urlItem ? { tab: urlTab, id: urlItem } : null,
   )
-  const [prevUrl, setPrevUrl] = useState({ tab: urlTab, item: urlItem })
-  if (urlTab !== prevUrl.tab || urlItem !== prevUrl.item) {
-    setPrevUrl({ tab: urlTab, item: urlItem })
-    if (urlTab) setTab(urlTab)
-    if (urlTab && urlItem) setFocusItem({ tab: urlTab, id: urlItem })
-  }
   const [open, setOpen] = useState({
     schedule: false,
     budget: false,
@@ -364,6 +380,19 @@ export function EventDetailClient({ event }: Props) {
   const peopleRef = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
 
+  function setLocalEvent(update: Event | ((prev: Event) => Event)) {
+    setEventEdits((prev) => {
+      const base = prev?.id === event.id ? prev : event
+      return typeof update === 'function' ? update(base) : update
+    })
+  }
+
+  if (urlKey !== urlSnapshot) {
+    setUrlSnapshot(urlKey)
+    if (urlTab) setTab(urlTab)
+    if (urlTab && urlItem) setFocusItem({ tab: urlTab, id: urlItem })
+  }
+
   const viewer = localEvent.viewer ?? { isHost: false, role: 'VIEWER' as const, surfaces: [] }
   const canSee = (surface: EventSurface) => viewer.isHost || viewer.surfaces.includes(surface)
   const canEditSite =
@@ -373,38 +402,53 @@ export function EventDetailClient({ event }: Props) {
     const surface = TAB_SURFACE[t.id]
     return !surface || canSee(surface)
   })
-
-  if (!visibleTabs.some((t) => t.id === tab)) {
-    setTab('overview')
+  const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : 'overview'
+  const unreadSurface = TAB_UNREAD[activeTab]
+  const [seenSurface, setSeenSurface] = useState(unreadSurface)
+  if (seenSurface !== unreadSurface) {
+    setSeenSurface(unreadSurface)
+    setUnread((prev) => (prev[unreadSurface] ? { ...prev, [unreadSurface]: 0 } : prev))
   }
+
+  useEffect(() => {
+    const reload = () => {
+      proxyClient
+        .get<Event>(`/events/${event.id}`)
+        .then(({ data }) => {
+          setEventEdits(data)
+          setSurfaceError(null)
+        })
+        .catch(() => setSurfaceError('Could not refresh this event.'))
+    }
+    window.addEventListener(DJAN_EVENT_REFRESH, reload)
+    return () => window.removeEventListener(DJAN_EVENT_REFRESH, reload)
+  }, [event.id])
 
   useEffect(() => {
     proxyClient
       .get<Record<string, number>>(`/events/${localEvent.id}/unread`)
-      .then(({ data }) => setUnread(data ?? {}))
-      .catch(() => {})
+      .then(({ data }) => {
+        setUnread(data ?? {})
+        setSurfaceError(null)
+      })
+      .catch(() => setSurfaceError('Could not load unread counts.'))
   }, [localEvent.id])
 
   useEffect(() => {
-    return on((event) => {
-      if (event.type !== 'event_activity' || !event.activity) return
-      if (event.activity.eventId !== localEvent.id) return
-      const key = event.activity.surface
-      if (TAB_UNREAD[tab] === key) return
+    return on((payload) => {
+      if (payload.type !== 'event_activity' || !payload.activity) return
+      if (payload.activity.eventId !== localEvent.id) return
+      const key = payload.activity.surface
+      if (TAB_UNREAD[activeTab] === key) return
       setUnread((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }))
     })
-  }, [on, localEvent.id, tab])
+  }, [on, localEvent.id, activeTab])
 
   useEffect(() => {
-    const surface = TAB_UNREAD[tab]
-    void proxyClient.patch(`/events/${localEvent.id}/unread`, { surface }).catch(() => {})
-  }, [tab, localEvent.id])
-  const unreadSurface = TAB_UNREAD[tab]
-  const [clearedTab, setClearedTab] = useState(tab)
-  if (tab !== clearedTab) {
-    setClearedTab(tab)
-    setUnread((prev) => (prev[unreadSurface] ? { ...prev, [unreadSurface]: 0 } : prev))
-  }
+    void proxyClient
+      .patch(`/events/${localEvent.id}/unread`, { surface: unreadSurface })
+      .catch(() => setSurfaceError('Could not mark this tab as read.'))
+  }, [unreadSurface, localEvent.id])
 
   function openLinkedItem(kind: 'budget' | 'checklist' | 'moodboard', id: string) {
     const surface: EventSurface =
@@ -474,7 +518,7 @@ export function EventDetailClient({ event }: Props) {
       observer.disconnect()
       window.removeEventListener('resize', update)
     }
-  }, [tab])
+  }, [activeTab])
 
   const past = isPastEvent(localEvent)
   const days = past ? null : daysUntil(localEvent.estimatedDate)
@@ -484,7 +528,8 @@ export function EventDetailClient({ event }: Props) {
   const totalTasks = stats?.checklistTotal ?? 0
   const remaining = localEvent.totalBudget - totalSpent
   const budgetOver = remaining < 0
-  const guestCount = stats?.confirmedGuestCount ?? 0
+  const confirmedGuestCount = stats?.confirmedGuestCount ?? 0
+  const guestListCount = stats?.guestListCount ?? 0
 
   const subtitle = [
     EVENT_TYPE_LABELS[localEvent.eventType] ?? localEvent.eventType,
@@ -499,6 +544,18 @@ export function EventDetailClient({ event }: Props) {
     <EventAccessProvider eventId={localEvent.id} viewer={viewer}>
       <MoodBoardProvider eventId={localEvent.id}>
         <div className="mx-auto max-w-5xl px-4 py-8 pb-16 sm:px-6 lg:px-8">
+          {surfaceError && (
+            <div
+              role="alert"
+              className="mb-4 rounded-xl px-4 py-3 text-sm"
+              style={{
+                background: 'color-mix(in srgb, var(--color-warning) 14%, transparent)',
+                color: 'var(--color-warning)',
+              }}
+            >
+              {surfaceError}
+            </div>
+          )}
           {/* ── Back ──────────────────────────────────────────────────────── */}
           <Link
             href={localEvent.parent ? `/events/${localEvent.parent.id}` : '/events'}
@@ -624,6 +681,20 @@ export function EventDetailClient({ event }: Props) {
 
               {/* Action buttons */}
               <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => openChat({ eventId: event.id })}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-all hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[.98]"
+                  style={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                    outlineColor: 'var(--ring)',
+                  }}
+                >
+                  <DjanMark className="h-5 w-5 text-[10px]" />
+                  Djan
+                </button>
                 {canEditSite && (
                   <Link
                     href={`/events/${event.id}/site`}
@@ -668,7 +739,7 @@ export function EventDetailClient({ event }: Props) {
                   >
                     <Users size={13} />
                     Guests
-                    {guestCount > 0 && (
+                    {guestListCount > 0 && (
                       <span
                         className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
                         style={{
@@ -677,7 +748,7 @@ export function EventDetailClient({ event }: Props) {
                           color: 'var(--color-brand-primary)',
                         }}
                       >
-                        {guestCount}
+                        {guestListCount}
                       </span>
                     )}
                   </Link>
@@ -712,9 +783,11 @@ export function EventDetailClient({ event }: Props) {
               <Stat
                 icon={Users}
                 value={
-                  guestCount > 0 ? `${guestCount}` : (localEvent.guestCount?.toString() ?? '—')
+                  confirmedGuestCount > 0
+                    ? `${confirmedGuestCount}`
+                    : (localEvent.guestCount?.toString() ?? '—')
                 }
-                label={guestCount > 0 ? 'Guests confirmed' : 'Guests expected'}
+                label={confirmedGuestCount > 0 ? 'Guests confirmed' : 'Guests expected'}
               />
             )}
             {canSee('BUDGET') && (
@@ -792,7 +865,7 @@ export function EventDetailClient({ event }: Props) {
           >
             <div ref={tabListRef} className="relative flex w-max min-w-full" role="tablist">
               {visibleTabs.map(({ id, label }) => {
-                const active = tab === id
+                const active = activeTab === id
                 return (
                   <button
                     key={id}
@@ -843,7 +916,7 @@ export function EventDetailClient({ event }: Props) {
 
           {/* ── Tab panels ────────────────────────────────────────────────── */}
 
-          {tab === 'overview' && (
+          {activeTab === 'overview' && (
             <div className="space-y-6">
               {canSee('SCHEDULE') &&
                 (open.schedule ? (
@@ -851,6 +924,7 @@ export function EventDetailClient({ event }: Props) {
                     eventId={localEvent.id}
                     itinerary={!localEvent.parentId}
                     childrenEvents={localEvent.children ?? []}
+                    initialItems={initialSchedule}
                     onItemsChange={(schedule) => setLocalEvent((prev) => ({ ...prev, schedule }))}
                     onOpenLinkedItem={openLinkedItem}
                     onChecklistChange={setChecklist}
@@ -872,6 +946,7 @@ export function EventDetailClient({ event }: Props) {
                   <BudgetSection
                     eventId={localEvent.id}
                     eventTitle={localEvent.title}
+                    initialItems={initialBudget}
                     totalBudget={localEvent.totalBudget}
                     onCollapse={() => toggleOpen('budget')}
                   />
@@ -886,6 +961,7 @@ export function EventDetailClient({ event }: Props) {
                 (open.checklist ? (
                   <ChecklistSection
                     eventId={localEvent.id}
+                    initialItems={initialChecklist}
                     onItemsChange={setChecklist}
                     onCollapse={() => toggleOpen('checklist')}
                   />
@@ -913,11 +989,12 @@ export function EventDetailClient({ event }: Props) {
             </div>
           )}
 
-          {tab === 'schedule' && (
+          {activeTab === 'schedule' && (
             <ScheduleSection
               eventId={localEvent.id}
               itinerary={!localEvent.parentId}
               childrenEvents={localEvent.children ?? []}
+              initialItems={initialSchedule}
               focusItemId={focusItem?.tab === 'schedule' ? focusItem.id : undefined}
               onItemsChange={(schedule) => setLocalEvent((prev) => ({ ...prev, schedule }))}
               onOpenLinkedItem={openLinkedItem}
@@ -925,24 +1002,26 @@ export function EventDetailClient({ event }: Props) {
             />
           )}
 
-          {tab === 'checklist' && (
+          {activeTab === 'checklist' && (
             <ChecklistSection
               eventId={localEvent.id}
+              initialItems={initialChecklist}
               focusItemId={focusItem?.tab === 'checklist' ? focusItem.id : undefined}
               onItemsChange={setChecklist}
             />
           )}
 
-          {tab === 'budget' && (
+          {activeTab === 'budget' && (
             <BudgetSection
               eventId={localEvent.id}
               eventTitle={localEvent.title}
+              initialItems={initialBudget}
               totalBudget={localEvent.totalBudget}
               focusItemId={focusItem?.tab === 'budget' ? focusItem.id : undefined}
             />
           )}
 
-          {tab === 'vendors' && (
+          {activeTab === 'vendors' && (
             <div
               className="overflow-hidden rounded-2xl"
               style={{
@@ -984,13 +1063,15 @@ export function EventDetailClient({ event }: Props) {
             </div>
           )}
 
-          {tab === 'moodboard' && (
+          {activeTab === 'moodboard' && (
             <MoodBoardTab
               focusEntryId={focusItem?.tab === 'moodboard' ? focusItem.id : undefined}
             />
           )}
 
-          {tab === 'party' && localEvent.partyEnabled && <PartySection eventId={localEvent.id} />}
+          {activeTab === 'party' && localEvent.partyEnabled && (
+            <PartySection eventId={localEvent.id} />
+          )}
 
           {/* Edit modal */}
           {editOpen && (

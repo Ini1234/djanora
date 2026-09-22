@@ -10,7 +10,12 @@ import { UpdateInquiryStatusDto } from '../inquiries/dto/update-inquiry-status.d
 import { InspirationService } from '../inspiration/inspiration.service'
 import { CompleteOnboardingDto } from '../users/dto/complete-onboarding.dto'
 import { UsersService } from '../users/users.service'
+import { EventAccessRepository } from './event-access.repository'
 import { allowsAction, EventAccessService, type EventAccess } from './event-access.service'
+
+function accessService(prisma: unknown) {
+  return new EventAccessService(new EventAccessRepository(prisma as never))
+}
 import { EventMembersService } from './event-members.service'
 import { receiptProxyUrl, rewriteReceiptUrls } from './events.service'
 
@@ -45,7 +50,7 @@ const scheduleOnlyEditor = {
 
 describe('hardening: concealment row ACL (FR-1–FR-7)', () => {
   it('host always sees a concealed row; the target member does not', () => {
-    const svc = new EventAccessService({} as any)
+    const svc = accessService({})
     const hidden = [{ eventMemberId: 'm1' }]
     expect(svc.canSeeChecklistRow(hostAccess, hidden)).toBe(true)
     expect(svc.canSeeChecklistRow(memberAccess, hidden)).toBe(false)
@@ -60,7 +65,7 @@ describe('hardening: concealment row ACL (FR-1–FR-7)', () => {
           .mockResolvedValueOnce(null),
       },
     }
-    const svc = new EventAccessService(prisma as any)
+    const svc = accessService(prisma)
     await expect(svc.assertCanSeeChecklistItem(memberAccess, 'hidden-row')).rejects.toBeInstanceOf(
       NotFoundException,
     )
@@ -78,13 +83,13 @@ describe('hardening: concealment row ACL (FR-1–FR-7)', () => {
         ]),
       },
     }
-    const svc = new EventAccessService(prisma as any)
+    const svc = accessService(prisma)
     const visible = await svc.filterVisibleChecklistIds(memberAccess, ['hidden', 'visible'])
     expect([...visible]).toEqual(['visible'])
   })
 
   it('filterVisibleChecklistIds does not hide rows from the host', async () => {
-    const svc = new EventAccessService({} as any)
+    const svc = accessService({})
     const visible = await svc.filterVisibleChecklistIds(hostAccess, ['hidden', 'visible'])
     expect(visible).toEqual(new Set(['hidden', 'visible']))
   })
@@ -96,7 +101,7 @@ describe('hardening: host-only hide list (FR-8, FR-9)', () => {
       event: { findFirst: jest.fn().mockResolvedValue({ id: 'evt1', parentId: null }) },
       eventMember: { findMany: jest.fn().mockResolvedValue([]) },
     }
-    const svc = new EventAccessService(prisma as any)
+    const svc = accessService(prisma)
     await expect(svc.assertConcealmentTargets('evt1', ['stranger'])).rejects.toBeInstanceOf(
       BadRequestException,
     )
@@ -107,7 +112,7 @@ describe('hardening: host-only hide list (FR-8, FR-9)', () => {
       event: { findFirst: jest.fn().mockResolvedValue({ id: 'evt1', parentId: null }) },
       eventMember: { findMany: jest.fn().mockResolvedValue([{ id: 'm1' }]) },
     }
-    const svc = new EventAccessService(prisma as any)
+    const svc = accessService(prisma)
     await expect(svc.assertConcealmentTargets('evt1', ['m1'])).resolves.toBeUndefined()
   })
 })
@@ -122,7 +127,7 @@ describe('hardening: home checklist requires Checklist edit (FR-10, FR-11)', () 
       require: jest.fn().mockRejectedValue(new NotFoundException('Event not found')),
     }
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ id: 'u1' }) },
+      user: { findFirst: jest.fn().mockResolvedValue({ id: 'u1' }) },
       $transaction: jest.fn(),
     }
     const svc = new UsersService(prisma as any, {} as any, access as any)
@@ -146,7 +151,7 @@ describe('hardening: home checklist requires Checklist edit (FR-10, FR-11)', () 
       canSeeChecklistItem: jest.fn().mockResolvedValue(false),
     }
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ id: 'u1' }) },
+      user: { findFirst: jest.fn().mockResolvedValue({ id: 'u1' }) },
       userChecklist: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'p1',
@@ -210,7 +215,11 @@ describe('hardening: public RSVP and invites (FR-12, FR-14)', () => {
       estimatedDate: null,
       location: 'Lagos',
     })
-    expect(Object.keys(dto.guest).sort()).toEqual(['firstName', 'lastName', 'plusOneAllowed'])
+    expect(Object.keys(dto.guest).sort((a, b) => a.localeCompare(b))).toEqual([
+      'firstName',
+      'lastName',
+      'plusOneAllowed',
+    ])
   })
 
   it('accepted planner invite returns title only', async () => {
@@ -330,6 +339,35 @@ describe('hardening: inquiry status allowlist', () => {
   })
 })
 
+describe('hardening: soft-deleted users (FR-24)', () => {
+  it('event access 404s and does not load the event', async () => {
+    const prisma = {
+      user: { findFirst: jest.fn().mockResolvedValue(null) },
+      event: { findFirst: jest.fn() },
+    }
+    const svc = accessService(prisma)
+    await expect(svc.load('clerk_deleted', 'evt1')).rejects.toBeInstanceOf(NotFoundException)
+    expect(prisma.event.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('ensureFromClerk does not recreate a deleted row', async () => {
+    const prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'u1',
+          clerkId: 'clerk_1',
+          deletedAt: new Date(),
+          vendorProfile: null,
+        }),
+        upsert: jest.fn(),
+      },
+    }
+    const svc = new UsersService(prisma as any, {} as any, {} as any)
+    await expect(svc.ensureFromClerk('clerk_1')).rejects.toBeInstanceOf(NotFoundException)
+    expect(prisma.user.upsert).not.toHaveBeenCalled()
+  })
+})
+
 describe('hardening: admin, onboarding, inspiration (FR-15–FR-17)', () => {
   it('onboarding DTO rejects ADMIN', async () => {
     const dto = plainToInstance(CompleteOnboardingDto, { role: 'ADMIN' })
@@ -364,7 +402,7 @@ describe('hardening: admin, onboarding, inspiration (FR-15–FR-17)', () => {
     const svc = new InspirationService(
       {
         user: {
-          findUnique: jest.fn().mockResolvedValue({ id: 'u1', vendorProfile: { id: 'vp-mine' } }),
+          findFirst: jest.fn().mockResolvedValue({ id: 'u1', vendorProfile: { id: 'vp-mine' } }),
         },
         inspirationItem: { create },
       } as any,

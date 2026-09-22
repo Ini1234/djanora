@@ -16,6 +16,13 @@ enum UserRole {
   ADMIN
 }
 
+enum VendorReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
 enum VendorCategory {
   CATERER
   DJ
@@ -230,6 +237,8 @@ model User {
   assignedChecklists EventChecklist[] @relation("ChecklistAssignee")
   mcpSessions        McpSession[]
   mcpConfirmTokens   McpConfirmToken[]
+  assistantThreads   AssistantThread[]
+  reviewedVendors    VendorProfile[]   @relation("VendorReviewer")
 
   @@index([clerkId])
   @@index([email])
@@ -283,6 +292,10 @@ model VendorProfile {
   embedding        Bytes?
   isVerified       Boolean        @default(false) @map("is_verified")
   isActive         Boolean        @default(true) @map("is_active")
+  reviewStatus     VendorReviewStatus @default(PENDING) @map("review_status")
+  reviewNote       String?        @map("review_note") @db.Text
+  reviewedAt       DateTime?      @map("reviewed_at")
+  reviewedById     String?        @map("reviewed_by_id")
   averageRating    Float?         @map("average_rating")
   totalReviews     Int            @default(0) @map("total_reviews")
   profileViews     Int            @default(0) @map("profile_views")
@@ -290,6 +303,7 @@ model VendorProfile {
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy       User?          @relation("VendorReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   services         VendorService[]
   availability     VendorAvailability[]
   inquiries        Inquiry[]      @relation("InquiryVendor")
@@ -304,6 +318,7 @@ model VendorProfile {
   @@index([category])
   @@index([slug])
   @@index([isActive, isVerified])
+  @@index([reviewStatus])
   @@map("vendor_profiles")
 }
 
@@ -383,6 +398,7 @@ model Event {
   site            EventSite?
   siteIncludes    EventSiteInclude[]
   mcpSessions     McpSession[]
+  assistantThreads AssistantThread[]
 
   @@index([userId])
   @@index([parentId])
@@ -440,6 +456,7 @@ model EventMember {
   @@index([userId])
   @@index([email])
   @@index([eventId])
+  // Partial UNIQUE (event_id, user_id) WHERE user_id IS NOT NULL — 20260921220000
   @@map("event_members")
 }
 
@@ -846,6 +863,7 @@ model Inquiry {
   @@index([eventId])
   @@index([status])
   @@index([originInspirationItemId])
+  // UNIQUE (sender, vendor, event) NULLS NOT DISTINCT — 20260921220000
   @@map("inquiries")
 }
 
@@ -877,7 +895,7 @@ model Review {
   id              String        @id @default(cuid())
   authorId        String        @map("author_id")
   vendorProfileId String        @map("vendor_profile_id")
-  rating          Int           // 1–5
+  rating          Int           // 1–5 — CHECK in 20260921220000_integrity_guards
   comment         String?       @db.Text
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -1208,4 +1226,25 @@ model McpConfirmToken {
 
   @@index([sessionId, toolName, spentAt])
   @@map("mcp_confirm_tokens")
+}
+
+// ─────────────────────────────────────────────
+// IN-APP ASSISTANT
+// ─────────────────────────────────────────────
+
+model AssistantThread {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  title          String?  @db.VarChar(160)
+  transcriptKey  String   @unique @map("transcript_key") @db.VarChar(80)
+  sessionId      String   @unique @map("session_id") @db.VarChar(80)
+  currentEventId String?  @map("current_event_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentEvent   Event?   @relation(fields: [currentEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, updatedAt])
+  @@map("assistant_threads")
 }

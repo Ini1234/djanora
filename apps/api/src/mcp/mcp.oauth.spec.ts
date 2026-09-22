@@ -110,7 +110,10 @@ describe('McpOAuthService.register', () => {
 
   it('uses Clerk AS metadata when the settings API is unavailable', async () => {
     global.fetch = jest.fn((input: RequestInfo | URL) => {
-      const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      let href: string
+      if (typeof input === 'string') href = input
+      else if (input instanceof URL) href = input.href
+      else href = input.url
       if (href.includes('oauth_application_settings')) {
         return Promise.resolve({ ok: false, status: 403 } as Response)
       }
@@ -120,12 +123,11 @@ describe('McpOAuthService.register', () => {
       } as Response)
     })
     const svc = new McpOAuthService({
-      get: (key: string) =>
-        key === 'CLERK_SECRET_KEY'
-          ? 'sk_test'
-          : key === 'CLERK_PUBLISHABLE_KEY'
-            ? TEST_PK
-            : undefined,
+      get: (key: string) => {
+        if (key === 'CLERK_SECRET_KEY') return 'sk_test'
+        if (key === 'CLERK_PUBLISHABLE_KEY') return TEST_PK
+        return undefined
+      },
     } as never)
     await expect(svc.discoverOAuthMode()).resolves.toBe('clerk')
   })

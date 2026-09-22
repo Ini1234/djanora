@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getInvite(token)
   return {
     title: data ? `RSVP · ${data.event.title}` : 'RSVP',
-    description: data ? `You're invited to ${data.event.title}` : undefined,
+    robots: { index: false, follow: false },
   }
 }
 

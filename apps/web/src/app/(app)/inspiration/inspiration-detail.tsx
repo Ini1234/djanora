@@ -221,7 +221,7 @@ export function InspirationDetail({
       <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
         <div
-          className="relative flex max-h-[100vh] w-full max-w-4xl flex-col overflow-hidden border shadow-2xl sm:max-h-[90vh] sm:flex-row sm:rounded-2xl"
+          className="relative flex max-h-[var(--app-vh)] w-full max-w-4xl flex-col overflow-hidden border shadow-2xl sm:max-h-[90vh] sm:flex-row sm:rounded-2xl"
           style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
         >
           <div

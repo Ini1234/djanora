@@ -73,9 +73,9 @@ export class McpConfirmService {
     ) {
       mcpError('invalid', 'Confirm token does not match this job')
     }
-    if (row.spentAt) mcpError('invalid', 'Confirm token was already used')
+    if (row.spentAt) mcpError('already_done', 'Confirm token was already used')
     if (row.expiresAt.getTime() <= Date.now())
-      mcpError('invalid', 'Confirm token expired. Preview again.')
+      mcpError('expired', 'Confirm token expired. Preview again.')
 
     const now = new Date()
     await this.prisma.$transaction([

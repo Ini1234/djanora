@@ -1,7 +1,12 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
-import { EventMemberRole, EventSiteAccessMode, EventSurface } from '@prisma/client'
+import { EventMemberRole, EventSiteAccessMode, EventSiteStatus, EventSurface } from '@prisma/client'
 import { ALL_SURFACES, EventAccessService } from '../events/event-access.service'
 import {
   canHaveSectionHero,
@@ -40,6 +45,7 @@ import {
   redactCoverIdentity,
   redactPublicSchedule,
   sectionIsOn,
+  siteNeedsInvite,
 } from './event-site.visibility'
 import { EventSitesService } from './event-sites.service'
 
@@ -69,8 +75,8 @@ describe('event site slug (FR-14)', () => {
   })
 
   it('puts the invite identifier on /e/{slug}', () => {
-    expect(eventSiteInviteUrl('https://djanora.com', 'izien-and-lois', 'abc123')).toBe(
-      'https://djanora.com/e/izien-and-lois?inviteeId=abc123',
+    expect(eventSiteInviteUrl('https://djanora.com', 'ada-and-chidi', 'abc123')).toBe(
+      'https://djanora.com/e/ada-and-chidi?inviteeId=abc123',
     )
   })
 })
@@ -580,6 +586,106 @@ describe('site visibility (AC-11, AC-12)', () => {
     expect(inviteIsActive(null)).toBe(true)
     expect(inviteIsActive(new Date(Date.now() + 60_000))).toBe(true)
     expect(inviteIsActive(new Date(Date.now() - 60_000))).toBe(false)
+  })
+
+  it('asks for an invite only while invited-only events stay locked', () => {
+    expect(siteNeedsInvite([reception], 'parent', new Set())).toBe(false)
+    expect(siteNeedsInvite([parent, reception], 'parent', new Set())).toBe(true)
+    expect(siteNeedsInvite([parent, reception], 'parent', new Set(['parent']))).toBe(false)
+    expect(siteNeedsInvite([parent, naming], 'parent', new Set(['naming']))).toBe(true)
+  })
+})
+
+describe('getPublic host view (FR-35)', () => {
+  const site = { id: 's1', eventId: 'parent' }
+
+  it('unlocks the live site for a signed-in event member', async () => {
+    const require = jest.fn().mockResolvedValue({ isHost: true })
+    const svc = new EventSitesService(
+      {} as never,
+      { require } as never,
+      {} as never,
+      { get: jest.fn() } as never,
+    )
+    jest.spyOn(svc as never, 'publishedSite').mockResolvedValue(site as never)
+    const projectPublic = jest.spyOn(svc as never, 'projectPublic').mockResolvedValue({
+      needsInvite: false,
+      hostView: true,
+    } as never)
+    await svc.getPublic('amaka-kemi', undefined, 'clerk-host')
+    expect(require).toHaveBeenCalledWith('clerk-host', 'parent', { action: 'view' })
+    expect(projectPublic).toHaveBeenCalledWith(site, [], { hostView: true })
+  })
+
+  it('treats a signed-in stranger as a guest', async () => {
+    const svc = new EventSitesService(
+      {} as never,
+      { require: jest.fn().mockRejectedValue(new NotFoundException('Event not found')) } as never,
+      {} as never,
+      { get: jest.fn() } as never,
+    )
+    jest.spyOn(svc as never, 'publishedSite').mockResolvedValue(site as never)
+    const projectPublic = jest.spyOn(svc as never, 'projectPublic').mockResolvedValue({
+      needsInvite: true,
+      hostView: false,
+    } as never)
+    await svc.getPublic('amaka-kemi', undefined, 'clerk-stranger')
+    expect(projectPublic).toHaveBeenCalledWith(site, [])
+  })
+})
+
+describe('createSession (FR-27, FR-33)', () => {
+  const secret = 's'.repeat(32)
+  const published = {
+    id: 's1',
+    eventId: 'parent',
+    status: EventSiteStatus.PUBLISHED,
+    event: { deletedAt: null },
+    includes: [{ eventId: 'naming' }],
+  }
+
+  function service(prisma: object) {
+    return new EventSitesService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      { get: jest.fn().mockReturnValue(secret) } as never,
+    )
+  }
+
+  it('accepts email-only and binds matching guests on the site', async () => {
+    const findGuests = jest.fn().mockResolvedValue([{ id: 'g-naming' }])
+    const svc = service({
+      eventSite: { findUnique: jest.fn().mockResolvedValue(published) },
+      guest: { findMany: findGuests },
+    })
+    const out = await svc.createSession('amaka-kemi', { email: 'Ada@example.com' })
+    expect(out.token).toBeTruthy()
+    expect(findGuests).toHaveBeenCalledWith({
+      where: {
+        eventId: { in: ['parent', 'naming'] },
+        email: { equals: 'Ada@example.com', mode: 'insensitive' },
+      },
+      select: { id: true },
+    })
+    expect(readSiteSession(out.token, secret)?.guestIds).toEqual(['g-naming'])
+  })
+
+  it('401s when neither email nor code is sent', async () => {
+    const svc = service({
+      eventSite: { findUnique: jest.fn().mockResolvedValue(published) },
+    })
+    await expect(svc.createSession('amaka-kemi', {})).rejects.toBeInstanceOf(UnauthorizedException)
+  })
+
+  it('401s an unknown email without naming an event', async () => {
+    const svc = service({
+      eventSite: { findUnique: jest.fn().mockResolvedValue(published) },
+      guest: { findMany: jest.fn().mockResolvedValue([]) },
+    })
+    await expect(
+      svc.createSession('amaka-kemi', { email: 'nobody@example.com' }),
+    ).rejects.toMatchObject({ message: "We couldn't find that invite." })
   })
 })
 

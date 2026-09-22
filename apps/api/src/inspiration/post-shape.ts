@@ -24,20 +24,25 @@ export const POST_INCLUDE = {
 } as const
 
 export function slugifyTag(label: string) {
-  return label
+  const dashed = label
     .toLowerCase()
     .trim()
-    .replace(/['']/g, '')
+    .replace(/['’]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
+  let start = 0
+  let end = dashed.length
+  while (start < end && dashed[start] === '-') start += 1
+  while (end > start && dashed[end - 1] === '-') end -= 1
+  return dashed.slice(start, end).slice(0, 48)
 }
 
 export function normalizePostCategories(
   category?: InspirationCategory | null,
   categories?: InspirationCategory[] | null,
 ) {
-  const source = categories?.length ? categories : category ? [category] : []
+  let source: InspirationCategory[] = []
+  if (categories?.length) source = categories
+  else if (category) source = [category]
   const unique = [...new Set(source)]
   if (unique.length === 0) {
     throw new BadRequestException('Pick at least one category')

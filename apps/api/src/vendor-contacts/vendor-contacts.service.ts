@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { VendorCategory } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateVendorContactDto, UpdateVendorContactDto } from './dto/vendor-contact.dto'
+import { liveUserWhere } from '../common/active-user'
 
 function parseVendorCategory(value?: string): VendorCategory | undefined {
   if (!value) return undefined
@@ -15,7 +16,7 @@ export class VendorContactsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async resolveUser(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
     return user
   }

@@ -17,16 +17,19 @@ export function EventSitePublic({
   slug,
   initial,
   inviteeId,
+  hostView = false,
 }: {
   slug: string
   initial: PublicEventSite
   inviteeId?: string
+  hostView?: boolean
 }) {
   const [site, setSite] = useState(initial)
   const [token, setToken] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
-  const [booting, setBooting] = useState(Boolean(inviteeId))
+  const [booting, setBooting] = useState(true)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -43,27 +46,30 @@ export function EventSitePublic({
     }
 
     async function boot() {
-      if (inviteeId) {
-        try {
-          const { data } = await backend.post<{ token: string }>(`/event-sites/${slug}/session`, {
-            inviteeId,
-          })
-          if (!cancelled) await applySession(data.token)
-        } catch (err) {
-          if (!cancelled) setError(getErrorMessage(err, "We couldn't find that invite."))
-        } finally {
-          if (!cancelled) setBooting(false)
-        }
-        return
-      }
-
-      const stored = window.localStorage.getItem(storageKey(slug))
-      if (!stored) return
       try {
-        await applySession(stored)
-      } catch {
-        window.localStorage.removeItem(storageKey(slug))
-        if (!cancelled) setToken(null)
+        if (hostView) return
+        if (inviteeId) {
+          try {
+            const { data } = await backend.post<{ token: string }>(`/event-sites/${slug}/session`, {
+              inviteeId,
+            })
+            if (!cancelled) await applySession(data.token)
+          } catch (err) {
+            if (!cancelled) setError(getErrorMessage(err, "We couldn't find that invite."))
+          }
+          return
+        }
+
+        const stored = window.localStorage.getItem(storageKey(slug))
+        if (!stored) return
+        try {
+          await applySession(stored)
+        } catch {
+          window.localStorage.removeItem(storageKey(slug))
+          if (!cancelled) setToken(null)
+        }
+      } finally {
+        if (!cancelled) setBooting(false)
       }
     }
 
@@ -71,14 +77,17 @@ export function EventSitePublic({
     return () => {
       cancelled = true
     }
-  }, [slug, inviteeId])
+  }, [slug, inviteeId, hostView])
 
   function unlock() {
+    const nextEmail = email.trim()
+    const nextCode = code.trim()
     startTransition(async () => {
       setError('')
       try {
         const { data } = await backend.post<{ token: string }>(`/event-sites/${slug}/session`, {
-          code: code.trim() || undefined,
+          email: nextEmail || undefined,
+          code: nextCode || undefined,
         })
         window.localStorage.setItem(storageKey(slug), data.token)
         setToken(data.token)
@@ -93,7 +102,66 @@ export function EventSitePublic({
   }
 
   const events = [site.owner, ...site.children]
-  const showGate = !token && !booting
+  const showGate = Boolean(site.needsInvite) && !token && !booting
+  const canUnlock = Boolean(email.trim() || code.trim())
+
+  const gate = showGate ? (
+    <section className="mt-8 rounded-2xl p-5" style={{ background: 'var(--site-card)' }}>
+      <h2 className="font-display text-xl" style={{ fontFamily: 'var(--site-heading)' }}>
+        On the guest list?
+      </h2>
+      <p className="mt-1 text-sm" style={{ color: 'var(--site-muted)' }}>
+        Enter the email we have for you, or your invite code.
+      </p>
+      <div className="mt-4 space-y-2">
+        <label className="block space-y-1">
+          <span className="text-xs font-medium" style={{ color: 'var(--site-muted)' }}>
+            Email
+          </span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className="min-h-11 w-full rounded-xl border px-3 py-2 text-sm"
+            style={{ borderColor: 'var(--site-muted)', background: 'transparent' }}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-medium" style={{ color: 'var(--site-muted)' }}>
+            Unique code
+          </span>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoComplete="one-time-code"
+            className="min-h-11 w-full rounded-xl border px-3 py-2 text-sm"
+            style={{ borderColor: 'var(--site-muted)', background: 'transparent' }}
+          />
+        </label>
+        {error && (
+          <p className="text-xs" role="alert">
+            {error}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={pending || !canUnlock}
+          onClick={unlock}
+          className={buttonClass(site.look.buttonStyle)}
+          style={{
+            background:
+              site.look.buttonStyle === 'underline' ? 'transparent' : 'var(--site-accent)',
+            color:
+              site.look.buttonStyle === 'underline' ? 'var(--site-accent)' : 'var(--site-card)',
+            borderColor: 'var(--site-accent)',
+          }}
+        >
+          {pending ? 'Checking…' : 'Continue'}
+        </button>
+      </div>
+    </section>
+  ) : null
 
   return (
     <EventSiteView
@@ -115,54 +183,7 @@ export function EventSitePublic({
           }))
         },
       }}
-      footer={
-        showGate ? (
-          <section className="mt-10 rounded-2xl p-5" style={{ background: 'var(--site-card)' }}>
-            <h2 className="font-display text-xl" style={{ fontFamily: 'var(--site-heading)' }}>
-              Have an invite?
-            </h2>
-            <p className="mt-1 text-sm" style={{ color: 'var(--site-muted)' }}>
-              Enter the unique code from your invite.
-            </p>
-            <div className="mt-4 space-y-2">
-              <label className="block space-y-1">
-                <span className="text-xs font-medium" style={{ color: 'var(--site-muted)' }}>
-                  Unique code
-                </span>
-                <input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  autoComplete="one-time-code"
-                  className="min-h-11 w-full rounded-xl border px-3 py-2 text-sm"
-                  style={{ borderColor: 'var(--site-muted)', background: 'transparent' }}
-                />
-              </label>
-              {error && (
-                <p className="text-xs" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={pending || !code.trim()}
-                onClick={unlock}
-                className={buttonClass(site.look.buttonStyle)}
-                style={{
-                  background:
-                    site.look.buttonStyle === 'underline' ? 'transparent' : 'var(--site-accent)',
-                  color:
-                    site.look.buttonStyle === 'underline'
-                      ? 'var(--site-accent)'
-                      : 'var(--site-card)',
-                  borderColor: 'var(--site-accent)',
-                }}
-              >
-                {pending ? 'Checking…' : 'Continue'}
-              </button>
-            </div>
-          </section>
-        ) : null
-      }
+      afterCover={gate}
     />
   )
 }

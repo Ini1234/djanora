@@ -6,6 +6,8 @@ export type McpErrorCode =
   | 'forbidden'
   | 'invalid'
   | 'conflict'
+  | 'already_done'
+  | 'expired'
   | 'needs_confirm'
   | 'needs_event'
   | 'rate_limited'

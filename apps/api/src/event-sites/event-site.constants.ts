@@ -84,7 +84,6 @@ export const SECTION_TYPES: EventSiteSectionType[] = [
 
 export const MAX_PHOTOS = 24
 export const MAX_SECTION_PHOTOS = 20
-export const MAX_PERSON_PHOTOS = 40
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024
 export const MAX_CUSTOM_SECTIONS = 10
 export const MAX_FAQ = 30
@@ -183,7 +182,7 @@ export function sanitizeFaq(raw: { question?: string; answer?: string }[] | unde
 export function sanitizeGifts(raw: { label?: string; url?: string }[] | undefined) {
   return (raw ?? []).slice(0, MAX_GIFTS).map((item) => ({
     label: sanitizePlainText(item.label ?? '', MAX_GIFT_LABEL),
-    url: sanitizeSiteHref(item.url ?? '') ?? '',
+    url: (sanitizeSiteHref(item.url ?? '') ?? '').slice(0, MAX_GIFT_URL),
   }))
 }
 
@@ -217,31 +216,6 @@ export function sanitizeRsvpExtras(dto: {
     dietaryNote: sanitizePlainText(dto.dietaryNote ?? '', MAX_DIETARY) || null,
     guestMessage: sanitizePlainText(dto.guestMessage ?? '', MAX_GUEST_MESSAGE) || null,
   }
-}
-
-export function catalogDefaults(type: EventSiteSectionType) {
-  if (type === EventSiteSectionType.PEOPLE) return { peopleStyle: 'circles' as const }
-  if (type === EventSiteSectionType.SCHEDULE) {
-    return {
-      scheduleStyle: 'list' as const,
-      groupByDay: true,
-      showTimes: true,
-      showItemDirections: true,
-    }
-  }
-  if (type === EventSiteSectionType.WHERE) return { map: 'link' as const }
-  if (type === EventSiteSectionType.FAQ) return { faqStyle: 'stack' as const }
-  if (type === EventSiteSectionType.GIFTS) return { giftsStyle: 'links' as const }
-  if (type === EventSiteSectionType.RSVP) {
-    return {
-      rsvpOpen: true,
-      allowMaybe: true,
-      collectPlusOne: true,
-      collectDietary: true,
-      collectMessage: true,
-    }
-  }
-  return {}
 }
 
 export function pickPeopleStyle(raw: unknown) {
@@ -301,7 +275,7 @@ export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 export const SESSION_HEADER = 'x-event-site-session'
 
 export function sanitizePlainText(raw: string, max: number) {
-  return raw.replace(/<[^>]*>/g, '').slice(0, max)
+  return raw.replace(/<[^>]{0,4000}>/g, '').slice(0, max)
 }
 
 const RICH_TAGS = new Set([
@@ -366,7 +340,7 @@ function stripRichOnce(html: string) {
       if (closing) return name === 'br' ? '' : `</${name}>`
       if (name === 'br') return '<br>'
       if (name === 'a') {
-        const hrefMatch = attrs.match(/\bhref\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i)
+        const hrefMatch = /\bhref\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs)
         const rawHref = hrefMatch ? (hrefMatch[2] ?? hrefMatch[3] ?? hrefMatch[4] ?? '') : ''
         const href = sanitizeSiteHref(rawHref)
         return href
@@ -405,15 +379,18 @@ export function sectionListError(sections: { type: string; id?: string }[]) {
 }
 
 export function slugifySite(raw: string) {
-  return raw
+  const dashed = raw
     .trim()
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/['’]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
+  let start = 0
+  let end = dashed.length
+  while (start < end && dashed[start] === '-') start += 1
+  while (end > start && dashed[end - 1] === '-') end -= 1
+  return dashed.slice(start, end).slice(0, 48)
 }
 
 /** Turn freeform input into a URL slug. Returns null when the result is unusable or reserved. */

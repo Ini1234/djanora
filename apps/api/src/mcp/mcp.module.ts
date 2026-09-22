@@ -43,5 +43,6 @@ import { McpSessionService } from './mcp.session.service'
     McpRegistry,
     McpBootstrap,
   ],
+  exports: [McpJobsService, McpSessionService, McpScopeService, McpConfirmService],
 })
 export class McpModule {}

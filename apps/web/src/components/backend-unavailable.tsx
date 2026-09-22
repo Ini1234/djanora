@@ -1,5 +1,8 @@
 'use client'
 
+import Link from 'next/link'
+import { CONTACT_PATH } from '@/lib/contact'
+
 function Message() {
   return (
     <>
@@ -9,14 +12,23 @@ function Message() {
       <p className="mt-2 text-sm" style={{ color: 'var(--color-muted)' }}>
         You&apos;re still signed in. The server took too long to answer. Try again.
       </p>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        className="mt-6 inline-flex min-h-11 items-center self-start text-sm font-medium"
-        style={{ color: 'var(--color-brand-primary)' }}
-      >
-        Try again
-      </button>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="inline-flex min-h-11 items-center self-start text-sm font-medium"
+          style={{ color: 'var(--color-brand-primary)' }}
+        >
+          Try again
+        </button>
+        <Link
+          href={CONTACT_PATH}
+          className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-2 hover:underline"
+          style={{ color: 'var(--color-muted)' }}
+        >
+          Contact us
+        </Link>
+      </div>
     </>
   )
 }

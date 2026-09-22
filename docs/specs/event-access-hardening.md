@@ -4,7 +4,7 @@
 | --------- | ----------------------------------------------------------------------------------------------------- |
 | Author    | Backend / database security (white-box audit, 2026-08-15)                                             |
 | Date      | 2026-08-15                                                                                            |
-| Status    | **Implemented**                                                                                       |
+| Status    | **Implemented** (FR-24 added 2026-09-21)                                                              |
 | Reviewers | Host-product owner                                                                                    |
 | Apps      | `apps/api` (Nest + Prisma). Small type/DTO follow-ups in `apps/web`.                                  |
 | HTTP      | Existing Nest paths via `proxyClient` / `backend` / `publicGet`. No new `app/api/proxy/.../route.ts`. |
@@ -64,6 +64,7 @@ There is no chat LLM. Embedding risk is cost abuse and ranking poison, not promp
 - **FR-21.** Guest invite email HTML MUST run `escapeHtml` on eventTitle, guestName, location, customNote, eventDate (same helper as planner invites).
 - **FR-22.** `GET /events/:id/members` MUST include `childGrants` only for the host. Non-host members MUST receive `childGrants: []` on every row (they already know their own grants via `viewer` / child access).
 - **FR-23.** Public token and search routes MUST be rate-limited: `/rsvp/:token`, `/event-invites/:token`, `GET /inspiration` when `q` is present. Default 20 req / 60s / IP.
+- **FR-24.** A user with `deletedAt` set MUST be treated as absent: `EventAccessService.load` 404s, admin and SSE refuse the Clerk id, and `ensureFromClerk` MUST NOT recreate or return the row.
 
 ---
 
@@ -74,7 +75,7 @@ There is no chat LLM. Embedding risk is cost abuse and ranking poison, not promp
 - **NFR-3.** Concealment check MUST be one function (`assertCanSeeChecklistItem` / `canSeeChecklistRow`) used by all FR-1–FR-7 call sites. No second concealment list.
 - **NFR-4.** Fail closed: unknown or concealed checklist id → `404` “Event not found” or existing item-not-found copy. Do not confirm existence.
 - **NFR-5.** UsersModule MUST NOT import EventsModule (circular). Extract `EventAccessModule` if UsersService needs `require()`.
-- **NFR-6.** Jest: extend `event-access.service.spec.ts`; add focused specs for concealment helper, RSVP projection, onboarding role, and re-embed admin gate.
+- **NFR-6.** Jest: extend `event-access.service.spec.ts`; add focused specs for concealment helper, RSVP projection, onboarding role, re-embed admin gate, and deleted-user deny (FR-24).
 
 ---
 
@@ -93,6 +94,7 @@ There is no chat LLM. Embedding risk is cost abuse and ranking poison, not promp
 - **AC-11.** (FR-19) Given a receipt URL, when fetched without a BUDGET-capable session, then not 200 file bytes.
 - **AC-12.** (FR-22) Given a non-host viewer, when they GET members, then every `childGrants` is `[]`.
 - **AC-13.** (FR-14) Given an accepted planner token, when they GET `/event-invites/:token`, then body has `accepted: true` and no `surfaces`.
+- **AC-14.** (FR-24) Given a soft-deleted Clerk user, when they call `load` or `GET /users/me`, then 404 and no new `User` row.
 
 ---
 

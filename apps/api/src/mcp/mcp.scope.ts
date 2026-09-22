@@ -4,7 +4,12 @@ import { EventsService } from '../events/events.service'
 import { mcpError } from './mcp.errors'
 import { McpSessionService } from './mcp.session.service'
 
-export type EventRef = { id: string; title: string; estimatedDate: string | null }
+export type EventRef = {
+  id: string
+  title: string
+  estimatedDate: string | null
+  guestCount: number | null
+}
 
 @Injectable()
 export class McpScopeService {
@@ -19,11 +24,13 @@ export class McpScopeService {
       id: string
       title: string
       estimatedDate?: Date | string | null
+      guestCount?: number | null
     }>
     return rows.map((e) => ({
       id: e.id,
       title: e.title,
       estimatedDate: e.estimatedDate ? new Date(e.estimatedDate).toISOString().slice(0, 10) : null,
+      guestCount: typeof e.guestCount === 'number' ? e.guestCount : null,
     }))
   }
 

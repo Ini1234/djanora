@@ -14,7 +14,8 @@ export class NotificationsController {
 
   @Get()
   findAll(@CurrentUser() user: ClerkPayload, @Query('limit') limit?: string) {
-    return this.notificationsService.findByUser(user.sub, limit ? parseInt(limit, 10) : 20)
+    const parsed = limit ? Number.parseInt(limit, 10) : 20
+    return this.notificationsService.findByUser(user.sub, Number.isFinite(parsed) ? parsed : 20)
   }
 
   @Patch('read-all')

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import {
   UserPlus,
   Trash2,
@@ -17,21 +17,19 @@ import {
   XCircle,
   HelpCircle,
   Search,
+  Link2,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
+import { copyText } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
-import type { Guest, Event } from '@/lib/api.types'
+import type { Event, Guest, GuestUnlockLink } from '@/lib/api.types'
 import { useEventAccess } from '../event-access-context'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { DataPortMenu } from '@/components/data-port-menu'
-import {
-  GUEST_HEADERS,
-  capImportRows,
-  guestExportRows,
-  parseGuestTable,
-} from '@/lib/data-port-maps'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
+import { GUEST_HEADERS, guestExportRows } from '@/lib/data-port-maps'
 import { fileBase } from '@/lib/sheet-io'
+import { DJAN_EVENT_REFRESH } from '@/components/assistant/djan-nav'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -376,6 +374,7 @@ function GuestRow({
   const [isPending, startTransition] = useTransition()
   const [showInvite, setShowInvite] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [unlockNote, setUnlockNote] = useState('')
   const [editForm, setEditForm] = useState({
     firstName: guest.firstName,
     lastName: guest.lastName ?? '',
@@ -404,6 +403,23 @@ function GuestRow({
       setIsEditing(false)
     } catch {
       // silently ignore
+    }
+  }
+
+  async function copyUnlockLink() {
+    setUnlockNote('')
+    try {
+      const { data } = await proxyClient.post<GuestUnlockLink>(
+        `/events/${eventId}/guests/${guest.id}/unlock-link`,
+      )
+      const ok = await copyText(data.url)
+      setUnlockNote(
+        ok
+          ? `Copied. If they need the code: ${data.code}`
+          : `Copy this link: ${data.url}. If they need the code: ${data.code}`,
+      )
+    } catch {
+      setUnlockNote('Could not copy their site link.')
     }
   }
 
@@ -513,6 +529,7 @@ function GuestRow({
               </div>
 
               {guest.note && <p className="text-brand-500 mt-0.5 text-xs italic">{guest.note}</p>}
+              {unlockNote && <p className="text-brand-400 mt-1 text-xs">{unlockNote}</p>}
 
               {/* RSVP response details */}
               {guest.invite?.rsvpStatus === 'ATTENDING' && (
@@ -539,6 +556,17 @@ function GuestRow({
             {/* Actions */}
             {canEdit('GUESTS') && (
               <div className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => {
+                    void copyUnlockLink()
+                    setShowInvite(false)
+                    setIsEditing(false)
+                  }}
+                  title="Copy site link"
+                  className="text-brand-400 hover:text-gold-300 hover:bg-gold-600/10 rounded-lg p-1.5 transition-colors"
+                >
+                  <Link2 size={13} />
+                </button>
                 <button
                   onClick={() => {
                     setShowInvite((v) => !v)
@@ -720,7 +748,7 @@ function BulkInviteBar({
 
 export function GuestsClient({ eventId, initialGuests, event }: Props) {
   const { canEdit } = useEventAccess()
-  const tPort = useTranslations('dataPort')
+  const { openChat } = useDjanChatLauncher()
   const [guests, setGuests] = useState<Guest[]>(initialGuests ?? [])
   const [loading, setLoading] = useState(!initialGuests)
   const [showAdd, setShowAdd] = useState(false)
@@ -729,51 +757,59 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
   useEffect(() => {
-    if (initialGuests) return
     let cancelled = false
-    proxyClient
-      .get<Guest[]>(`/events/${eventId}/guests`)
-      .then(({ data }) => {
-        if (!cancelled) setGuests(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {
-        if (!cancelled) setGuests([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    const load = () => {
+      proxyClient
+        .get<Guest[]>(`/events/${eventId}/guests`)
+        .then(({ data }) => {
+          if (!cancelled) setGuests(Array.isArray(data) ? data : [])
+        })
+        .catch(() => {
+          if (!cancelled) setGuests([])
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }
+    if (!initialGuests) load()
+    window.addEventListener(DJAN_EVENT_REFRESH, load)
     return () => {
       cancelled = true
+      window.removeEventListener(DJAN_EVENT_REFRESH, load)
     }
   }, [eventId, initialGuests])
 
   // ── Stats ──────────────────────────────────────────────────────────────────
 
-  const attending = guests.filter((g) => g.invite?.rsvpStatus === 'ATTENDING').length
-  const declined = guests.filter((g) => g.invite?.rsvpStatus === 'DECLINED').length
-  const awaiting = guests.filter((g) => g.invite?.rsvpStatus === 'PENDING').length
-  const notInvited = guests.filter((g) => !g.invite).length
+  const { attending, declined, awaiting, notInvited } = useMemo(() => {
+    return {
+      attending: guests.filter((g) => g.invite?.rsvpStatus === 'ATTENDING').length,
+      declined: guests.filter((g) => g.invite?.rsvpStatus === 'DECLINED').length,
+      awaiting: guests.filter((g) => g.invite?.rsvpStatus === 'PENDING').length,
+      notInvited: guests.filter((g) => !g.invite).length,
+    }
+  }, [guests])
 
-  // ── Filtered list ──────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return guests.filter((g) => {
+      const name = guestDisplayName(g).toLowerCase()
+      const matchSearch =
+        !search ||
+        name.includes(search.toLowerCase()) ||
+        g.email?.includes(search) ||
+        g.phone?.includes(search)
 
-  const filtered = guests.filter((g) => {
-    const name = guestDisplayName(g).toLowerCase()
-    const matchSearch =
-      !search ||
-      name.includes(search.toLowerCase()) ||
-      g.email?.includes(search) ||
-      g.phone?.includes(search)
+      const status = g.invite?.rsvpStatus ?? 'NONE'
+      const matchFilter =
+        filterStatus === 'all' ||
+        (filterStatus === 'attending' && status === 'ATTENDING') ||
+        (filterStatus === 'declined' && status === 'DECLINED') ||
+        (filterStatus === 'awaiting' && status === 'PENDING') ||
+        (filterStatus === 'not_invited' && !g.invite)
 
-    const status = g.invite?.rsvpStatus ?? 'NONE'
-    const matchFilter =
-      filterStatus === 'all' ||
-      (filterStatus === 'attending' && status === 'ATTENDING') ||
-      (filterStatus === 'declined' && status === 'DECLINED') ||
-      (filterStatus === 'awaiting' && status === 'PENDING') ||
-      (filterStatus === 'not_invited' && !g.invite)
-
-    return matchSearch && matchFilter
-  })
+      return matchSearch && matchFilter
+    })
+  }, [guests, search, filterStatus])
 
   // ── Callbacks ──────────────────────────────────────────────────────────────
 
@@ -845,23 +881,11 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
           rows={guestExportRows(guests)}
           canImport={canEdit('GUESTS')}
           triggerClassName="flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-medium text-brand-200 transition-colors hover:bg-white/8"
-          onImport={async (table) => {
-            const parsed = parseGuestTable(table)
-            const capped = capImportRows(parsed.items, parsed.issues, tPort('tooManyRows'))
-            if (capped.items.length === 0) {
-              return {
-                created: 0,
-                skipped: 0,
-                issues: capped.issues.length ? capped.issues : [tPort('emptyFile')],
-              }
-            }
-            const { data } = await proxyClient.post<{
-              created: number
-              skipped: number
-              guests: Guest[]
-            }>(`/events/${eventId}/guests/import`, { guests: capped.items })
-            setGuests(data.guests)
-            return { created: data.created, skipped: data.skipped, issues: capped.issues }
+          onAskDjan={({ filename, grid, truncated }) => {
+            openChat({
+              eventId,
+              sheet: { kind: 'guests', filename, grid, truncated },
+            })
           }}
         />
 

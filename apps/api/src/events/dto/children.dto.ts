@@ -1,6 +1,8 @@
+import { Type } from 'class-transformer'
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -9,6 +11,7 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator'
 import { EventType, Tribe, WeddingTheme } from '@prisma/client'
 
@@ -60,4 +63,29 @@ export class ReorderChildrenDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   eventIds: string[]
+}
+
+export class WeekendCeremonyDto {
+  @IsEnum(EventType)
+  eventType: EventType
+
+  @IsString()
+  @MinLength(1)
+  title: string
+
+  @IsOptional()
+  @IsDateString()
+  estimatedDate?: string
+}
+
+export class ApplyWeekendDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => WeekendCeremonyDto)
+  ceremonies: WeekendCeremonyDto[]
+
+  @IsOptional()
+  @IsBoolean()
+  includeBridePrice?: boolean
 }

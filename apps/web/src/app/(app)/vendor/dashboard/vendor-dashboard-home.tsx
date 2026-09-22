@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { contactHref } from '@/lib/contact'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import type { MyVendorProfile } from '@/lib/api.types'
 
@@ -125,6 +126,7 @@ function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
 
 export function VendorDashboardHome({ firstName, profile }: Props) {
   const tCat = useTranslations('vendorCategories')
+  const tContact = useTranslations('contact')
   const score = profile ? completeness(profile) : 0
 
   return (
@@ -142,7 +144,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
             {profile && (
               <p className="text-brand-500 dark:text-brand-400 mt-1 text-sm">
                 {profile.businessName}
-                {profile.isVerified && (
+                {profile.reviewStatus === 'APPROVED' && (
                   <span className="text-gold-600 dark:text-gold-400 ml-2 inline-flex items-center gap-1">
                     <BadgeCheck size={13} /> Verified
                   </span>
@@ -161,6 +163,36 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
           )}
         </div>
       </motion.div>
+
+      {profile && profile.reviewStatus && profile.reviewStatus !== 'APPROVED' && (
+        <motion.div
+          {...fadeUp(0)}
+          className="rounded-2xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: 'var(--color-border)',
+            background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
+          }}
+        >
+          <p className="font-medium">
+            {profile.reviewStatus === 'PENDING' &&
+              'Djanora is reviewing your profile. Hosts cannot find you yet.'}
+            {profile.reviewStatus === 'REJECTED' &&
+              'Your listing was not approved. Update your profile and wait for another review.'}
+            {profile.reviewStatus === 'SUSPENDED' &&
+              'Your listing is hidden from hosts while we review it.'}
+          </p>
+          {profile.reviewNote && (
+            <p className="text-brand-500 mt-1 text-xs">{profile.reviewNote}</p>
+          )}
+          <Link
+            href={contactHref('vendor_review')}
+            className="mt-2 inline-block text-xs font-medium underline-offset-2 hover:underline"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {tContact('reviewLink')}
+          </Link>
+        </motion.div>
+      )}
 
       {/* ── Categories ────────────────────────────────────────────────── */}
       {profile && profile.categories.length > 0 && (

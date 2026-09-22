@@ -58,8 +58,9 @@ function asStringArray(value: unknown): string[] {
 
 function sameRedirects(a: string[], b: string[]) {
   if (a.length !== b.length) return false
-  const left = [...a].sort()
-  const right = [...b].sort()
+  const byUri = (left: string, right: string) => left.localeCompare(right)
+  const left = [...a].sort(byUri)
+  const right = [...b].sort(byUri)
   return left.every((uri, i) => uri === right[i])
 }
 

@@ -126,7 +126,7 @@ export function NotificationBell({ vendorMode = false }: { vendorMode?: boolean 
 
           {/* List */}
           <div
-            className="max-h-[min(360px,calc(100vh-8rem))] divide-y overflow-y-auto"
+            className="max-h-[min(360px,calc(var(--app-vh)-8rem))] divide-y overflow-y-auto"
             style={{ borderColor: 'var(--border)' }}
           >
             {notifications.length === 0 ? (

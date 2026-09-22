@@ -33,7 +33,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { proxyClient } from '@/lib/proxy-client'
-import { useLazyGet } from '@/lib/use-lazy-get'
+import { useEventGet } from '@/lib/use-event-get'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
@@ -379,19 +379,20 @@ function AssigneeSelect({
 function ItemDrawer({
   item,
   eventId,
+  people,
   onClose,
   onSaved,
   onToggle,
 }: {
   item: EventChecklistItem
   eventId: string
+  people: AssignablePerson[]
   onClose: () => void
   onSaved: (updated: EventChecklistItem) => void
   onToggle: () => void
 }) {
   const tCat = useTranslations('vendorCategories')
   const { canEdit } = useEventAccess()
-  const people = useAssignablePeople(eventId)
   const [isPending, startTransition] = useTransition()
   const [isEditing, setIsEditing] = useState(false)
 
@@ -1358,10 +1359,12 @@ function ReminderRow({
 
 function AddRow({
   eventId,
+  people,
   onAdded,
   onClose,
 }: {
   eventId: string
+  people: AssignablePerson[]
   onAdded: (item: EventChecklistItem) => void
   onClose: () => void
 }) {
@@ -1375,7 +1378,6 @@ function AddRow({
   const [vendors, setVendors] = useState<VendorDraft[]>([])
   const [assigneeUserId, setAssigneeUserId] = useState('')
   const [expanded, setExpanded] = useState(false)
-  const people = useAssignablePeople(eventId)
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -1598,7 +1600,7 @@ export function ChecklistSection({
   const tCat = useTranslations('vendorCategories')
   const { canEdit, viewer } = useEventAccess()
   const people = useAssignablePeople(eventId)
-  const fetched = useLazyGet<EventChecklistItem[]>(
+  const fetched = useEventGet<EventChecklistItem[]>(
     initialItems ? null : `/events/${eventId}/checklist`,
   )
   const [items, setItems] = useHydratedState(
@@ -2058,6 +2060,7 @@ export function ChecklistSection({
               key={openItem.id}
               item={openItem}
               eventId={eventId}
+              people={people}
               onClose={() => setOpenItemId(null)}
               onSaved={(updated) =>
                 setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
@@ -2071,7 +2074,12 @@ export function ChecklistSection({
 
       {/* ── Add row ─────────────────────────────────────────────────────────── */}
       {showAdd ? (
-        <AddRow eventId={eventId} onAdded={handleAdded} onClose={() => setShowAdd(false)} />
+        <AddRow
+          eventId={eventId}
+          people={people}
+          onAdded={handleAdded}
+          onClose={() => setShowAdd(false)}
+        />
       ) : canEdit('CHECKLIST') ? (
         <button
           onClick={() => setShowAdd(true)}

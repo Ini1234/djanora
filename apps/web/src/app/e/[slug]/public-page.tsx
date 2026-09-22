@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { publicGet } from '@/lib/backend'
+import { JsonLd } from '@/components/json-ld'
+import { backend, publicGet } from '@/lib/backend'
+import { getBackendClerkToken } from '@/lib/clerk-token'
 import type { PublicEventSite } from '@/lib/api.types'
+import { eventJsonLd, faqJsonLd, noindexRobots, pageMeta } from '@/lib/seo'
 import { EventSitePublic } from './event-site-public'
 
 interface Props {
@@ -10,21 +13,33 @@ interface Props {
 }
 
 async function getSite(slug: string) {
-  return publicGet<PublicEventSite>(`/event-sites/${slug}`)
+  const token = await getBackendClerkToken()
+  if (!token) return publicGet<PublicEventSite>(`/event-sites/${slug}`)
+  try {
+    const { data } = await backend.get<PublicEventSite>(`/event-sites/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 5_000,
+    })
+    return data
+  } catch {
+    return publicGet<PublicEventSite>(`/event-sites/${slug}`)
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const site = await getSite(slug)
-  if (!site) return { title: 'Event not found', robots: { index: false, follow: false } }
-  const indexable = site.robots === 'index'
-  return {
-    title: site.owner.title || site.look.navName?.trim() || 'Event',
-    description: [formatMetaDate(site.owner.estimatedDate), site.owner.location]
-      .filter(Boolean)
-      .join(' · '),
-    robots: indexable ? { index: true, follow: true } : { index: false, follow: false },
-  }
+  if (!site) return { title: 'Event not found', robots: noindexRobots }
+  const title = site.owner.title || site.look.navName?.trim() || 'Event'
+  const description =
+    [formatMetaDate(site.owner.estimatedDate), site.owner.location].filter(Boolean).join(' · ') ||
+    'Event details on Djanora.'
+  return pageMeta({
+    title,
+    description,
+    path: `/e/${slug}`,
+    index: site.robots === 'index',
+  })
 }
 
 function formatMetaDate(value: string | null) {
@@ -43,28 +58,35 @@ export default async function PublicEventSitePage({ params, searchParams }: Prop
   const site = await getSite(slug)
   if (!site) notFound()
 
-  const jsonLd =
-    site.robots === 'index' && (site.owner.title || site.owner.estimatedDate || site.owner.location)
-      ? {
-          '@context': 'https://schema.org',
-          '@type': 'Event',
-          ...(site.owner.title ? { name: site.owner.title } : {}),
-          startDate: site.owner.estimatedDate ?? undefined,
-          location: site.owner.location
-            ? { '@type': 'Place', name: site.owner.location }
-            : undefined,
-        }
+  const eventLd =
+    site.robots === 'index'
+      ? eventJsonLd({
+          slug,
+          name: site.owner.title || site.look.navName?.trim() || undefined,
+          startDate: site.owner.estimatedDate,
+          location: site.owner.location,
+          image: site.look.coverPhotoUrl,
+        })
       : null
+  const faqItems =
+    site.robots === 'index'
+      ? site.sections
+          .filter((section) => section.type === 'FAQ' && section.enabled)
+          .flatMap((section) => section.faq ?? [])
+          .filter((item) => item.question.trim() && item.answer.trim())
+      : []
+  const faqLd = faqJsonLd(faqItems)
 
   return (
     <>
-      {jsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      )}
-      <EventSitePublic slug={slug} initial={site} inviteeId={inviteeId} />
+      <JsonLd data={eventLd} />
+      <JsonLd data={faqLd} />
+      <EventSitePublic
+        slug={slug}
+        initial={site}
+        inviteeId={inviteeId}
+        hostView={site.hostView === true}
+      />
     </>
   )
 }

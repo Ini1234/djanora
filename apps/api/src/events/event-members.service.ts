@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common'
 import { randomBytes } from 'crypto'
 import { NotificationType, EventMemberRole, EventSurface } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
@@ -11,6 +16,7 @@ import { EventActivityService } from './event-activity.service'
 import { ChildGrantDto, InviteMemberDto, UpdateMemberDto } from './dto/members.dto'
 import { EventActivityAction } from '@prisma/client'
 import { escapeHtml } from '../common/escape-html'
+import { liveUserWhere } from '../common/active-user'
 
 const MEMBER_USER_SELECT = {
   id: true,
@@ -23,7 +29,8 @@ const MEMBER_USER_SELECT = {
 function redactMemberUser<T extends { email: string }>(user: T | null, revealEmail: boolean) {
   if (!user) return user
   if (revealEmail) return user
-  const { email: _email, ...rest } = user
+  const rest = { ...user }
+  delete (rest as { email?: string }).email
   return rest
 }
 
@@ -406,7 +413,7 @@ export class EventMembersService {
   }
 
   async listPending(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     return this.prisma.eventMember.findMany({
@@ -437,6 +444,12 @@ export class EventMembersService {
     if (member.acceptedAt) {
       return { eventId: member.eventId, alreadyAccepted: true }
     }
+
+    const already = await this.prisma.eventMember.findFirst({
+      where: { eventId: member.eventId, userId: user.id, id: { not: member.id } },
+      select: { id: true },
+    })
+    if (already) throw new ConflictException('You already have access to this event')
 
     await this.prisma.eventMember.update({
       where: { id: member.id },

@@ -3,7 +3,11 @@ import { createClerkClient } from '@clerk/backend'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { EventSurface, UserRole, Tribe } from '@prisma/client'
-import { ALL_SURFACES, EventAccessService, type EventAccess } from '../events/event-access.service'
+import { ALL_SURFACES, EventAccessService } from '../events/event-access.service'
+import { liveUserWhere } from '../common/active-user'
+import { ASSIGNED_CHECKLIST_CAP } from '../common/list-cap'
+import { reviewFlags } from '../vendors/vendor-listing'
+import { VENDOR_REVIEW_STATUS } from '../vendors/vendor-review'
 
 const VENDOR_PROFILE_SAFE_SELECT = {
   id: true,
@@ -26,6 +30,8 @@ const VENDOR_PROFILE_SAFE_SELECT = {
   city: true,
   isVerified: true,
   isActive: true,
+  reviewStatus: true,
+  reviewNote: true,
   averageRating: true,
   totalReviews: true,
   profileViews: true,
@@ -56,6 +62,12 @@ export class UsersService {
   ) {}
 
   async upsert(dto: UpsertUserDto) {
+    const existing = await this.prisma.user.findUnique({ where: { clerkId: dto.clerkId } })
+    if (existing?.deletedAt) {
+      this.logger.warn(`Ignoring Clerk upsert for soft-deleted user ${existing.id}`)
+      return existing
+    }
+
     const user = await this.prisma.user.upsert({
       where: { clerkId: dto.clerkId },
       create: {
@@ -83,9 +95,23 @@ export class UsersService {
   }
 
   async softDelete(clerkId: string) {
-    const user = await this.prisma.user.update({
-      where: { clerkId },
-      data: { deletedAt: new Date() },
+    const existing = await this.prisma.user.findUnique({ where: { clerkId } })
+    if (!existing) return null
+    if (existing.deletedAt) return existing
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: existing.id },
+        data: {
+          deletedAt: new Date(),
+          email: `deleted+${existing.id}@invalid.local`,
+        },
+      })
+      await tx.vendorProfile.updateMany({
+        where: { userId: updated.id },
+        data: reviewFlags(VENDOR_REVIEW_STATUS.SUSPENDED),
+      })
+      return updated
     })
 
     this.logger.log(`Soft deleted user ${user.id} (clerkId: ${clerkId})`)
@@ -93,8 +119,8 @@ export class UsersService {
   }
 
   async findByClerkId(clerkId: string) {
-    return this.prisma.user.findUnique({
-      where: { clerkId },
+    return this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: ME_INCLUDE,
     })
   }
@@ -108,6 +134,7 @@ export class UsersService {
       where: { clerkId },
       include: ME_INCLUDE,
     })
+    if (existing?.deletedAt) throw new NotFoundException('User not found')
     if (existing) return existing
 
     const clerk = createClerkClient({
@@ -153,6 +180,7 @@ export class UsersService {
       city?: string
     },
   ) {
+    await this.requireUser(clerkId)
     return this.prisma.user.update({
       where: { clerkId },
       data: {
@@ -165,8 +193,8 @@ export class UsersService {
   }
 
   async setMode(clerkId: string, mode: 'user' | 'vendor') {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true, hasVendorProfile: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -212,8 +240,8 @@ export class UsersService {
   }
 
   private async requireUser(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true, email: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -293,19 +321,12 @@ export class UsersService {
         event: { select: { id: true, title: true } },
         concealments: { select: { eventMemberId: true } },
       },
+      take: ASSIGNED_CHECKLIST_CAP,
+      orderBy: { dueDate: 'asc' },
     })
 
     const eventIds = [...new Set(assigned.map((row) => row.eventId))]
-    const accessByEvent = new Map<string, EventAccess | null>()
-    await Promise.all(
-      eventIds.map(async (eventId) => {
-        try {
-          accessByEvent.set(eventId, await this.access.load(clerkId, eventId))
-        } catch {
-          accessByEvent.set(eventId, null)
-        }
-      }),
-    )
+    const accessByEvent = await this.access.loadMany(clerkId, eventIds)
 
     const visible: Array<
       ReturnType<UsersService['projectChecklist']> & {
@@ -564,8 +585,8 @@ export class UsersService {
     }
 
     const title = dto.title !== undefined ? dto.title.trim() : existing.title
-    const dueDate =
-      dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : existing.dueDate
+    let dueDate = existing.dueDate
+    if (dto.dueDate !== undefined) dueDate = dto.dueDate ? new Date(dto.dueDate) : null
     const isCompleted = dto.isCompleted !== undefined ? dto.isCompleted : existing.isCompleted
 
     const updated = await this.prisma.$transaction(async (tx) => {

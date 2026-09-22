@@ -11,4 +11,5 @@ export const queryKeys = {
     ['inspiration', 'feed', q, category, tag] as const,
   inspirationItem: (id: string) => ['inspiration', 'item', id] as const,
   inspirationMatchingVendors: (id: string) => ['inspiration', 'matching-vendors', id] as const,
+  eventSlice: (path: string) => ['event-slice', path] as const,
 }

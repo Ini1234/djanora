@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import {
   IsString,
   IsOptional,
@@ -8,6 +9,8 @@ import {
   ValidateIf,
   IsArray,
   IsBoolean,
+  ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator'
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
@@ -59,6 +62,14 @@ export class CreateScheduleItemDto {
   @IsOptional()
   @IsBoolean()
   showOnSite?: boolean
+}
+
+export class ImportScheduleDto {
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => CreateScheduleItemDto)
+  items: CreateScheduleItemDto[]
 }
 
 export class UpdateScheduleItemDto {

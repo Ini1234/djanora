@@ -18,18 +18,35 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import { EventCommentSubject, EventSurface } from '@prisma/client'
 import { EventsService } from './events.service'
+import { EventBudgetService } from './event-budget.service'
+import { EventChecklistService } from './event-checklist.service'
+import { EventScheduleService } from './event-schedule.service'
 import { EventPartyService } from './event-party.service'
 import { EventMembersService } from './event-members.service'
-import { CreatePartyMemberDto, PairPartyMemberDto, UpdatePartyMemberDto } from './dto/party.dto'
+import {
+  CreatePartyMemberDto,
+  ImportPartyDto,
+  PairPartyMemberDto,
+  UpdatePartyMemberDto,
+} from './dto/party.dto'
 import { EventCommentsService } from './event-comments.service'
 import { EventActivityService } from './event-activity.service'
 import { CreateEventDto } from './dto/create-event.dto'
-import { CreateChecklistItemDto, UpdateChecklistItemDto } from './dto/checklist.dto'
+import {
+  CreateChecklistItemDto,
+  ImportChecklistDto,
+  UpdateChecklistItemDto,
+} from './dto/checklist.dto'
 import { CreateBudgetItemDto, UpdateBudgetItemDto, ImportBudgetDto } from './dto/budget.dto'
 import { UpdateEventDto } from './dto/update-event.dto'
-import { CreateScheduleItemDto, UpdateScheduleItemDto } from './dto/schedule.dto'
+import { CreateScheduleItemDto, ImportScheduleDto, UpdateScheduleItemDto } from './dto/schedule.dto'
 import { InviteMemberDto, UpdateMemberDto } from './dto/members.dto'
-import { AttachChildEventDto, CreateChildEventDto, ReorderChildrenDto } from './dto/children.dto'
+import {
+  ApplyWeekendDto,
+  AttachChildEventDto,
+  CreateChildEventDto,
+  ReorderChildrenDto,
+} from './dto/children.dto'
 import { CreateCommentDto, UpdateCommentDto } from './dto/comments.dto'
 import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
@@ -45,6 +62,9 @@ interface ClerkPayload {
 export class EventsController {
   constructor(
     private readonly eventsService: EventsService,
+    private readonly budgetService: EventBudgetService,
+    private readonly checklistService: EventChecklistService,
+    private readonly scheduleService: EventScheduleService,
     private readonly partyService: EventPartyService,
     private readonly membersService: EventMembersService,
     private readonly commentsService: EventCommentsService,
@@ -84,7 +104,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Query('assignedTo') assignedTo?: string,
   ) {
-    return this.eventsService.listChecklist(user.sub, eventId, assignedTo === 'me')
+    return this.checklistService.listChecklist(user.sub, eventId, assignedTo === 'me')
   }
 
   @Post(':id/checklist')
@@ -93,7 +113,16 @@ export class EventsController {
     @Param('id') eventId: string,
     @Body() dto: CreateChecklistItemDto,
   ) {
-    return this.eventsService.addChecklistItem(user.sub, eventId, dto)
+    return this.checklistService.addChecklistItem(user.sub, eventId, dto)
+  }
+
+  @Post(':id/checklist/import')
+  importChecklist(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: ImportChecklistDto,
+  ) {
+    return this.checklistService.importChecklistItems(user.sub, eventId, dto)
   }
 
   @Patch(':id/checklist/:itemId')
@@ -103,7 +132,7 @@ export class EventsController {
     @Param('itemId') itemId: string,
     @Body() dto: UpdateChecklistItemDto,
   ) {
-    return this.eventsService.updateChecklistItem(user.sub, eventId, itemId, dto)
+    return this.checklistService.updateChecklistItem(user.sub, eventId, itemId, dto)
   }
 
   @Delete(':id/checklist/:itemId')
@@ -112,14 +141,14 @@ export class EventsController {
     @Param('id') eventId: string,
     @Param('itemId') itemId: string,
   ) {
-    return this.eventsService.deleteChecklistItem(user.sub, eventId, itemId)
+    return this.checklistService.deleteChecklistItem(user.sub, eventId, itemId)
   }
 
   // ─── Schedule ─────────────────────────────────────────────────────────
 
   @Get(':id/schedule')
   listSchedule(@CurrentUser() user: ClerkPayload, @Param('id') eventId: string) {
-    return this.eventsService.listSchedule(user.sub, eventId)
+    return this.scheduleService.listSchedule(user.sub, eventId)
   }
 
   @Post(':id/schedule')
@@ -128,7 +157,16 @@ export class EventsController {
     @Param('id') eventId: string,
     @Body() dto: CreateScheduleItemDto,
   ) {
-    return this.eventsService.addScheduleItem(user.sub, eventId, dto)
+    return this.scheduleService.addScheduleItem(user.sub, eventId, dto)
+  }
+
+  @Post(':id/schedule/import')
+  importSchedule(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: ImportScheduleDto,
+  ) {
+    return this.scheduleService.importScheduleItems(user.sub, eventId, dto)
   }
 
   @Patch(':id/schedule/:itemId')
@@ -138,7 +176,7 @@ export class EventsController {
     @Param('itemId') itemId: string,
     @Body() dto: UpdateScheduleItemDto,
   ) {
-    return this.eventsService.updateScheduleItem(user.sub, eventId, itemId, dto)
+    return this.scheduleService.updateScheduleItem(user.sub, eventId, itemId, dto)
   }
 
   @Delete(':id/schedule/:itemId')
@@ -147,7 +185,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Param('itemId') itemId: string,
   ) {
-    return this.eventsService.deleteScheduleItem(user.sub, eventId, itemId)
+    return this.scheduleService.deleteScheduleItem(user.sub, eventId, itemId)
   }
 
   // ─── Wedding party ────────────────────────────────────────────────────────
@@ -164,6 +202,15 @@ export class EventsController {
     @Body() dto: CreatePartyMemberDto,
   ) {
     return this.partyService.add(user.sub, eventId, dto)
+  }
+
+  @Post(':id/party/import')
+  importParty(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: ImportPartyDto,
+  ) {
+    return this.partyService.importMembers(user.sub, eventId, dto)
   }
 
   @Patch(':id/party/:memberId')
@@ -242,7 +289,7 @@ export class EventsController {
 
   @Get(':id/budget')
   listBudget(@CurrentUser() user: ClerkPayload, @Param('id') eventId: string) {
-    return this.eventsService.listBudget(user.sub, eventId)
+    return this.budgetService.listBudget(user.sub, eventId)
   }
 
   @Post(':id/budget')
@@ -251,7 +298,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Body() dto: CreateBudgetItemDto,
   ) {
-    return this.eventsService.addBudgetItem(user.sub, eventId, dto)
+    return this.budgetService.addBudgetItem(user.sub, eventId, dto)
   }
 
   @Post(':id/budget/import')
@@ -260,7 +307,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Body() dto: ImportBudgetDto,
   ) {
-    return this.eventsService.importBudgetItems(user.sub, eventId, dto)
+    return this.budgetService.importBudgetItems(user.sub, eventId, dto)
   }
 
   @Patch(':id/budget/:itemId')
@@ -270,7 +317,7 @@ export class EventsController {
     @Param('itemId') itemId: string,
     @Body() dto: UpdateBudgetItemDto,
   ) {
-    return this.eventsService.updateBudgetItem(user.sub, eventId, itemId, dto)
+    return this.budgetService.updateBudgetItem(user.sub, eventId, itemId, dto)
   }
 
   @Delete(':id/budget/:itemId')
@@ -279,7 +326,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Param('itemId') itemId: string,
   ) {
-    return this.eventsService.deleteBudgetItem(user.sub, eventId, itemId)
+    return this.budgetService.deleteBudgetItem(user.sub, eventId, itemId)
   }
 
   // ─── Receipts ─────────────────────────────────────────────────────────────
@@ -306,7 +353,7 @@ export class EventsController {
     if (!file) throw new BadRequestException('No file uploaded')
     const storedName = makeUploadName(file.originalname)
     await this.storage.upload('receipts', storedName, file.buffer, file.mimetype)
-    return this.eventsService.addReceipt(
+    return this.budgetService.addReceipt(
       user.sub,
       eventId,
       itemId,
@@ -324,7 +371,7 @@ export class EventsController {
     @Param('itemId') itemId: string,
     @Param('receiptId') receiptId: string,
   ) {
-    const file = await this.eventsService.openReceiptFile(user.sub, eventId, itemId, receiptId)
+    const file = await this.budgetService.openReceiptFile(user.sub, eventId, itemId, receiptId)
     return new StreamableFile(file.stream, {
       type: file.mimeType,
       disposition: `inline; filename="${file.filename.replace(/"/g, '')}"`,
@@ -337,7 +384,7 @@ export class EventsController {
     @Param('id') eventId: string,
     @Param('receiptId') receiptId: string,
   ) {
-    return this.eventsService.deleteReceipt(user.sub, eventId, receiptId)
+    return this.budgetService.deleteReceipt(user.sub, eventId, receiptId)
   }
 
   // ─── Members ──────────────────────────────────────────────────────────────
@@ -394,6 +441,15 @@ export class EventsController {
   @Post(':id/leave')
   leaveEvent(@CurrentUser() user: ClerkPayload, @Param('id') eventId: string) {
     return this.membersService.leave(user.sub, eventId)
+  }
+
+  @Post(':id/weekend')
+  applyWeekend(
+    @CurrentUser() user: ClerkPayload,
+    @Param('id') eventId: string,
+    @Body() dto: ApplyWeekendDto,
+  ) {
+    return this.eventsService.applyWeekend(user.sub, eventId, dto)
   }
 
   @Post(':id/children')

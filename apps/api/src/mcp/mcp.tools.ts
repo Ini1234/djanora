@@ -16,7 +16,7 @@ const file = {
   base64: z.string().optional(),
 }
 
-type Shape = Record<string, z.ZodTypeAny>
+type Shape = Record<string, z.ZodType>
 
 export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
   const add = (name: string, description: string, inputSchema: Shape) => {
@@ -89,6 +89,12 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
     title: z.string(),
     event_type: z.string().optional(),
   })
+  add('apply_weekend', 'Create named child ceremonies from a weekend plan. Confirm required.', {
+    ...eventScope,
+    ceremonies: z.array(z.record(z.string(), z.unknown())),
+    include_bride_price: z.boolean().optional(),
+    ...confirm,
+  })
   add('attach_child_event', 'Attach an existing event as a child.', {
     ...eventScope,
     child_id: z.string(),
@@ -114,7 +120,17 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
     due_date: z.string().optional(),
   })
   add('delete_checklist_item', 'Delete a checklist item.', { ...eventScope, item_id: z.string() })
+  add('import_checklist', 'Import checklist items from a pasted list. Confirm required.', {
+    ...eventScope,
+    items: z.array(z.record(z.string(), z.unknown())),
+    ...confirm,
+  })
   add('list_schedule', 'Schedule items.', eventScope)
+  add('import_schedule', 'Import schedule blocks from a pasted list. Confirm required.', {
+    ...eventScope,
+    items: z.array(z.record(z.string(), z.unknown())),
+    ...confirm,
+  })
   add('add_schedule_item', 'Add a schedule item.', {
     ...eventScope,
     title: z.string(),
@@ -138,6 +154,11 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
   })
   add('delete_schedule_item', 'Delete a schedule item.', { ...eventScope, item_id: z.string() })
   add('list_party', 'Wedding party roster.', eventScope)
+  add('import_party', 'Import wedding party names from a pasted list. Confirm required.', {
+    ...eventScope,
+    members: z.array(z.record(z.string(), z.unknown())),
+    ...confirm,
+  })
   add('add_party_member', 'Add a party member.', {
     ...eventScope,
     name: z.string(),
@@ -195,9 +216,10 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
     table_number: z.string().optional(),
   })
   add('delete_guest', 'Remove a guest.', { ...eventScope, guest_id: z.string() })
-  add('import_guests', 'Import guests.', {
+  add('import_guests', 'Import guests from a pasted list. Confirm required.', {
     ...eventScope,
     guests: z.array(z.record(z.string(), z.unknown())),
+    ...confirm,
   })
   add('invite_guest', 'Email or text an RSVP invite. Confirm required.', {
     ...eventScope,
@@ -232,7 +254,11 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
     vendor_name: z.string().optional(),
   })
   add('delete_budget_item', 'Delete a budget line.', { ...eventScope, item_id: z.string() })
-  add('import_budget', 'Import budget lines.', { ...eventScope, items: z.unknown().optional() })
+  add('import_budget', 'Import budget lines from a pasted list. Confirm required.', {
+    ...eventScope,
+    items: z.array(z.record(z.string(), z.unknown())),
+    ...confirm,
+  })
   add('add_budget_receipt', 'Attach a receipt image or PDF.', {
     ...eventScope,
     item_id: z.string(),
@@ -282,6 +308,18 @@ export function registerMcpTools(server: McpServer, jobs: McpJobsService) {
   })
   add('delete_personal_checklist', 'Delete a personal checklist item.', { item_id: z.string() })
   add('get_site', 'Event site editor payload.', eventScope)
+  add(
+    'draft_site_copy',
+    'Draft About/Travel/Stay/Dress text only. Confirm required. Never publishes.',
+    {
+      ...eventScope,
+      about: z.string().optional(),
+      travel: z.string().optional(),
+      stay: z.string().optional(),
+      dress_code: z.string().optional(),
+      ...confirm,
+    },
+  )
   add('create_site', 'Create a draft event site.', {
     ...eventScope,
     slug: z.string(),

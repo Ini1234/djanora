@@ -32,17 +32,13 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { getErrorMessage } from '@/lib/errors'
 import { proxyClient } from '@/lib/proxy-client'
-import { useLazyGet } from '@/lib/use-lazy-get'
+import { useEventGet } from '@/lib/use-event-get'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { DataPortMenu } from '@/components/data-port-menu'
 import { VENDOR_CATEGORY_KEYS, getVendorCategoryLabel } from '@/lib/vendor-categories'
 import type { EventBudgetItem, BudgetReceipt, UserVendorContact } from '@/lib/api.types'
-import {
-  BUDGET_HEADERS,
-  budgetExportRows,
-  capImportRows,
-  parseBudgetTable,
-} from '@/lib/data-port-maps'
+import { useDjanChatLauncher } from '@/components/assistant/djan-chat-context'
+import { BUDGET_HEADERS, budgetExportRows } from '@/lib/data-port-maps'
 import { fileBase } from '@/lib/sheet-io'
 import { useMoodBoardLinks } from './mood-board-context'
 import { useEventAccess } from './event-access-context'
@@ -1426,9 +1422,9 @@ export function BudgetSection({
 }: BudgetSectionProps) {
   const t = useTranslations('budget')
   const tCat = useTranslations('vendorCategories')
-  const tPort = useTranslations('dataPort')
   const { canEdit } = useEventAccess()
-  const fetched = useLazyGet<EventBudgetItem[]>(initialItems ? null : `/events/${eventId}/budget`)
+  const { openChat } = useDjanChatLauncher()
+  const fetched = useEventGet<EventBudgetItem[]>(initialItems ? null : `/events/${eventId}/budget`)
   const [items, setItems] = useHydratedState(
     fetched.data === undefined ? undefined : Array.isArray(fetched.data) ? fetched.data : [],
     initialItems ?? [],
@@ -1592,23 +1588,11 @@ export function BudgetSection({
               headers={BUDGET_HEADERS}
               rows={budgetExportRows(items, (key) => getVendorCategoryLabel(key, tCat))}
               canImport={canEdit('BUDGET')}
-              onImport={async (table) => {
-                const parsed = parseBudgetTable(table)
-                const capped = capImportRows(parsed.items, parsed.issues, tPort('tooManyRows'))
-                if (capped.items.length === 0) {
-                  return {
-                    created: 0,
-                    skipped: 0,
-                    issues: capped.issues.length ? capped.issues : [tPort('emptyFile')],
-                  }
-                }
-                const { data } = await proxyClient.post<{
-                  created: number
-                  skipped: number
-                  items: EventBudgetItem[]
-                }>(`/events/${eventId}/budget/import`, { items: capped.items })
-                setItems(data.items)
-                return { created: data.created, skipped: data.skipped, issues: capped.issues }
+              onAskDjan={({ filename, grid, truncated }) => {
+                openChat({
+                  eventId,
+                  sheet: { kind: 'budget', filename, grid, truncated },
+                })
               }}
             />
             {canEdit('BUDGET') && (

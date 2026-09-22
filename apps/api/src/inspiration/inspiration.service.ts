@@ -11,7 +11,6 @@ import {
   InspirationVisibility,
   NotificationType,
   Prisma,
-  UserRole,
   VendorCategory,
 } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
@@ -23,6 +22,14 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { POST_INCLUDE, mapPost, normalizePostCategories } from './post-shape'
 import { attachLookStats } from './look-stats'
 import { rewriteAppUploadUrl } from '../uploads/public-upload-url'
+import { requireAdminUser } from '../common/admin-access'
+import { listedVendorWhere } from '../vendors/vendor-listing'
+import { liveUserWhere } from '../common/active-user'
+import { VECTOR_CANDIDATE_CAP } from '../common/list-cap'
+
+function sameOptionalId(left?: string | null, right?: string | null) {
+  return left != null && right != null && left == right
+}
 
 // Re-export so controller can import from one place without emitDecoratorMetadata issues
 export type { CreateInspirationDto }
@@ -86,6 +93,11 @@ export class InspirationService {
   ): Prisma.InspirationItemWhereInput {
     return {
       visibility: InspirationVisibility.INSPIRATION,
+      AND: [
+        {
+          OR: [{ vendorProfileId: null }, { vendorProfile: listedVendorWhere() }],
+        },
+      ],
       ...(category ? { OR: [{ category }, { categories: { has: category } }] } : {}),
       ...(tag ? { tagLinks: { some: { tag: { slug: tag } } } } : {}),
     }
@@ -110,37 +122,41 @@ export class InspirationService {
     limit: number,
     tag?: string,
   ) {
-    const rows = await this.prisma.inspirationItem.findMany({
-      where: { ...this.feedWhere(category, tag), embedding: { not: null } },
-      include: POST_INCLUDE,
-      take: 200,
-    })
     const embeddings = await this.prisma.inspirationItem.findMany({
-      where: { id: { in: rows.map((r) => r.id) } },
+      where: { ...this.feedWhere(category, tag), embedding: { not: null } },
       select: { id: true, embedding: true },
+      take: VECTOR_CANDIDATE_CAP,
     })
-    const embById = new Map(embeddings.map((e) => [e.id, e.embedding]))
-
-    if (rows.length === 0) return []
+    if (embeddings.length === 0) return []
 
     const queryFloats = EmbeddingService.deserialize(queryEmbedding)
-
-    const ranked = rows
+    const rankedIds = embeddings
       .map((row) => {
-        const embedding = embById.get(row.id)
-        if (!embedding) return null
+        if (!row.embedding) return null
         return {
-          ...mapPost(row),
-          _score: EmbeddingService.cosineSimilarity(
+          id: row.id,
+          score: EmbeddingService.cosineSimilarity(
             queryFloats,
-            EmbeddingService.deserialize(embedding),
+            EmbeddingService.deserialize(row.embedding),
           ),
         }
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
-      .sort((a, b) => b._score - a._score)
+      .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map(({ _score, ...rest }) => rest)
+      .map((row) => row.id)
+
+    if (rankedIds.length === 0) return []
+
+    const rows = await this.prisma.inspirationItem.findMany({
+      where: { id: { in: rankedIds } },
+      include: POST_INCLUDE,
+    })
+    const byId = new Map(rows.map((row) => [row.id, row]))
+    const ranked = rankedIds
+      .map((id) => byId.get(id))
+      .filter((row): row is NonNullable<typeof row> => Boolean(row))
+      .map((row) => mapPost(row))
 
     return attachLookStats(this.prisma, ranked)
   }
@@ -221,14 +237,33 @@ export class InspirationService {
       include: POST_INCLUDE,
     })
     if (!row) throw new NotFoundException('Inspiration item not found')
+    if (row.vendorProfileId && row.visibility !== InspirationVisibility.DRAFT) {
+      const listed = await this.prisma.vendorProfile.findFirst({
+        where: { id: row.vendorProfileId, ...listedVendorWhere() },
+        select: { id: true },
+      })
+      if (!listed) {
+        if (!clerkId) throw new NotFoundException('Inspiration item not found')
+        const owner = await this.prisma.user.findFirst({
+          where: liveUserWhere(clerkId),
+          select: { vendorProfile: { select: { id: true } } },
+        })
+        if (owner?.vendorProfile?.id !== row.vendorProfileId) {
+          throw new NotFoundException('Inspiration item not found')
+        }
+      }
+    }
     if (row.visibility === InspirationVisibility.DRAFT) {
       if (!clerkId) throw new NotFoundException('Inspiration item not found')
-      const user = await this.prisma.user.findUnique({
-        where: { clerkId },
+      const user = await this.prisma.user.findFirst({
+        where: liveUserWhere(clerkId),
         select: { id: true, vendorProfile: { select: { id: true } } },
       })
-      const owns = user?.id === row.createdById || user?.vendorProfile?.id === row.vendorProfileId
-      if (!owns) throw new NotFoundException('Inspiration item not found')
+      const profileId = (user as { vendorProfile?: { id: string } | null } | null)?.vendorProfile
+        ?.id
+      const ownsDraft =
+        sameOptionalId(user?.id, row.createdById) || sameOptionalId(profileId, row.vendorProfileId)
+      if (!ownsDraft) throw new NotFoundException('Inspiration item not found')
     }
     return (await attachLookStats(this.prisma, [mapPost(row)]))[0]
   }
@@ -236,8 +271,8 @@ export class InspirationService {
   // ─── Create ───────────────────────────────────────────────────────────────────
 
   async create(clerkId: string, dto: CreateInspirationDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: { vendorProfile: { select: { id: true } } },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -394,7 +429,7 @@ export class InspirationService {
   // ─── Mood board: all saves the viewer can see ────────────────────────────────
 
   async getMyMoodBoard(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const [hosted, memberships] = await Promise.all([
@@ -539,11 +574,7 @@ export class InspirationService {
   // ─── Re-embed all (admin utility) ─────────────────────────────────────────────
 
   async requireAdmin(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      select: { role: true },
-    })
-    if (user?.role !== UserRole.ADMIN) throw new NotFoundException('Not found')
+    await requireAdminUser(this.prisma, clerkId)
   }
 
   async reEmbedAll(clerkId: string) {
@@ -640,8 +671,8 @@ export class InspirationService {
 
     // ── Case 1: vendor-created → return that vendor directly ──────────────
     if (item.vendorProfileId) {
-      const vendor = await this.prisma.vendorProfile.findUnique({
-        where: { id: item.vendorProfileId, isActive: true },
+      const vendor = await this.prisma.vendorProfile.findFirst({
+        where: { id: item.vendorProfileId, ...listedVendorWhere() },
         select: VENDOR_SELECT,
       })
       return vendor ? [{ ...vendor, _matchType: 'direct' as const, _score: 1 }] : []
@@ -651,25 +682,40 @@ export class InspirationService {
     if (this.embedding.isConfigured && item.embedding) {
       const itemFloats = EmbeddingService.deserialize(item.embedding)
 
-      const vendors = await this.prisma.vendorProfile.findMany({
-        where: { isActive: true, embedding: { not: null } },
-        select: { ...VENDOR_SELECT, embedding: true },
-        take: 200,
+      const candidates = await this.prisma.vendorProfile.findMany({
+        where: { ...listedVendorWhere(), embedding: { not: null } },
+        select: { id: true, embedding: true },
+        take: VECTOR_CANDIDATE_CAP,
       })
 
-      if (vendors.length > 0) {
-        return vendors
-          .map(({ embedding, ...rest }) => ({
-            ...rest,
-            _matchType: 'semantic' as const,
+      if (candidates.length > 0) {
+        const ranked = candidates
+          .map((row) => ({
+            id: row.id,
             _score: EmbeddingService.cosineSimilarity(
               itemFloats,
-              EmbeddingService.deserialize(embedding as Uint8Array),
+              EmbeddingService.deserialize(row.embedding as Uint8Array),
             ),
           }))
           .sort((a, b) => b._score - a._score)
           .slice(0, limit)
-          .filter((v) => v._score > 0.5)
+          .filter((row) => row._score > 0.5)
+
+        if (ranked.length === 0) return []
+
+        const vendors = await this.prisma.vendorProfile.findMany({
+          where: { id: { in: ranked.map((row) => row.id) }, ...listedVendorWhere() },
+          select: VENDOR_SELECT,
+        })
+        const byId = new Map(vendors.map((vendor) => [vendor.id, vendor]))
+        return ranked
+          .map((row) => {
+            const vendor = byId.get(row.id)
+            return vendor
+              ? { ...vendor, _matchType: 'semantic' as const, _score: row._score }
+              : null
+          })
+          .filter((row): row is NonNullable<typeof row> => Boolean(row))
       }
     }
 
@@ -689,7 +735,7 @@ export class InspirationService {
 
     const candidates = await this.prisma.vendorProfile.findMany({
       where: {
-        isActive: true,
+        ...listedVendorWhere(),
         OR: [
           { category: { in: affinityCategories } },
           { categories: { hasSome: affinityCategories } },
@@ -791,8 +837,8 @@ export class InspirationService {
     const text = body.trim()
     if (!text) throw new BadRequestException('Comment cannot be empty')
     const post = await this.requireVisiblePost(itemId)
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true, firstName: true, lastName: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -818,8 +864,8 @@ export class InspirationService {
   }
 
   async deleteComment(clerkId: string, itemId: string, commentId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true, vendorProfile: { select: { id: true } } },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -844,8 +890,8 @@ export class InspirationService {
   }
 
   async like(clerkId: string, inspirationItemId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -871,8 +917,8 @@ export class InspirationService {
   }
 
   async unlike(clerkId: string, inspirationItemId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -886,8 +932,8 @@ export class InspirationService {
   }
 
   async getLiked(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -908,8 +954,8 @@ export class InspirationService {
   }
 
   async getLikedIds(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) return []

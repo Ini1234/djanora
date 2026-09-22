@@ -171,7 +171,26 @@ describe('mcp.confirm', () => {
         event_id: 'e1',
         confirm_token: preview.confirm_token,
       }),
-    ).rejects.toMatchObject({ body: { code: 'invalid' } })
+    ).rejects.toMatchObject({ body: { code: 'already_done' } })
+  })
+
+  it('rejects an expired token as expired', async () => {
+    const { svc, store } = setup()
+    const preview = await svc.preview(
+      'sess-a',
+      'clerk',
+      'publish_site',
+      { event_id: 'e1' },
+      'Publish',
+      'Public',
+    )
+    store[0].expiresAt = new Date(0)
+    await expect(
+      svc.spend('sess-a', 'clerk', 'publish_site', {
+        event_id: 'e1',
+        confirm_token: preview.confirm_token,
+      }),
+    ).rejects.toMatchObject({ body: { code: 'expired' } })
   })
 
   it('rejects a token from another session or tool', async () => {
@@ -265,6 +284,98 @@ describe('mcp.jobs confirm gates', () => {
     const out = await svc.run(ctx, 'book_vendor', { inquiry_id: 'i1', message_id: 'm1' })
     expect(out).toMatchObject({ code: 'needs_confirm' })
     expect(inquiries.bookQuote).not.toHaveBeenCalled()
+  })
+
+  it('import_schedule without a token does not write', async () => {
+    const events = { importScheduleItems: jest.fn() }
+    const { svc, confirm } = jobs({ events })
+    const out = await svc.run(ctx, 'import_schedule', {
+      event_id: 'e1',
+      items: [{ title: 'Introduction', date: '2027-10-08', start_time: '10:00' }],
+    })
+    expect(out).toMatchObject({ code: 'needs_confirm' })
+    expect(events.importScheduleItems).not.toHaveBeenCalled()
+    expect(confirm.preview).toHaveBeenCalledWith(
+      'sess-a',
+      'clerk',
+      'import_schedule',
+      expect.objectContaining({ event_id: 'e1' }),
+      'Add 1 schedule block?',
+      expect.stringContaining('Review every row'),
+    )
+  })
+
+  it('apply_weekend without a token does not write children', async () => {
+    const events = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'e1',
+        title: 'Ima & Oct',
+        tribes: ['YORUBA'],
+      }),
+      applyWeekend: jest.fn(),
+    }
+    const { svc } = jobs({ events })
+    const out = await svc.run(ctx, 'apply_weekend', {
+      event_id: 'e1',
+      ceremonies: [{ event_type: 'introduction', date: '2027-10-08' }],
+    })
+    expect(out).toMatchObject({ code: 'needs_confirm' })
+    expect(events.applyWeekend).not.toHaveBeenCalled()
+  })
+
+  it('draft_site_copy without a token does not patch the site', async () => {
+    const sites = { draftCopy: jest.fn(), publish: jest.fn() }
+    const { svc } = jobs({ sites })
+    const out = await svc.run(ctx, 'draft_site_copy', {
+      event_id: 'e1',
+      about: 'We met in Lagos.',
+    })
+    expect(out).toMatchObject({ code: 'needs_confirm' })
+    expect(sites.draftCopy).not.toHaveBeenCalled()
+  })
+
+  it('bulk_invite_guests confirm card lists names', async () => {
+    const guests = {
+      listGuests: jest.fn().mockResolvedValue([
+        { id: 'g1', firstName: 'Ada', lastName: 'Okonkwo', invite: { sentAt: null } },
+        { id: 'g2', firstName: 'Tunde', lastName: 'Ade', invite: { sentAt: new Date() } },
+      ]),
+      bulkSendInvites: jest.fn(),
+    }
+    const { svc, confirm } = jobs({ guests })
+    const out = await svc.run(ctx, 'bulk_invite_guests', {
+      event_id: 'e1',
+      guest_ids: ['g1', 'g2'],
+    })
+    expect(out).toMatchObject({ code: 'needs_confirm' })
+    expect(guests.bulkSendInvites).not.toHaveBeenCalled()
+    expect(confirm.preview).toHaveBeenCalledWith(
+      'sess-a',
+      'clerk',
+      'bulk_invite_guests',
+      expect.objectContaining({ guest_ids: ['g1', 'g2'] }),
+      'Send RSVP invites to 2 guests',
+      expect.stringMatching(/Ada Okonkwo[\s\S]*Tunde Ade — already invited/),
+    )
+  })
+
+  it('import_guests without a token does not write', async () => {
+    const guests = { importGuests: jest.fn() }
+    const { svc, confirm } = jobs({ guests })
+    const out = await svc.run(ctx, 'import_guests', {
+      event_id: 'e1',
+      guests: [{ first_name: 'Ada' }],
+    })
+    expect(out).toMatchObject({ code: 'needs_confirm' })
+    expect(guests.importGuests).not.toHaveBeenCalled()
+    expect(confirm.preview).toHaveBeenCalledWith(
+      'sess-a',
+      'clerk',
+      'import_guests',
+      { event_id: 'e1', guests: [{ first_name: 'Ada' }] },
+      'Add 1 guest?',
+      expect.stringContaining('Review every row'),
+    )
   })
 
   it('list_guests without GUESTS maps to not_found', async () => {

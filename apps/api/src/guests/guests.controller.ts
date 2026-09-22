@@ -53,6 +53,15 @@ export class GuestsController {
     return this.guestsService.updateGuest(user.sub, eventId, guestId, dto)
   }
 
+  @Post(':guestId/unlock-link')
+  unlockLink(
+    @CurrentUser() user: ClerkPayload,
+    @Param('eventId') eventId: string,
+    @Param('guestId') guestId: string,
+  ) {
+    return this.guestsService.unlockLink(user.sub, eventId, guestId)
+  }
+
   @Delete(':guestId')
   remove(
     @CurrentUser() user: ClerkPayload,

@@ -7,6 +7,7 @@ import {
   MinLength,
   MaxLength,
   IsArray,
+  ArrayMaxSize,
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
@@ -76,6 +77,28 @@ export class CreateChecklistItemDto {
   @ValidateIf((_, v) => v !== null)
   @IsString()
   assigneeUserId?: string | null
+}
+
+export class ImportChecklistItemDto {
+  @IsString()
+  @MinLength(2)
+  title: string
+
+  @IsOptional()
+  @IsString()
+  description?: string
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string
+}
+
+export class ImportChecklistDto {
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => ImportChecklistItemDto)
+  items: ImportChecklistItemDto[]
 }
 
 export class UpdateChecklistItemDto {
