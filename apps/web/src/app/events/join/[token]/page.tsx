@@ -114,21 +114,21 @@ function InviteCard({
         className="overflow-hidden rounded-3xl border"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        <div className="bg-brand-900 dark:bg-brand-800 px-6 pt-8 pb-6">
-          <p className="text-gold-500 mb-2 text-xs font-medium tracking-[2px] uppercase">
+        <div className="bg-inverse px-6 pt-8 pb-6">
+          <p className="text-inverse-muted mb-2 text-xs font-medium tracking-[2px] uppercase">
             You&apos;re invited to plan
           </p>
-          <h1 className="font-display text-2xl leading-tight font-bold text-white">
+          <h1 className="font-display text-inverse-fg text-2xl leading-tight font-bold">
             {data.event.title}
           </h1>
           {!data.accepted && (
-            <p className="text-brand-400 mt-1 text-sm">
+            <p className="text-inverse-muted mt-1 text-sm">
               {EVENT_TYPE_LABELS[data.event.eventType] ?? data.event.eventType}
             </p>
           )}
           {eventDate && (
-            <div className="text-brand-300 mt-4 flex items-center gap-2 text-sm">
-              <CalendarDays size={13} className="text-gold-500 shrink-0" />
+            <div className="text-inverse-muted mt-4 flex items-center gap-2 text-sm">
+              <CalendarDays size={13} className="text-inverse-muted shrink-0" />
               {eventDate}
             </div>
           )}

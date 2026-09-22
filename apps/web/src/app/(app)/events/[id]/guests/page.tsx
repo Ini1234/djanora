@@ -32,7 +32,7 @@ export default async function GuestsPage({ params }: Props) {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href={`/events/${id}`}
-        className="text-brand-400 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors hover:text-white"
+        className="text-muted hover:text-fg mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
       >
         <ChevronLeft size={15} /> {event.title}
       </Link>
@@ -40,10 +40,10 @@ export default async function GuestsPage({ params }: Props) {
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <Users size={18} className="text-gold-400" />
-            <h1 className="font-display text-2xl font-semibold text-white">Guest List</h1>
+            <Users size={18} className="text-primary" />
+            <h1 className="font-display text-fg text-2xl font-semibold">Guest List</h1>
           </div>
-          <p className="text-brand-400 text-sm">{event.title}</p>
+          <p className="text-muted text-sm">{event.title}</p>
         </div>
       </div>
 

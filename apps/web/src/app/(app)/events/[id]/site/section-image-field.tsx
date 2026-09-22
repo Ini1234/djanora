@@ -47,7 +47,7 @@ export function SectionImageField({
           <button
             type="button"
             onClick={onRemove}
-            className="absolute top-1 right-1 rounded bg-black/60 px-1.5 text-[10px] text-white"
+            className="bg-overlay text-inverse-fg absolute top-1 right-1 rounded px-1.5 text-[10px]"
           >
             Remove
           </button>

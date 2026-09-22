@@ -24,7 +24,7 @@ export function Navbar() {
   }, [mobileOpen])
 
   return (
-    <header className="fixed top-[var(--sandbox-offset,0px)] right-0 left-0 z-50 border-b border-[var(--nav-border)] bg-[var(--nav-bg)]">
+    <header className="border-nav-border bg-nav fixed top-[var(--sandbox-offset,0px)] right-0 left-0 z-50 border-b">
       <nav
         className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
         aria-label="Main navigation"
@@ -32,10 +32,10 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="font-display hover:text-muted text-foreground flex items-center gap-2 text-xl font-semibold transition-colors"
+          className="font-display text-nav-fg hover:text-nav-muted flex items-center gap-2 text-xl font-semibold transition-colors"
           aria-label="Djanora — home"
         >
-          <span className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+          <span className="bg-primary text-primary-fg flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
             D
           </span>
           <span>Djanora</span>
@@ -47,7 +47,7 @@ export function Navbar() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
+                className="text-nav-muted hover:text-nav-fg text-sm transition-colors"
               >
                 {link.label}
               </Link>
@@ -68,7 +68,7 @@ export function Navbar() {
         {/* Mobile menu toggle */}
         <button
           type="button"
-          className="tap-target inline-flex items-center justify-center rounded-md p-2 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-foreground)] md:hidden"
+          className="tap-target text-nav-muted hover:bg-nav-hover hover:text-nav-fg inline-flex items-center justify-center rounded-md p-2 transition-colors md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
@@ -82,7 +82,7 @@ export function Navbar() {
       <div
         id="mobile-menu"
         className={cn(
-          'overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-background)] transition-all duration-200 md:hidden',
+          'border-border bg-canvas overflow-hidden border-t transition-all duration-200 md:hidden',
           mobileOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
         )}
         aria-hidden={!mobileOpen}
@@ -92,14 +92,14 @@ export function Navbar() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
+                className="text-nav-muted hover:text-nav-fg text-sm transition-colors"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
               </Link>
             </li>
           ))}
-          <li className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-2">
+          <li className="border-border flex flex-col gap-3 border-t pt-2">
             <Link
               href="/sign-in"
               className="btn btn-ghost btn-sm justify-start"

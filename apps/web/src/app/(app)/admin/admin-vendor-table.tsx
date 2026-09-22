@@ -6,9 +6,9 @@ import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import type { AdminVendorRow } from '@/lib/admin.types'
 
 export function reviewTone(status: AdminVendorRow['reviewStatus']) {
-  if (status === 'APPROVED') return 'text-emerald-500'
-  if (status === 'REJECTED' || status === 'SUSPENDED') return 'text-red-400'
-  return 'text-amber-400'
+  if (status === 'APPROVED') return 'text-success'
+  if (status === 'REJECTED' || status === 'SUSPENDED') return 'text-danger'
+  return 'text-warning'
 }
 
 export function AdminVendorTable({ items }: { items: AdminVendorRow[] }) {
@@ -16,11 +16,7 @@ export function AdminVendorTable({ items }: { items: AdminVendorRow[] }) {
   const tCat = useTranslations('vendorCategories')
 
   if (items.length === 0) {
-    return (
-      <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-        {t('empty')}
-      </p>
-    )
+    return <p className="text-muted text-sm">{t('empty')}</p>
   }
 
   return (

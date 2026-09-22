@@ -215,7 +215,7 @@ function MatchedVendorRow({ vendor }: { vendor: MatchedVendor }) {
   return (
     <Link
       href={`/vendors/${vendor.slug}`}
-      className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-black/4 dark:hover:bg-white/4"
+      className="hover:bg-hover flex items-center gap-3 px-5 py-3.5 transition-colors"
     >
       {/* Avatar */}
       <div
@@ -350,7 +350,7 @@ function FindVendorsPanel({ item, onClose }: { item: InspirationItem; onClose: (
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+            className="hover:bg-hover flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={16} />

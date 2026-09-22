@@ -236,11 +236,11 @@ function EventTypePill({
       className={cn(
         'flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-all',
         selected
-          ? 'bg-gold-500/15 border-gold-500 text-gold-300 ring-gold-500/20 ring-1'
-          : 'text-brand-300 border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 hover:text-white',
+          ? 'bg-primary/15 border-primary text-primary ring-primary/20 ring-1'
+          : 'text-muted border-border bg-surface hover:border-border hover:bg-hover hover:text-fg',
       )}
     >
-      {selected && <Check size={12} strokeWidth={3} className="text-gold-400 shrink-0" />}
+      {selected && <Check size={12} strokeWidth={3} className="text-primary shrink-0" />}
       {label}
     </button>
   )
@@ -267,29 +267,29 @@ function TribeRow({
       className={cn(
         'flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all',
         selected
-          ? 'bg-gold-500/10 border-gold-500/50 ring-gold-500/20 ring-1'
-          : 'border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/6',
+          ? 'bg-primary/10 border-primary/50 ring-primary/20 ring-1'
+          : 'border-border bg-surface hover:border-border hover:bg-hover',
       )}
     >
       {/* Checkbox indicator */}
       <span
         className={cn(
           'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors',
-          selected ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+          selected ? 'border-primary bg-primary' : 'border-border',
         )}
       >
-        {selected && <Check size={10} strokeWidth={3} className="text-brand-900" />}
+        {selected && <Check size={10} strokeWidth={3} className="text-primary-fg" />}
       </span>
 
       {/* Text */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={cn('text-sm font-medium', selected ? 'text-gold-200' : 'text-white')}>
+          <span className={cn('text-sm font-medium', selected ? 'text-primary' : 'text-fg')}>
             {label}
           </span>
-          <span className="text-brand-500 text-[10px] font-normal">{region}</span>
+          <span className="text-muted text-[10px] font-normal">{region}</span>
         </div>
-        <p className="text-brand-400 mt-0.5 text-xs leading-relaxed">{description}</p>
+        <p className="text-muted mt-0.5 text-xs leading-relaxed">{description}</p>
       </div>
     </button>
   )
@@ -341,7 +341,7 @@ function StepProgress({ step }: { step: number }) {
           key={i}
           className={cn(
             'h-1 flex-1 rounded-full transition-all duration-300',
-            i < step ? 'bg-gold-500' : i === step - 1 ? 'bg-gold-400' : 'bg-white/15',
+            i < step ? 'bg-primary' : i === step - 1 ? 'bg-primary' : 'bg-hover',
           )}
         />
       ))}
@@ -361,10 +361,8 @@ function StepEventType({
   const selected = EVENT_TYPES.find((t) => t.value === state.eventType)
   return (
     <div>
-      <h2 className="font-display mb-1 text-2xl font-semibold text-white">
-        What are we celebrating?
-      </h2>
-      <p className="text-brand-300 mb-6 text-sm">Choose the type of event you&apos;re planning.</p>
+      <h2 className="font-display text-fg mb-1 text-2xl font-semibold">What are we celebrating?</h2>
+      <p className="text-muted mb-6 text-sm">Choose the type of event you&apos;re planning.</p>
 
       {/* Pill grid */}
       <div className="mb-6 flex flex-wrap gap-2">
@@ -387,10 +385,10 @@ function StepEventType({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="bg-gold-500/8 border-gold-500/20 rounded-xl border px-4 py-3"
+            className="bg-primary/10 border-primary/20 rounded-xl border px-4 py-3"
           >
-            <p className="text-gold-200 text-sm font-medium">{selected.label}</p>
-            <p className="text-brand-300 mt-0.5 text-xs">{selected.description}</p>
+            <p className="text-primary text-sm font-medium">{selected.label}</p>
+            <p className="text-muted mt-0.5 text-xs">{selected.description}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -422,23 +420,23 @@ function StepTribe({
 
   return (
     <div>
-      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Which cultures?</h2>
-      <p className="text-brand-300 mb-1 text-sm">
+      <h2 className="font-display text-fg mb-1 text-2xl font-semibold">Which cultures?</h2>
+      <p className="text-muted mb-1 text-sm">
         Select all that apply — we&apos;ll merge the traditions into one checklist.
       </p>
       {state.tribes.length > 0 && (
-        <p className="text-gold-400 mb-3 text-xs">{state.tribes.length} selected</p>
+        <p className="text-primary mb-3 text-xs">{state.tribes.length} selected</p>
       )}
 
       {/* Search */}
       <div className="relative mb-3">
-        <Search size={14} className="text-brand-500 absolute top-1/2 left-3.5 -translate-y-1/2" />
+        <Search size={14} className="text-muted absolute top-1/2 left-3.5 -translate-y-1/2" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cultures…"
-          className="placeholder:text-brand-500 focus:ring-gold-500/40 focus:border-gold-500/40 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-9 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
+          className="placeholder:text-muted focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm transition-colors focus:ring-2 focus:outline-none"
         />
       </div>
 
@@ -455,7 +453,7 @@ function StepTribe({
           />
         ))}
         {filtered.length === 0 && (
-          <p className="text-brand-400 py-6 text-center text-sm">
+          <p className="text-muted py-6 text-center text-sm">
             No match — try &quot;Other / Mixed&quot;
           </p>
         )}
@@ -474,8 +472,8 @@ function StepTheme({
   const selected = THEMES.filter((t) => state.themes.includes(t.value))
   return (
     <div>
-      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Set the scene</h2>
-      <p className="text-brand-300 mb-6 text-sm">
+      <h2 className="font-display text-fg mb-1 text-2xl font-semibold">Set the scene</h2>
+      <p className="text-muted mb-6 text-sm">
         Pick one or more looks. They apply to this event and any sub-events you add later.
       </p>
 
@@ -493,17 +491,14 @@ function StepTheme({
       {selected.length > 0 && (
         <div className="space-y-2">
           {selected.map((theme) => (
-            <div
-              key={theme.value}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3"
-            >
+            <div key={theme.value} className="border-border bg-surface rounded-xl border px-4 py-3">
               <div className="mb-2.5 flex gap-1">
                 {theme.palette.map((c) => (
                   <div key={c} className="h-3 flex-1 rounded-md" style={{ background: c }} />
                 ))}
               </div>
-              <p className="text-sm font-medium text-white">{theme.label}</p>
-              <p className="text-brand-300 mt-0.5 text-xs">{theme.description}</p>
+              <p className="text-fg text-sm font-medium">{theme.label}</p>
+              <p className="text-muted mt-0.5 text-xs">{theme.description}</p>
             </div>
           ))}
         </div>
@@ -524,46 +519,46 @@ function StepDetails({
 
   return (
     <div>
-      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Event details</h2>
-      <p className="text-brand-300 mb-6 text-sm">
+      <h2 className="font-display text-fg mb-1 text-2xl font-semibold">Event details</h2>
+      <p className="text-muted mb-6 text-sm">
         Add the specifics — everything here is optional except the name.
       </p>
       <div className="space-y-4">
         {/* Name */}
         <div>
-          <label className="text-brand-200 mb-1.5 block text-sm font-medium">
-            Event name <span className="text-gold-500">*</span>
+          <label className="text-fg mb-1.5 block text-sm font-medium">
+            Event name <span className="text-primary">*</span>
           </label>
           <input
             type="text"
             value={state.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder={placeholder}
-            className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
+            className="placeholder:text-muted focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border px-4 py-3 text-sm transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
 
         {/* Date */}
         <div>
-          <label className="text-brand-200 mb-1.5 block text-sm font-medium">
-            <Calendar size={13} className="text-brand-400 mr-1.5 inline" />
-            Estimated date <span className="text-brand-500">(optional)</span>
+          <label className="text-fg mb-1.5 block text-sm font-medium">
+            <Calendar size={13} className="text-muted mr-1.5 inline" />
+            Estimated date <span className="text-muted">(optional)</span>
           </label>
           <input
             type="date"
             value={state.estimatedDate}
             onChange={(e) => set('estimatedDate', e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white [color-scheme:dark] transition-colors focus:ring-2 focus:outline-none"
+            className="focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border px-4 py-3 text-sm transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
 
         {/* Guest count + Location */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-brand-200 mb-1.5 block text-sm font-medium">
-              <Users size={13} className="text-brand-400 mr-1.5 inline" />
-              Guests <span className="text-brand-500">(optional)</span>
+            <label className="text-fg mb-1.5 block text-sm font-medium">
+              <Users size={13} className="text-muted mr-1.5 inline" />
+              Guests <span className="text-muted">(optional)</span>
             </label>
             <input
               type="number"
@@ -572,12 +567,12 @@ function StepDetails({
               placeholder="200"
               min={1}
               max={5000}
-              className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
+              className="placeholder:text-muted focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border px-4 py-3 text-sm transition-colors focus:ring-2 focus:outline-none"
             />
           </div>
           <div>
-            <label className="text-brand-200 mb-1.5 block text-sm font-medium">
-              <MapPin size={13} className="text-brand-400 mr-1.5 inline" />
+            <label className="text-fg mb-1.5 block text-sm font-medium">
+              <MapPin size={13} className="text-muted mr-1.5 inline" />
               Location
             </label>
             <input
@@ -585,7 +580,7 @@ function StepDetails({
               value={state.location}
               onChange={(e) => set('location', e.target.value)}
               placeholder="Ottawa, Ontario, Canada"
-              className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white transition-colors focus:ring-2 focus:outline-none"
+              className="placeholder:text-muted focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border px-4 py-3 text-sm transition-colors focus:ring-2 focus:outline-none"
             />
           </div>
         </div>
@@ -614,20 +609,20 @@ function StepBudget({
 
   return (
     <div>
-      <h2 className="font-display mb-1 text-2xl font-semibold text-white">Your budget</h2>
-      <p className="text-brand-300 mb-6 text-sm">
+      <h2 className="font-display text-fg mb-1 text-2xl font-semibold">Your budget</h2>
+      <p className="text-muted mb-6 text-sm">
         Set your total budget in CAD. You can start with a starter split and checklist, or build
         both from scratch.
       </p>
 
       {/* Budget input */}
       <div className="mb-6">
-        <label className="text-brand-200 mb-1.5 block text-sm font-medium">
-          <DollarSign size={13} className="text-brand-400 mr-1 inline" />
-          Total budget (CAD) <span className="text-gold-500">*</span>
+        <label className="text-fg mb-1.5 block text-sm font-medium">
+          <DollarSign size={13} className="text-muted mr-1 inline" />
+          Total budget (CAD) <span className="text-primary">*</span>
         </label>
         <div className="relative">
-          <span className="text-brand-400 absolute top-1/2 left-4 -translate-y-1/2 text-sm font-medium">
+          <span className="text-muted absolute top-1/2 left-4 -translate-y-1/2 text-sm font-medium">
             CA$
           </span>
           <input
@@ -636,10 +631,10 @@ function StepBudget({
             onChange={(e) => set('totalBudget', e.target.value)}
             placeholder="0"
             min={0}
-            className="placeholder:text-brand-500 focus:ring-gold-500/50 focus:border-gold-500/50 w-full rounded-xl border border-white/12 bg-white/6 py-3.5 pr-4 pl-12 text-lg font-semibold text-white transition-colors focus:ring-2 focus:outline-none"
+            className="placeholder:text-muted focus:ring-ring focus:border-primary border-border bg-input text-fg w-full rounded-xl border py-3.5 pr-4 pl-12 text-lg font-semibold transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
-        <p className="text-brand-500 mt-1.5 text-xs">
+        <p className="text-muted mt-1.5 text-xs">
           Any amount, including CA$0 if you&apos;re still deciding.
         </p>
       </div>
@@ -651,23 +646,23 @@ function StepBudget({
           className={cn(
             'flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all',
             state.includeDefaultBudget
-              ? 'border-gold-500/50 bg-gold-500/10'
-              : 'border-white/10 bg-white/4 hover:border-white/20',
+              ? 'border-primary/50 bg-primary/10'
+              : 'border-border bg-surface hover:border-border',
           )}
         >
           <span
             className={cn(
               'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
-              state.includeDefaultBudget ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+              state.includeDefaultBudget ? 'border-primary bg-primary' : 'border-border',
             )}
           >
             {state.includeDefaultBudget && (
-              <Check size={10} strokeWidth={3} className="text-brand-900" />
+              <Check size={10} strokeWidth={3} className="text-primary-fg" />
             )}
           </span>
           <span>
-            <span className="block text-sm font-medium text-white">Starter budget categories</span>
-            <span className="text-brand-400 mt-0.5 block text-xs">
+            <span className="text-fg block text-sm font-medium">Starter budget categories</span>
+            <span className="text-muted mt-0.5 block text-xs">
               Split this total across catering, photo, décor, and the rest. You can edit every line
               later.
             </span>
@@ -679,23 +674,23 @@ function StepBudget({
           className={cn(
             'flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all',
             state.includeDefaultChecklist
-              ? 'border-gold-500/50 bg-gold-500/10'
-              : 'border-white/10 bg-white/4 hover:border-white/20',
+              ? 'border-primary/50 bg-primary/10'
+              : 'border-border bg-surface hover:border-border',
           )}
         >
           <span
             className={cn(
               'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
-              state.includeDefaultChecklist ? 'border-gold-500 bg-gold-500' : 'border-brand-500',
+              state.includeDefaultChecklist ? 'border-primary bg-primary' : 'border-border',
             )}
           >
             {state.includeDefaultChecklist && (
-              <Check size={10} strokeWidth={3} className="text-brand-900" />
+              <Check size={10} strokeWidth={3} className="text-primary-fg" />
             )}
           </span>
           <span>
-            <span className="block text-sm font-medium text-white">Starter checklist</span>
-            <span className="text-brand-400 mt-0.5 block text-xs">
+            <span className="text-fg block text-sm font-medium">Starter checklist</span>
+            <span className="text-muted mt-0.5 block text-xs">
               Venue, vendors, invitations, plus cultural tasks from the traditions you picked.
             </span>
           </span>
@@ -707,9 +702,9 @@ function StepBudget({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-white/10 bg-white/4 p-4"
+          className="border-border bg-surface rounded-2xl border p-4"
         >
-          <p className="text-brand-300 mb-3 text-xs font-medium tracking-wider uppercase">
+          <p className="text-muted mb-3 text-xs font-medium tracking-wider uppercase">
             Budget split preview
           </p>
           <div className="space-y-2">
@@ -719,27 +714,25 @@ function StepBudget({
               return (
                 <div key={category}>
                   <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-brand-300">{getVendorCategoryLabel(category, tCat)}</span>
-                    <span className="font-medium text-white">
-                      CA${amount.toLocaleString('en-CA')}
-                    </span>
+                    <span className="text-muted">{getVendorCategoryLabel(category, tCat)}</span>
+                    <span className="text-fg font-medium">CA${amount.toLocaleString('en-CA')}</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+                  <div className="bg-hover h-1.5 overflow-hidden rounded-full">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${width}%` }}
                       transition={{ duration: 0.5, delay: 0.05 }}
-                      className="from-gold-500 to-gold-400 h-full rounded-full bg-gradient-to-r"
+                      className="bg-primary h-full rounded-full"
                     />
                   </div>
                 </div>
               )
             })}
-            <p className="text-brand-500 pt-1 text-right text-xs">+ 6 more categories</p>
+            <p className="text-muted pt-1 text-right text-xs">+ 6 more categories</p>
           </div>
-          <div className="mt-3 flex justify-between border-t border-white/8 pt-3">
-            <span className="text-brand-300 text-sm">Total</span>
-            <span className="text-gold-400 text-sm font-semibold">CA${formatted}</span>
+          <div className="border-border mt-3 flex justify-between border-t pt-3">
+            <span className="text-muted text-sm">Total</span>
+            <span className="text-primary text-sm font-semibold">CA${formatted}</span>
           </div>
         </motion.div>
       )}
@@ -793,12 +786,12 @@ function StepReview({ state }: { state: WizardState }) {
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
-        <div className="bg-gold-500/15 rounded-xl p-2.5">
-          <Sparkles size={18} className="text-gold-400" />
+        <div className="bg-primary/15 rounded-xl p-2.5">
+          <Sparkles size={18} className="text-primary" />
         </div>
         <div>
-          <h2 className="font-display text-2xl font-semibold text-white">Review & create</h2>
-          <p className="text-brand-300 text-sm">
+          <h2 className="font-display text-fg text-2xl font-semibold">Review & create</h2>
+          <p className="text-muted text-sm">
             {state.includeDefaultChecklist || state.includeDefaultBudget
               ? 'We’ll add the starters you chose. You can edit every line after this.'
               : 'We’ll create a blank event. Add budget lines and tasks whenever you’re ready.'}
@@ -806,24 +799,24 @@ function StepReview({ state }: { state: WizardState }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/4">
+      <div className="border-border bg-surface overflow-hidden rounded-2xl border">
         {rows.map(({ label, value }, i) => (
           <div
             key={label}
             className={cn(
               'flex items-center justify-between px-4 py-3 text-sm',
-              i < rows.length - 1 && 'border-b border-white/6',
+              i < rows.length - 1 && 'border-border border-b',
             )}
           >
-            <span className="text-brand-400 w-20 shrink-0">{label}</span>
-            <span className="text-right text-white">{value}</span>
+            <span className="text-muted w-20 shrink-0">{label}</span>
+            <span className="text-fg text-right">{value}</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3">
-        <Check size={16} className="mt-0.5 shrink-0 text-emerald-400" />
-        <p className="text-xs leading-relaxed text-emerald-300">
+      <div className="border-success/20 bg-success/10 mt-4 flex gap-3 rounded-xl border px-4 py-3">
+        <Check size={16} className="text-success mt-0.5 shrink-0" />
+        <p className="text-success text-xs leading-relaxed">
           {state.includeDefaultChecklist && state.includeDefaultBudget
             ? 'We’ll create a personalised checklist with cultural traditions and auto-split your budget across vendor categories.'
             : state.includeDefaultChecklist
@@ -930,12 +923,12 @@ export function CreateEventWizard() {
           <button
             type="button"
             onClick={() => router.push('/events')}
-            className="text-brand-400 mb-6 flex items-center gap-1.5 text-sm transition-colors hover:text-white"
+            className="text-muted hover:text-fg mb-6 flex items-center gap-1.5 text-sm transition-colors"
           >
             <ChevronLeft size={16} /> Back to Events
           </button>
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-brand-400 text-xs font-medium tracking-widest uppercase">
+            <p className="text-muted text-xs font-medium tracking-widest uppercase">
               Step {step} of {TOTAL_STEPS}
             </p>
           </div>
@@ -943,7 +936,7 @@ export function CreateEventWizard() {
         </div>
 
         {/* Step panel */}
-        <div className="relative min-h-[420px] overflow-hidden rounded-2xl border border-white/10 bg-white/4 p-6 md:p-8">
+        <div className="border-border bg-surface relative min-h-[420px] overflow-hidden rounded-2xl border p-6 md:p-8">
           {/* Adire pattern */}
           <div className="pattern-adire pointer-events-none absolute inset-0 opacity-[0.03]" />
 
@@ -969,7 +962,7 @@ export function CreateEventWizard() {
         </div>
 
         {/* Error */}
-        {error && <p className="mt-3 text-center text-sm text-red-400">{error}</p>}
+        {error && <p className="text-danger mt-3 text-center text-sm">{error}</p>}
 
         {/* Navigation */}
         <div className="mt-5 flex items-center justify-between">
@@ -977,7 +970,7 @@ export function CreateEventWizard() {
             type="button"
             onClick={() => go(-1)}
             disabled={step === 1}
-            className="text-brand-300 flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:bg-white/8 hover:text-white disabled:pointer-events-none disabled:opacity-0"
+            className="text-muted hover:bg-hover hover:text-fg flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-0"
           >
             <ChevronLeft size={16} /> Back
           </button>
@@ -987,7 +980,7 @@ export function CreateEventWizard() {
               type="button"
               onClick={() => go(1)}
               disabled={!canAdvance}
-              className="bg-gold-600 hover:bg-gold-500 text-brand-900 shadow-gold-900/20 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              className="bg-primary text-primary-fg flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continue <ChevronRight size={16} />
             </button>
@@ -996,7 +989,7 @@ export function CreateEventWizard() {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-gold-600 hover:bg-gold-500 text-brand-900 shadow-gold-900/20 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-primary text-primary-fg flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>

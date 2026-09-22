@@ -84,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-sandbox={sandbox ? '' : undefined}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-[var(--color-background)] text-[var(--color-foreground)]">
+      <body className="bg-canvas text-fg flex min-h-full flex-col">
         <SkipLink />
         <SandboxBanner />
         {!sandbox && (

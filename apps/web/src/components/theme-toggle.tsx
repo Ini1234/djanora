@@ -24,7 +24,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={() => setTheme(next)}
         aria-label={`Switch theme (current: ${theme})`}
-        className="tap-target text-brand-400 hover:text-brand-200 light:hover:bg-black/6 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-white/6 dark:hover:bg-white/6"
+        className="tap-target text-nav-muted hover:bg-nav-hover hover:text-nav-fg inline-flex items-center justify-center rounded-lg p-1.5 transition-colors"
       >
         <Current size={15} aria-hidden="true" />
       </button>
@@ -32,7 +32,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="flex items-center gap-0.5 rounded-lg border border-black/10 bg-black/5 p-0.5 dark:border-white/10 dark:bg-white/6">
+    <div className="border-nav-border bg-hover flex items-center gap-0.5 rounded-lg border p-0.5">
       {options.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
@@ -42,8 +42,8 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
           className={cn(
             'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all',
             theme === value
-              ? 'bg-gold-600 text-brand-900 shadow-sm'
-              : 'text-brand-500 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-200',
+              ? 'bg-primary text-primary-fg shadow-sm'
+              : 'text-nav-muted hover:text-nav-fg',
           )}
         >
           <Icon size={11} aria-hidden="true" />

@@ -124,7 +124,7 @@ export function AdminVendorReview({ vendor }: { vendor: AdminVendorRow }) {
         />
       </label>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
         {vendor.reviewStatus !== 'APPROVED' && (

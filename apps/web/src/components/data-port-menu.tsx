@@ -137,7 +137,7 @@ export function DataPortMenu({
         className="hidden"
         onChange={(e) => void pickFile(e.target.files?.[0])}
       />
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="text-danger mt-1 text-xs">{error}</p>}
     </div>
   )
 }

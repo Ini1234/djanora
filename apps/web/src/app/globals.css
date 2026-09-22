@@ -1,139 +1,174 @@
 @import 'tailwindcss';
 
-@theme inline {
-  /* Brand scale — cool zinc, not warm stone */
-  --color-brand-900: #18181b;
-  --color-brand-800: #27272a;
-  --color-brand-700: #3f3f46;
-  --color-brand-600: #52525b;
-  --color-brand-500: #71717a;
-  --color-brand-400: #a1a1aa;
-  --color-brand-300: #d4d4d8;
-  --color-brand-200: #e4e4e7;
-  --color-brand-100: #f4f4f5;
-  --color-brand-50: #fafafa;
+@custom-variant dark (&:where(.dark, [data-theme='dark'], .dark *));
+@custom-variant light (&:where(.light, [data-theme='light'], .light *));
 
-  /* Legacy gold-* classes resolve to the same zinc scale */
-  --color-gold-900: #18181b;
-  --color-gold-800: #27272a;
-  --color-gold-700: #3f3f46;
-  --color-gold-600: #52525b;
-  --color-gold-500: #71717a;
-  --color-gold-400: #a1a1aa;
-  --color-gold-300: #d4d4d8;
-  --color-gold-200: #e4e4e7;
-  --color-gold-100: #f4f4f5;
-  --color-gold-50: #fafafa;
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-fg: var(--secondary-fg);
+  --color-nav: var(--nav);
+  --color-nav-fg: var(--nav-fg);
+  --color-nav-muted: var(--nav-muted);
+  --color-nav-border: var(--nav-border);
+  --color-nav-hover: var(--nav-hover);
+  --color-nav-active: var(--nav-active);
+  --color-hover: var(--hover);
+  --color-overlay: var(--overlay);
+  --color-inverse: var(--inverse);
+  --color-inverse-fg: var(--inverse-fg);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-disabled: var(--disabled);
+
+  /* Compat aliases — already-migrated files keep working */
+  --color-background: var(--canvas);
+  --color-foreground: var(--fg);
+  --color-card: var(--surface);
+  --color-destructive: var(--danger);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary-foreground: var(--secondary-fg);
+  --color-inverse-foreground: var(--inverse-fg);
 
   --color-terracotta-600: #b85c2a;
   --color-terracotta-500: #c4622a;
   --color-terracotta-400: #d4784a;
   --color-terracotta-100: #fce9df;
 
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-border: var(--border);
-  --color-muted: var(--muted);
-  --color-ring: var(--ring);
-  --color-destructive: var(--destructive);
-  --color-success: var(--success);
-  --color-input: var(--input);
-  --color-inverse: var(--inverse);
-  --color-inverse-foreground: var(--inverse-foreground);
-  --color-inverse-muted: var(--inverse-muted);
-
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-playfair);
 }
 
-/* ─── Semantic tokens ───────────────────────────────────────────────── */
-:root {
-  --background: #fafafa;
-  --foreground: #18181b;
-  --card: #ffffff;
+/* Values from src/theme/tokens.ts — add a theme by adding a [data-theme] block. */
+:root,
+[data-theme='light'] {
+  --canvas: #fafafa;
+  --page: #f4f4f5;
+  --surface: #ffffff;
+  --surface-hover: #f4f4f5;
+  --fg: #18181b;
   --muted: #52525b;
   --border: #e4e4e7;
   --input: #ffffff;
   --ring: #18181b;
   --primary: #18181b;
-  --primary-foreground: #ffffff;
+  --primary-fg: #ffffff;
   --primary-hover: #27272a;
   --secondary: #ffffff;
-  --secondary-foreground: #18181b;
-  --inverse: #18181b;
-  --inverse-foreground: #fafafa;
-  --inverse-muted: #a1a1aa;
-  --destructive: #dc2626;
-  --success: #16a34a;
+  --secondary-fg: #18181b;
+  --nav: #ffffff;
+  --nav-fg: #18181b;
+  --nav-muted: #52525b;
+  --nav-border: #e4e4e7;
+  --nav-hover: rgba(0, 0, 0, 0.05);
+  --nav-active: color-mix(in srgb, #18181b 18%, transparent);
   --hover: rgba(0, 0, 0, 0.05);
   --overlay: rgba(0, 0, 0, 0.4);
-
-  --nav-bg: #ffffff;
-  --nav-border: #e4e4e7;
-  --page-bg: #f4f4f5;
-  --card-bg: #ffffff;
-  --card-bg-hover: #f4f4f5;
-  --card-border: #e4e4e7;
-  --input-bg: #ffffff;
-  --overlay-bg: #ffffff;
+  --inverse: #18181b;
+  --inverse-fg: #fafafa;
+  --inverse-muted: #a1a1aa;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+  --disabled: rgba(24, 24, 27, 0.4);
   --scrollbar: rgba(0, 0, 0, 0.2) transparent;
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --background: var(--canvas);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --primary-foreground: var(--primary-fg);
+  --secondary-foreground: var(--secondary-fg);
+  --inverse-foreground: var(--inverse-fg);
+  --destructive: var(--danger);
+  --nav-bg: var(--nav);
+  --page-bg: var(--page);
+  --card-bg: var(--surface);
+  --card-bg-hover: var(--surface-hover);
+  --card-border: var(--border);
+  --input-bg: var(--input);
+  --overlay-bg: var(--overlay);
+
+  --color-background: var(--canvas);
+  --color-foreground: var(--fg);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --color-card: var(--card);
-  --color-text-primary: var(--foreground);
+  --color-card: var(--surface);
+  --color-text-primary: var(--fg);
   --color-text-secondary: var(--muted);
   --color-brand-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-foreground: var(--primary-fg);
 }
 
-.dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #18181b;
+.dark,
+[data-theme='dark'] {
+  --canvas: #09090b;
+  --page: #18181b;
+  --surface: #18181b;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --fg: #fafafa;
   --muted: #a1a1aa;
   --border: #27272a;
   --input: #18181b;
   --ring: #fafafa;
   --primary: #fafafa;
-  --primary-foreground: #18181b;
+  --primary-fg: #18181b;
   --primary-hover: #e4e4e7;
   --secondary: transparent;
-  --secondary-foreground: #fafafa;
-  --inverse: #18181b;
-  --inverse-foreground: #fafafa;
-  --inverse-muted: #a1a1aa;
-  --destructive: #f87171;
-  --success: #4ade80;
+  --secondary-fg: #fafafa;
+  --nav: #09090b;
+  --nav-fg: #fafafa;
+  --nav-muted: #a1a1aa;
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --nav-hover: rgba(255, 255, 255, 0.06);
+  --nav-active: color-mix(in srgb, #fafafa 18%, transparent);
   --hover: rgba(255, 255, 255, 0.06);
   --overlay: rgba(0, 0, 0, 0.6);
-
-  --nav-bg: #09090b;
-  --nav-border: rgba(255, 255, 255, 0.08);
-  --page-bg: #18181b;
-  --card-bg: rgba(255, 255, 255, 0.04);
-  --card-bg-hover: rgba(255, 255, 255, 0.06);
-  --card-border: rgba(255, 255, 255, 0.1);
-  --input-bg: rgba(255, 255, 255, 0.06);
-  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --inverse: #18181b;
+  --inverse-fg: #fafafa;
+  --inverse-muted: #a1a1aa;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --disabled: rgba(250, 250, 250, 0.4);
   --scrollbar: rgba(255, 255, 255, 0.15) transparent;
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --background: var(--canvas);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --primary-foreground: var(--primary-fg);
+  --secondary-foreground: var(--secondary-fg);
+  --inverse-foreground: var(--inverse-fg);
+  --destructive: var(--danger);
+  --nav-bg: var(--nav);
+  --page-bg: var(--page);
+  --card-bg: var(--surface);
+  --card-bg-hover: var(--surface-hover);
+  --card-border: var(--border);
+  --input-bg: var(--input);
+  --overlay-bg: var(--overlay);
+
+  --color-background: var(--canvas);
+  --color-foreground: var(--fg);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --color-card: var(--card);
-  --color-text-primary: var(--foreground);
+  --color-card: var(--surface);
+  --color-text-primary: var(--fg);
   --color-text-secondary: var(--muted);
   --color-brand-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-foreground: var(--primary-fg);
 }
 
 /* ─── Standard elements (light + dark via tokens) ───────────────────── */
@@ -180,7 +215,7 @@
 
   .btn-primary {
     background: var(--primary);
-    color: var(--primary-foreground);
+    color: var(--primary-fg);
   }
 
   .btn-primary:hover:not(:disabled) {
@@ -189,7 +224,7 @@
 
   .btn-secondary {
     background: var(--secondary);
-    color: var(--secondary-foreground);
+    color: var(--secondary-fg);
     border-color: var(--border);
   }
 
@@ -271,7 +306,7 @@
 
   .panel-inverse {
     background: var(--inverse);
-    color: var(--inverse-foreground);
+    color: var(--inverse-fg);
   }
 
   .panel-inverse .muted,
@@ -373,223 +408,12 @@
   /* Selected / primary fill — ink always contrasts (white-on-black or black-on-white) */
   .fill-primary {
     background: var(--primary);
-    color: var(--primary-foreground);
+    color: var(--primary-fg);
   }
 }
 
-/* ─── Interior light-mode remaps (app screens written for dark utilities) */
-:root:not(.dark) [class~='text-white'] {
-  color: var(--foreground) !important;
-}
-
-:root:not(.dark) [class~='text-brand-100'] {
-  color: #18181b !important;
-}
-:root:not(.dark) [class~='text-brand-200'] {
-  color: #27272a !important;
-}
-:root:not(.dark) [class~='text-brand-300'] {
-  color: #3f3f46 !important;
-}
-:root:not(.dark) [class~='text-brand-400'] {
-  color: #52525b !important;
-}
-:root:not(.dark) [class~='text-brand-500'] {
-  color: #52525b !important;
-}
-:root:not(.dark) [class~='text-brand-600'] {
-  color: #52525b !important;
-}
-
-/* Glass utilities were authored for dark canvases. In light they must be solid. */
-:root:not(.dark)
-  :is(
-    [class~='bg-white/3'],
-    [class~='bg-white/4'],
-    [class~='bg-white/5'],
-    [class~='bg-white/6'],
-    [class~='bg-white/8'],
-    [class~='bg-white/10'],
-    [class~='bg-white/12'],
-    [class~='bg-white/15']
-  ) {
-  background-color: var(--card) !important;
-}
-:root:not(.dark)
-  :is(
-    [class~='hover:bg-white/4'],
-    [class~='hover:bg-white/6'],
-    [class~='hover:bg-white/8'],
-    [class~='hover:bg-white/12'],
-    [class~='hover:bg-white/15']
-  ):hover {
-  background-color: var(--page-bg) !important;
-}
-:root:not(.dark)
-  :is([class~='focus:bg-white/8'], [class~='focus:bg-white/12']):is(:focus, :focus-visible) {
-  background-color: var(--card) !important;
-}
-:root:not(.dark)
-  :is(
-    [class~='border-white/6'],
-    [class~='border-white/8'],
-    [class~='border-white/10'],
-    [class~='border-white/12'],
-    [class~='border-white/15'],
-    [class~='border-white/16'],
-    [class~='border-white/20'],
-    [class~='border-white/22']
-  ) {
-  border-color: var(--border) !important;
-}
-:root:not(.dark)
-  :is(
-    [class~='bg-gold-400/8'],
-    [class~='bg-gold-500/5'],
-    [class~='bg-gold-500/8'],
-    [class~='bg-gold-500/10'],
-    [class~='bg-gold-500/12'],
-    [class~='bg-gold-500/15'],
-    [class~='bg-gold-600/8'],
-    [class~='bg-gold-600/12'],
-    [class~='bg-gold-600/15'],
-    [class~='bg-gold-600/20']
-  ) {
-  background-color: var(--page-bg) !important;
-}
-:root:not(.dark) :is([class~='hover:bg-gold-600/25'], [class~='hover:bg-gold-500/10']):hover {
-  background-color: #e4e4e7 !important;
-}
-:root:not(.dark)
-  :is(
-    [class~='bg-brand-700/30'],
-    [class~='bg-brand-700/40'],
-    [class~='bg-brand-700/50'],
-    [class~='bg-brand-700/60']
-  ) {
-  background-color: var(--page-bg) !important;
-}
-:root:not(.dark)
-  :is(
-    [class~='border-brand-500/30'],
-    [class~='border-brand-500/40'],
-    [class~='border-brand-500/50']
-  ) {
-  border-color: var(--border) !important;
-}
-
-/* Dark bands keep a light frost — do not flatten those to white cards. */
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  :is(
-    [class~='bg-white/3'],
-    [class~='bg-white/4'],
-    [class~='bg-white/5'],
-    [class~='bg-white/6'],
-    [class~='bg-white/8'],
-    [class~='bg-white/10'],
-    [class~='bg-white/12'],
-    [class~='bg-white/15']
-  ) {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  :is(
-    [class~='hover:bg-white/4'],
-    [class~='hover:bg-white/6'],
-    [class~='hover:bg-white/8'],
-    [class~='hover:bg-white/12']
-  ):hover {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  :is(
-    [class~='border-white/6'],
-    [class~='border-white/8'],
-    [class~='border-white/10'],
-    [class~='border-white/12'],
-    [class~='border-white/15'],
-    [class~='border-white/16'],
-    [class~='border-white/20']
-  ) {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-}
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  :is(
-    [class~='bg-gold-500/5'],
-    [class~='bg-gold-500/8'],
-    [class~='bg-gold-500/10'],
-    [class~='bg-gold-500/12'],
-    [class~='bg-gold-500/15'],
-    [class~='bg-gold-600/15']
-  ) {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-:root:not(.dark) [class~='text-white\/50'] {
-  color: rgba(24, 24, 27, 0.55) !important;
-}
-:root:not(.dark) [class~='text-white\/60'] {
-  color: rgba(24, 24, 27, 0.65) !important;
-}
-:root:not(.dark) [class~='text-white\/70'] {
-  color: rgba(24, 24, 27, 0.75) !important;
-}
-:root:not(.dark) [class~='text-white\/80'] {
-  color: rgba(24, 24, 27, 0.85) !important;
-}
-
-:root:not(.dark) [class~='text-gold-300'],
-:root:not(.dark) [class~='text-gold-400'] {
-  color: #3f3f46 !important;
-}
-:root:not(.dark) [class~='text-gold-500'],
-:root:not(.dark) [class~='text-gold-600'] {
-  color: #18181b !important;
-}
-:root:not(.dark) [class~='text-gold-700'] {
-  color: #18181b !important;
-}
-
-:root:not(.dark) [class~='hover:bg-black\/4']:hover {
-  background-color: rgba(0, 0, 0, 0.06) !important;
-}
-
-/* Inverse-panel exceptions must win over the text-white remap above */
-:root:not(.dark)
-  :is(
-    [class~='bg-brand-700'],
-    [class~='bg-brand-800'],
-    [class~='bg-brand-900'],
-    [class~='bg-gold-600'],
-    [class~='bg-gold-500'],
-    [class~='bg-gold-700']
-  )[class~='text-white'] {
-  color: #ffffff !important;
-}
-
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  [class~='text-white'] {
-  color: #fafafa !important;
-}
-
-:root:not(.dark)
-  :is(.panel-inverse, [class~='bg-brand-800'], [class~='bg-brand-900'])
-  :is(
-    [class~='text-brand-200'],
-    [class~='text-brand-300'],
-    [class~='text-brand-400'],
-    [class~='text-brand-500']
-  ) {
-  color: #a1a1aa !important;
-}
-
 .btn-primary {
-  color: var(--primary-foreground) !important;
+  color: var(--primary-fg) !important;
 }
 
 input[type='date'],
@@ -604,21 +428,6 @@ input[type='datetime-local'] {
 input[type='date']::-webkit-date-and-time-value {
   text-align: start;
   min-height: 1.25em;
-}
-
-.panel-inverse,
-.panel-inverse [class~='text-white'] {
-  color: var(--inverse-foreground) !important;
-}
-
-.panel-inverse
-  :is(
-    [class~='text-brand-200'],
-    [class~='text-brand-300'],
-    [class~='text-brand-400'],
-    [class~='text-brand-500']
-  ) {
-  color: var(--inverse-muted) !important;
 }
 
 /* ─── Base ─────────────────────────────────────────────────────────── */
@@ -1016,7 +825,7 @@ iframe {
 }
 
 .pattern-adire {
-  background-image: radial-gradient(circle at 1px 1px, var(--color-brand-400) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, var(--muted) 1px, transparent 0);
   background-size: 24px 24px;
 }
 
@@ -1024,11 +833,6 @@ iframe {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Darken focus ring in light mode so it's visible against white surfaces */
-:root:not(.dark) :focus-visible {
-  outline-color: #8b6200; /* gold-800, 5.2:1 on white ✓ */
 }
 
 html[data-sandbox] {

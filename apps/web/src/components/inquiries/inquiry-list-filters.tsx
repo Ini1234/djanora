@@ -65,7 +65,7 @@ function matchesWhen(ts: number | null, when: WhenFilter) {
 }
 
 const SELECT_CLASS =
-  'w-full px-2.5 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-gold-500/40'
+  'w-full px-2.5 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-border'
 
 const SELECT_STYLE = {
   background: 'var(--input-bg)',
@@ -183,7 +183,7 @@ export function StatusFilterTabs({
         >
           {label}
           {key === 'PENDING' && pendingCount != null && pendingCount > 0 && (
-            <span className="bg-gold-600 ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] text-white">
+            <span className="bg-primary text-primary-fg ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px]">
               {pendingCount}
             </span>
           )}
@@ -346,7 +346,7 @@ function SearchField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="focus:ring-gold-500/40 w-full rounded-lg border py-1.5 pr-7 pl-8 text-xs focus:ring-2 focus:outline-none"
+        className="focus:ring-border w-full rounded-lg border py-1.5 pr-7 pl-8 text-xs focus:ring-2 focus:outline-none"
         style={{
           background: 'var(--input-bg)',
           borderColor: 'var(--color-border)',

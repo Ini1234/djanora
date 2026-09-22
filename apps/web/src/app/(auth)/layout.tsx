@@ -9,11 +9,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative">
           <Link
             href="/"
-            className="font-display flex items-center gap-2 text-xl font-semibold"
-            style={{ color: 'var(--inverse-foreground)' }}
+            className="font-display text-inverse-fg flex items-center gap-2 text-xl font-semibold"
             aria-label="Djanora — go to homepage"
           >
-            <span className="bg-primary-foreground text-primary flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+            <span className="bg-inverse-fg text-inverse flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
               D
             </span>
             <span>Djanora</span>
@@ -22,17 +21,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative space-y-6">
           <blockquote>
-            <p
-              className="font-display text-3xl leading-snug font-semibold"
-              style={{ color: 'var(--inverse-foreground)' }}
-            >
+            <p className="font-display text-inverse-fg text-3xl leading-snug font-semibold">
               &ldquo;Your event. Your plan. Your way.&rdquo;
             </p>
           </blockquote>
           <div>
-            <p className="text-sm font-medium" style={{ color: 'var(--inverse-foreground)' }}>
-              Djanora
-            </p>
+            <p className="text-inverse-fg text-sm font-medium">Djanora</p>
             <p className="text-inverse-muted text-xs">Ottawa, Ontario — event planning</p>
           </div>
         </div>
@@ -44,9 +38,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             { value: 'Guests', label: 'Keep everyone in sync' },
           ].map((item) => (
             <div key={item.value}>
-              <p className="text-lg font-semibold" style={{ color: 'var(--inverse-foreground)' }}>
-                {item.value}
-              </p>
+              <p className="text-inverse-fg text-lg font-semibold">{item.value}</p>
               <p className="text-inverse-muted text-xs">{item.label}</p>
             </div>
           ))}
@@ -56,15 +48,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex flex-col items-center justify-center bg-[var(--color-background)] px-4 py-12"
+        className="bg-canvas flex flex-col items-center justify-center px-4 py-12"
       >
         <div className="mb-8 lg:hidden">
           <Link
             href="/"
-            className="font-display text-foreground flex items-center gap-2 text-xl font-semibold"
+            className="font-display text-fg flex items-center gap-2 text-xl font-semibold"
             aria-label="Djanora — go to homepage"
           >
-            <span className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+            <span className="bg-primary text-primary-fg flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
               D
             </span>
             <span>Djanora</span>

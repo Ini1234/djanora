@@ -158,7 +158,7 @@ export function EventInquiriesSection({ eventId }: { eventId: string }) {
                 <li key={inq.id}>
                   <Link
                     href={`/messages?inquiry=${inq.id}`}
-                    className="group flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-black/4 dark:hover:bg-white/4"
+                    className="group hover:bg-hover flex items-start gap-3 px-5 py-3.5 transition-colors"
                   >
                     {/* Vendor avatar / initials */}
                     <div

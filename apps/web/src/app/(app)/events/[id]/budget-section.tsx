@@ -300,7 +300,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
             {/* Selected vendor chip */}
             {vendorName && (
               <div className="mb-2 flex items-center gap-2">
-                <div className="bg-gold-500/10 border-gold-500/25 text-foreground flex flex-1 items-center gap-2 rounded-xl border px-3 py-2 text-sm">
+                <div className="bg-primary/10 border-primary/25 text-foreground flex flex-1 items-center gap-2 rounded-xl border px-3 py-2 text-sm">
                   {selectedContactId ? (
                     <BookUser size={13} className="text-foreground shrink-0" />
                   ) : (
@@ -331,7 +331,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     setNewContactWebsite('')
                     setSaveToContacts(false)
                   }}
-                  className="text-muted rounded-lg p-1.5 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                  className="text-muted hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
                   title="Remove"
                 >
                   <X size={13} />
@@ -483,7 +483,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                       <span className="text-muted text-[10px]">{v.city}</span>
                                     )}
                                     {v.averageRating !== null && (
-                                      <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
+                                      <span className="text-warning flex items-center gap-0.5 text-[10px]">
                                         <Star size={8} fill="currentColor" />
                                         {v.averageRating.toFixed(1)}
                                         <span className="text-muted">({v.totalReviews})</span>
@@ -572,7 +572,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                                 setVendorSearch('')
                                 setSaveToContacts(true)
                               }}
-                              className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 shrink-0 rounded-md border px-2 py-0.5 text-[10px] transition-colors"
+                              className="bg-primary/15 border-primary/25 text-foreground hover:bg-primary/25 shrink-0 rounded-md border px-2 py-0.5 text-[10px] transition-colors"
                             >
                               Add
                             </button>
@@ -606,7 +606,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                     className={cn(
                       'flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] transition-colors',
                       saveToContacts
-                        ? 'bg-gold-600/20 border-gold-500/30 text-foreground'
+                        ? 'bg-primary/20 border-primary/30 text-foreground'
                         : 'text-muted hover:text-foreground border-border bg-foreground/5',
                     )}
                   >
@@ -615,7 +615,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
                   </button>
                 )}
                 {selectedContactId && (
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                  <span className="text-success flex items-center gap-1 text-[10px]">
                     <Check size={9} />
                     From my contacts
                   </span>
@@ -699,7 +699,7 @@ function EditModal({ eventId, item, onClose, onSaved }: EditModalProps) {
             />
           </div>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-danger text-xs">{error}</p>}
         </div>
 
         {/* Footer */}
@@ -813,7 +813,7 @@ function ReceiptUploader({ eventId, item, onUploaded }: ReceiptUploaderProps) {
         {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
         {uploading ? 'Uploading…' : 'Add receipt'}
       </button>
-      {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
+      {error && <p className="text-danger mt-1 text-[10px]">{error}</p>}
     </div>
   )
 }
@@ -849,7 +849,7 @@ function ReceiptThumb({
         href={receipt.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="hover:border-gold-500/40 border-border bg-foreground/5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border transition-colors"
+        className="hover:border-primary/40 border-border bg-foreground/5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border transition-colors"
         title={receipt.filename}
       >
         {isPdf ? (
@@ -863,7 +863,7 @@ function ReceiptThumb({
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
+          className="text-foreground bg-danger absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100"
         >
           {deleting ? <Loader2 size={8} className="animate-spin" /> : <X size={8} />}
         </button>
@@ -951,7 +951,7 @@ function ContactModal({
             </p>
           </div>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-danger text-xs">{error}</p>}
         </div>
 
         {/* Footer */}
@@ -1165,7 +1165,7 @@ function MoneyInput({
       }}
       className={cn(
         'hover:border-border focus:border-border w-[6.5rem] border-b border-transparent bg-transparent py-0.5 text-right text-xs tabular-nums transition-colors focus:outline-none',
-        danger ? 'text-red-400' : 'text-foreground',
+        danger ? 'text-danger' : 'text-foreground',
       )}
     />
   )
@@ -1255,7 +1255,7 @@ function BudgetRow({
             <span
               className={cn(
                 'text-xs tabular-nums',
-                item.spentAmount > item.allocatedAmount ? 'text-red-400' : 'text-foreground',
+                item.spentAmount > item.allocatedAmount ? 'text-danger' : 'text-foreground',
               )}
             >
               {money(item.spentAmount)}
@@ -1263,7 +1263,7 @@ function BudgetRow({
           )}
         </td>
         <td className="hidden px-2 py-2.5 text-right align-middle lg:table-cell">
-          <span className={cn('text-xs tabular-nums', left < 0 ? 'text-red-400' : 'text-muted')}>
+          <span className={cn('text-xs tabular-nums', left < 0 ? 'text-danger' : 'text-muted')}>
             {left < 0 ? `−${money(Math.abs(left))}` : money(left)}
           </span>
         </td>
@@ -1281,7 +1281,7 @@ function BudgetRow({
               <button
                 type="button"
                 onClick={onDelete}
-                className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                className="text-muted hover:bg-danger/8 hover:text-danger rounded-md p-1 transition-colors"
                 aria-label="Delete"
               >
                 <Trash2 size={11} />
@@ -1348,7 +1348,7 @@ function BudgetRow({
                     <Store size={12} className="text-foreground shrink-0" />
                     <span className="text-foreground text-xs font-medium">{item.vendorName}</span>
                     {inquirySent && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-emerald-400">
+                      <span className="text-success flex items-center gap-0.5 text-[10px]">
                         <Check size={9} /> {t('inquirySent')}
                       </span>
                     )}
@@ -1610,7 +1610,7 @@ export function BudgetSection({
           <div
             className={cn(
               'progress-bar transition-all duration-500',
-              overallPct >= 100 && '!bg-red-500',
+              overallPct >= 100 && '!bg-danger',
             )}
             style={{ width: `${Math.min(overallPct, 100)}%` }}
           />
@@ -1636,7 +1636,7 @@ export function BudgetSection({
                   'flex items-center gap-1 rounded-md px-2 py-1 text-[11px] whitespace-nowrap transition-colors',
                   active
                     ? opt.value === 'over'
-                      ? 'bg-red-500/10 text-red-300'
+                      ? 'bg-danger/10 text-danger'
                       : 'bg-foreground/5 text-foreground'
                     : 'text-muted hover:text-foreground',
                 )}
@@ -1761,7 +1761,7 @@ export function BudgetSection({
                           <span
                             className={cn(
                               'ml-auto shrink-0 text-[11px] tabular-nums',
-                              sectionOver ? 'text-red-400' : 'text-muted',
+                              sectionOver ? 'text-danger' : 'text-muted',
                             )}
                           >
                             {money(sectionSpent)}

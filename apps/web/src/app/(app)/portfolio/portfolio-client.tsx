@@ -467,7 +467,7 @@ function PostEditor({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="bg-overlay absolute inset-0" onClick={onClose} />
       <div
         className="relative max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border p-5 shadow-2xl"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
@@ -789,7 +789,7 @@ function PostEditor({
                   <img src={m.url} alt="" className="h-full w-full object-cover" />
                 )}
                 {m.isCover && (
-                  <span className="absolute top-1 left-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                  <span className="bg-overlay text-inverse-fg absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold">
                     Cover
                   </span>
                 )}
@@ -798,7 +798,7 @@ function PostEditor({
                     <button
                       type="button"
                       onClick={() => void setCover(m.id)}
-                      className="text-brand-900 inline-flex h-6 flex-1 items-center justify-center gap-0.5 rounded bg-white/90 text-[10px]"
+                      className="text-fg bg-surface inline-flex h-6 flex-1 items-center justify-center gap-0.5 rounded text-[10px]"
                     >
                       <Star size={10} /> Cover
                     </button>
@@ -806,7 +806,7 @@ function PostEditor({
                   <button
                     type="button"
                     onClick={() => void removeMedia(m.id)}
-                    className="h-6 rounded bg-white/90 px-1.5 text-[10px] text-red-700"
+                    className="bg-surface text-danger h-6 rounded px-1.5 text-[10px]"
                     aria-label="Remove"
                   >
                     <Trash2 size={10} />

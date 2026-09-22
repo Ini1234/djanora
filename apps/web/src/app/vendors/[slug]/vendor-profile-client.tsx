@@ -137,7 +137,7 @@ function SaveLookModal({ post, onClose }: { post: VendorLook; onClose: () => voi
       aria-modal="true"
       aria-labelledby="save-look-title"
     >
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="bg-overlay absolute inset-0" onClick={onClose} />
       <div
         className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
         style={{
@@ -423,7 +423,7 @@ export function VendorProfileClient({
         >
           <div className="flex flex-wrap items-start gap-4 sm:flex-nowrap">
             <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl ring-2 ring-black/8 dark:ring-white/10"
+              className="ring-border flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl ring-2"
               style={{ background: 'var(--card-bg)' }}
             >
               {vendor.avatarUrl ? (
@@ -449,11 +449,7 @@ export function VendorProfileClient({
                   {vendor.businessName}
                 </h1>
                 {vendor.isVerified && (
-                  <BadgeCheck
-                    size={18}
-                    className="text-gold-700 dark:text-gold-400 shrink-0"
-                    aria-label="Verified"
-                  />
+                  <BadgeCheck size={18} className="text-primary shrink-0" aria-label="Verified" />
                 )}
               </div>
 
@@ -475,7 +471,7 @@ export function VendorProfileClient({
                     className="flex items-center gap-1 text-sm"
                     style={{ color: 'var(--color-muted)' }}
                   >
-                    <Star size={12} className="text-gold-600 fill-gold-600" />
+                    <Star size={12} className="text-primary fill-primary" />
                     {vendor.averageRating.toFixed(1)}
                     <span>({vendor.totalReviews})</span>
                   </span>
@@ -487,7 +483,7 @@ export function VendorProfileClient({
                   {vendor.categories.map((cat) => (
                     <span
                       key={cat}
-                      className="border-gold-500/25 bg-gold-500/12 text-gold-700 dark:bg-gold-500/15 dark:text-gold-400 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                      className="border-primary/25 bg-primary/12 text-primary rounded-full border px-2.5 py-0.5 text-xs font-medium"
                     >
                       {getVendorCategoryLabel(cat, tCat)}
                     </span>
@@ -519,7 +515,7 @@ export function VendorProfileClient({
               <button
                 type="button"
                 onClick={contactVendor}
-                className="bg-gold-600 hover:bg-gold-700 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors"
+                className="bg-primary hover:bg-primary-hover text-primary-fg flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
               >
                 <MessageSquare size={15} />
                 Contact
@@ -569,7 +565,7 @@ export function VendorProfileClient({
                   href={vendor.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
+                  className="text-primary flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <Globe size={14} />
                   Website
@@ -580,7 +576,7 @@ export function VendorProfileClient({
                   href={vendor.instagramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
+                  className="text-primary flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <ExternalLink size={14} />
                   Instagram
@@ -591,7 +587,7 @@ export function VendorProfileClient({
                   href={vendor.facebookUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
+                  className="text-primary flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <Link2 size={14} />
                   Facebook
@@ -602,7 +598,7 @@ export function VendorProfileClient({
                   href={vendor.externalPortfolioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gold-800 dark:text-gold-400 flex items-center gap-1.5 text-sm hover:underline"
+                  className="text-primary flex items-center gap-1.5 text-sm hover:underline"
                 >
                   <ExternalLink size={14} />
                   {vendor.externalPortfolioLabel || 'Portfolio'}

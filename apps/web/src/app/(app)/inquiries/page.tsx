@@ -149,7 +149,7 @@ function Avatar({
   const px = size * 4
   return (
     <div
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-black/8 dark:ring-white/10"
+      className="ring-border flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1"
       style={{ width: px, height: px, minWidth: px, background: 'var(--card-bg-hover)' }}
     >
       {avatarUrl ? (
@@ -348,7 +348,7 @@ function DetailPanel({
           <button
             disabled={isPending}
             onClick={() => act('ACCEPTED')}
-            className="bg-gold-600 hover:bg-gold-700 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+            className="bg-primary hover:bg-primary-hover text-primary-fg flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
           >
             <CheckCircle size={12} /> Accept
           </button>
@@ -365,7 +365,7 @@ function DetailPanel({
             <XCircle size={12} /> Decline
           </button>
           {isPending && (
-            <span className="border-gold-400/30 border-t-gold-600 h-3.5 w-3.5 animate-spin rounded-full border-2" />
+            <span className="border-primary/30 border-t-primary h-3.5 w-3.5 animate-spin rounded-full border-2" />
           )}
         </div>
       )}

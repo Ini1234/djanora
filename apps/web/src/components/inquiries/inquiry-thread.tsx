@@ -98,7 +98,7 @@ function Avatar({ name, avatarUrl }: { name: string; avatarUrl: string | null })
       .slice(0, 2) || '?'
   return (
     <div
-      className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-black/8 dark:ring-white/10"
+      className="ring-border flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1"
       style={{ background: 'var(--card-bg)', minWidth: 24, minHeight: 24 }}
     >
       {avatarUrl ? (
@@ -377,10 +377,10 @@ function QuoteCard({
                   type="button"
                   onClick={onAccept}
                   disabled={busy}
-                  className="bg-gold-600 hover:bg-gold-700 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
+                  className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
                 >
                   {accepting ? (
-                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="border-primary-fg/30 border-t-primary-fg h-3 w-3 animate-spin rounded-full border-2" />
                   ) : (
                     <CheckCircle size={12} />
                   )}
@@ -485,7 +485,7 @@ function LinkCard({
             href={payload.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gold-700 dark:text-gold-400 mt-1.5 flex items-center gap-1.5 text-sm font-medium break-all hover:underline"
+            className="text-primary mt-1.5 flex items-center gap-1.5 text-sm font-medium break-all hover:underline"
           >
             {title}
             <ExternalLink size={12} className="shrink-0" />
@@ -1038,10 +1038,10 @@ export function InquiryThread({
               type="button"
               onClick={confirmBooked}
               disabled={!!bookingId}
-              className="bg-gold-600 hover:bg-gold-700 inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-40"
+              className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
             >
               {bookingId ? (
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span className="border-primary-fg/30 border-t-primary-fg h-3 w-3 animate-spin rounded-full border-2" />
               ) : (
                 <CheckCircle size={12} />
               )}
@@ -1109,7 +1109,7 @@ export function InquiryThread({
 
           {loading ? (
             <div className="flex justify-center py-1">
-              <span className="border-gold-400/30 border-t-gold-600 h-4 w-4 animate-spin rounded-full border-2" />
+              <span className="border-primary/30 border-t-primary h-4 w-4 animate-spin rounded-full border-2" />
             </div>
           ) : (
             messages.map((msg) => {
@@ -1145,7 +1145,7 @@ export function InquiryThread({
                         rows={3}
                         value={editingDraft}
                         onChange={(e) => setEditingDraft(e.target.value)}
-                        className="focus:ring-gold-500/40 w-full resize-none rounded-2xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
+                        className="focus:ring-border w-full resize-none rounded-2xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
                         style={{
                           background: 'var(--input-bg)',
                           borderColor: 'var(--color-border)',
@@ -1172,10 +1172,10 @@ export function InquiryThread({
                           type="button"
                           onClick={() => saveEdit(msg.id)}
                           disabled={savingEditId === msg.id || !editingDraft.trim()}
-                          className="bg-gold-600 hover:bg-gold-700 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                          className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {savingEditId === msg.id ? (
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            <span className="border-primary-fg/30 border-t-primary-fg h-3 w-3 animate-spin rounded-full border-2" />
                           ) : (
                             <Check size={12} />
                           )}
@@ -1350,7 +1350,7 @@ export function InquiryThread({
                     placeholder="Amount"
                     value={quoteAmount}
                     onChange={(e) => setQuoteAmount(e.target.value)}
-                    className="focus:ring-gold-500/40 flex-1 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                    className="focus:ring-border flex-1 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                     style={{
                       background: 'var(--input-bg)',
                       borderColor: 'var(--color-border)',
@@ -1376,7 +1376,7 @@ export function InquiryThread({
                   placeholder="Optional note (what's included)"
                   value={quoteNote}
                   onChange={(e) => setQuoteNote(e.target.value)}
-                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-border rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   style={{
                     background: 'var(--input-bg)',
                     borderColor: 'var(--color-border)',
@@ -1397,7 +1397,7 @@ export function InquiryThread({
                   }
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-border rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   style={{
                     background: 'var(--input-bg)',
                     borderColor: 'var(--color-border)',
@@ -1409,7 +1409,7 @@ export function InquiryThread({
                   placeholder="Optional label"
                   value={linkLabel}
                   onChange={(e) => setLinkLabel(e.target.value)}
-                  className="focus:ring-gold-500/40 rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-border rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   style={{
                     background: 'var(--input-bg)',
                     borderColor: 'var(--color-border)',
@@ -1429,7 +1429,7 @@ export function InquiryThread({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send()
                   }}
-                  className="focus:ring-gold-500/40 flex-1 resize-none rounded-xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
+                  className="focus:ring-border flex-1 resize-none rounded-xl border px-3 py-2 text-sm transition focus:ring-2 focus:outline-none"
                   style={{
                     background: 'var(--input-bg)',
                     borderColor: 'var(--color-border)',
@@ -1439,10 +1439,10 @@ export function InquiryThread({
                 <button
                   onClick={send}
                   disabled={isPending || !canSend}
-                  className="bg-gold-600 hover:bg-gold-700 flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bg-primary hover:bg-primary-hover text-primary-fg flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isPending ? (
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="border-primary-fg/30 border-t-primary-fg h-3.5 w-3.5 animate-spin rounded-full border-2" />
                   ) : (
                     <Send size={13} />
                   )}
@@ -1456,10 +1456,10 @@ export function InquiryThread({
                 <button
                   onClick={send}
                   disabled={isPending || !canSend}
-                  className="bg-gold-600 hover:bg-gold-700 flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bg-primary hover:bg-primary-hover text-primary-fg flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isPending ? (
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span className="border-primary-fg/30 border-t-primary-fg h-3.5 w-3.5 animate-spin rounded-full border-2" />
                   ) : (
                     <Send size={13} />
                   )}
@@ -1470,9 +1470,7 @@ export function InquiryThread({
           </div>
         )}
 
-        {error && (
-          <p className="shrink-0 px-4 pb-2 text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="text-danger shrink-0 px-4 pb-2 text-xs">{error}</p>}
       </div>
       {openLook && (
         <InspirationDetail
@@ -1541,7 +1539,7 @@ function ThreadSaveLookModal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="bg-overlay absolute inset-0" onClick={onClose} />
       <div
         className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
         style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
@@ -1577,7 +1575,7 @@ function ThreadSaveLookModal({
                 </option>
               ))}
             </select>
-            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p className="text-danger text-xs">{error}</p>}
             <button
               type="button"
               disabled={saving || !eventId}

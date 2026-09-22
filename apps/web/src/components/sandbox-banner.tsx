@@ -9,7 +9,7 @@ export async function SandboxBanner() {
   return (
     <div
       role="status"
-      className="bg-gold-800 text-gold-50 z-[60] shrink-0 px-4 py-2 text-center text-sm font-medium"
+      className="bg-inverse text-inverse-fg z-[60] shrink-0 px-4 py-2 text-center text-sm font-medium"
     >
       Testing sandbox — you&apos;re just playing around. This is not the live product, and data here
       may be reset.
