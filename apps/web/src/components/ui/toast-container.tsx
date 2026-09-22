@@ -45,59 +45,35 @@ function ToastCard({
   return (
     <div
       role="alert"
-      className="relative flex w-72 cursor-pointer items-start gap-3 overflow-hidden rounded-xl px-4 py-3 shadow-lg select-none"
-      style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--color-border)',
-        boxShadow: '0 8px 24px rgba(0,0,0,.18)',
-      }}
+      className="bg-surface border-border relative flex w-72 cursor-pointer items-start gap-3 overflow-hidden rounded-xl border px-4 py-3 shadow-lg select-none"
       onClick={() => {
         if (href) router.push(href)
         onDismiss()
       }}
     >
-      {/* Icon */}
-      <div
-        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-        style={{ background: 'color-mix(in srgb, var(--color-brand-primary) 15%, transparent)' }}
-      >
-        <MessageSquare size={15} style={{ color: 'var(--color-brand-primary)' }} />
+      <div className="bg-primary/15 text-primary mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+        <MessageSquare size={15} />
       </div>
 
-      {/* Text */}
       <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-[13px] leading-tight font-semibold"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {toast.title}
-        </p>
-        <p
-          className="mt-0.5 line-clamp-2 text-[12px] leading-snug"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          {toast.body}
-        </p>
+        <p className="text-fg truncate text-[13px] leading-tight font-semibold">{toast.title}</p>
+        <p className="text-muted mt-0.5 line-clamp-2 text-[12px] leading-snug">{toast.body}</p>
       </div>
 
-      {/* Dismiss */}
       <button
         onClick={(e) => {
           e.stopPropagation()
           onDismiss()
         }}
-        className="shrink-0 opacity-50 transition-opacity hover:opacity-100"
-        style={{ color: 'var(--color-text-secondary)' }}
+        className="text-muted shrink-0 opacity-50 transition-opacity hover:opacity-100"
         aria-label="Dismiss notification"
       >
         <X size={14} />
       </button>
 
-      {/* Progress bar */}
       <div
         ref={progressRef}
-        className="absolute bottom-0 left-0 h-0.5 rounded-full"
-        style={{ background: 'var(--color-brand-primary)', width: '100%' }}
+        className="bg-primary absolute bottom-0 left-0 h-0.5 w-full rounded-full"
       />
     </div>
   )

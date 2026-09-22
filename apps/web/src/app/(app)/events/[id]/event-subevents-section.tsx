@@ -230,7 +230,7 @@ export function EventSubEventsSection({
               style={{ background: 'color-mix(in srgb, var(--color-border) 80%, transparent)' }}
             >
               <div
-                className="bg-gold-600 h-full rounded-full"
+                className="bg-primary h-full rounded-full"
                 style={{
                   width: `${tree.pot ? Math.min(100, (tree.envelopesTotal / tree.pot) * 100) : 0}%`,
                 }}
@@ -543,7 +543,7 @@ export function EventSubEventsSection({
           </form>
         )}
 
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+        {error && <p className="text-danger mt-3 text-sm">{error}</p>}
 
         {isHost && attachable.length > 0 && (
           <div className="mt-5">

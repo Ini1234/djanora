@@ -480,7 +480,7 @@ export default function MessagesPage() {
                 </p>
                 <Link
                   href="/vendors"
-                  className="bg-gold-600 hover:bg-gold-700 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                  className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                 >
                   Find vendors <ArrowRight size={11} />
                 </Link>

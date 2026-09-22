@@ -15,7 +15,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
   return (
     <>
-      <div className="h-app flex overflow-hidden" style={{ background: 'var(--page-bg)' }}>
+      <div className="h-app bg-page flex overflow-hidden">
         <Sidebar
           displayName={displayName}
           initials={initials}
@@ -37,9 +37,8 @@ export function AppShell({ user, children }: AppShellProps) {
 
           <main
             id="main-content"
-            className="relative flex-1 overflow-y-auto"
+            className="bg-page relative flex-1 overflow-y-auto"
             style={{
-              background: 'var(--page-bg)',
               scrollbarWidth: 'thin',
               scrollbarColor: 'var(--scrollbar)',
             }}

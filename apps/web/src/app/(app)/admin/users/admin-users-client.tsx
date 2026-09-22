@@ -28,7 +28,7 @@ export function AdminUsersClient({ users }: { users: AdminUserRow[] }) {
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
       <div
         className="overflow-x-auto rounded-xl border"
         style={{ borderColor: 'var(--color-border)' }}

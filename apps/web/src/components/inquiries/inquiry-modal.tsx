@@ -123,7 +123,7 @@ export function InquiryModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-overlay absolute inset-0 backdrop-blur-sm" onClick={onClose} />
       <div
         className="relative w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
@@ -154,8 +154,8 @@ export function InquiryModal({
 
         {sent ? (
           <div className="px-5 py-10 text-center">
-            <div className="bg-gold-600/15 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
-              <MessageSquare size={22} className="text-gold-700 dark:text-gold-400" />
+            <div className="bg-primary/15 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+              <MessageSquare size={22} className="text-primary" />
             </div>
             <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
               Inquiry sent!
@@ -166,7 +166,7 @@ export function InquiryModal({
             <button
               type="button"
               onClick={onClose}
-              className="bg-gold-600 hover:bg-gold-700 mt-5 rounded-xl px-5 py-2 text-sm font-medium text-white"
+              className="bg-primary hover:bg-primary-hover text-primary-fg mt-5 rounded-xl px-5 py-2 text-sm font-medium"
             >
               Done
             </button>
@@ -194,7 +194,7 @@ export function InquiryModal({
                 <select
                   value={selectedEventId}
                   onChange={(e) => setSelectedEventId(e.target.value)}
-                  className="focus:ring-gold-500/40 w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-border w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   style={{
                     background: 'var(--input-bg)',
                     borderColor: 'var(--color-border)',
@@ -220,7 +220,7 @@ export function InquiryModal({
                 placeholder={`Hi ${vendor.businessName}, I'm planning an event and would love to learn more…`}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="focus:ring-gold-500/40 w-full resize-none rounded-xl border px-3 py-2.5 text-sm focus:ring-2 focus:outline-none"
+                className="focus:ring-border w-full resize-none rounded-xl border px-3 py-2.5 text-sm focus:ring-2 focus:outline-none"
                 style={{
                   background: 'var(--input-bg)',
                   borderColor: 'var(--color-border)',
@@ -236,7 +236,7 @@ export function InquiryModal({
             </div>
 
             {error && (
-              <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+              <p className="border-danger/20 bg-danger/10 text-danger rounded-lg border px-3 py-2 text-xs">
                 {error}
               </p>
             )}
@@ -245,7 +245,7 @@ export function InquiryModal({
               type="button"
               onClick={submit}
               disabled={isPending || message.trim().length < 10}
-              className="bg-gold-600 hover:bg-gold-700 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+              className="bg-primary hover:bg-primary-hover text-primary-fg flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium disabled:opacity-40"
             >
               {isPending ? (
                 'Sending…'

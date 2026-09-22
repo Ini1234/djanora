@@ -28,7 +28,7 @@ export function Footer() {
               className="font-display mb-4 flex items-center gap-2 text-xl font-semibold"
               aria-label="Djanora — home"
             >
-              <span className="bg-inverse-foreground text-inverse flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
+              <span className="bg-inverse-fg text-inverse flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold">
                 D
               </span>
               <span>Djanora</span>
@@ -48,7 +48,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-inverse-muted hover:text-inverse-foreground text-sm transition-colors"
+                      className="text-inverse-muted hover:text-inverse-fg text-sm transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -59,7 +59,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+        <div className="border-inverse-muted/20 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
           <p className="text-inverse-muted text-xs">
             &copy; {new Date().getFullYear()} Djanora. Ottawa, Ontario, Canada.
           </p>
@@ -67,7 +67,7 @@ export function Footer() {
             Questions?{' '}
             <Link
               href={CONTACT_PATH}
-              className="hover:text-inverse-foreground underline-offset-2 hover:underline"
+              className="hover:text-inverse-fg underline-offset-2 hover:underline"
             >
               {CONTACT_EMAIL}
             </Link>

@@ -91,18 +91,14 @@ export function MobileNav({
     <>
       {/* Top bar */}
       <div
-        className="flex shrink-0 items-center justify-between border-b px-4 py-3.5 md:hidden"
-        style={{
-          background: 'var(--nav-bg)',
-          borderColor: 'var(--nav-border)',
-          paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))',
-        }}
+        className="bg-nav border-nav-border flex shrink-0 items-center justify-between border-b px-4 py-3.5 md:hidden"
+        style={{ paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))' }}
       >
         <Link href={isVendorMode ? '/vendor/dashboard' : '/'} className="flex items-center gap-2">
-          <div className="bg-gold-600 flex h-7 w-7 items-center justify-center rounded-lg">
-            <span className="text-brand-900 font-display text-xs font-bold">D</span>
+          <div className="bg-primary text-primary-fg flex h-7 w-7 items-center justify-center rounded-lg">
+            <span className="font-display text-xs font-bold">D</span>
           </div>
-          <span className="font-display text-brand-900 font-semibold dark:text-white">Djanora</span>
+          <span className="font-display text-nav-fg font-semibold">Djanora</span>
         </Link>
         <div className="flex items-center gap-1">
           <ThemeToggle compact />
@@ -113,7 +109,7 @@ export function MobileNav({
             aria-label="Open navigation"
             aria-expanded={open}
             aria-controls="mobile-app-nav"
-            className="tap-target text-brand-500 dark:text-brand-300 hover:text-brand-800 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
+            className="tap-target text-nav-muted hover:bg-nav-hover hover:text-nav-fg inline-flex items-center justify-center rounded-lg p-1.5 transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -128,7 +124,7 @@ export function MobileNav({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 md:hidden dark:bg-black/60"
+              className="bg-overlay fixed inset-0 z-40 md:hidden"
               onClick={() => setOpen(false)}
             />
             <motion.div
@@ -137,24 +133,18 @@ export function MobileNav({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col border-r shadow-2xl md:hidden"
-              style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}
+              className="bg-nav border-nav-border fixed inset-y-0 left-0 z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col border-r shadow-2xl md:hidden"
             >
               <div
-                className="flex items-center justify-between border-b px-5 py-5"
-                style={{
-                  borderColor: 'var(--nav-border)',
-                  paddingTop: 'max(1.25rem, env(safe-area-inset-top, 0px))',
-                }}
+                className="border-nav-border flex items-center justify-between border-b px-5 py-5"
+                style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top, 0px))' }}
               >
-                <span className="font-display text-brand-900 text-lg font-semibold dark:text-white">
-                  Djanora
-                </span>
+                <span className="font-display text-nav-fg text-lg font-semibold">Djanora</span>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close navigation"
-                  className="tap-target text-brand-400 hover:text-brand-700 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-black/4 dark:hover:bg-white/8 dark:hover:text-white"
+                  className="tap-target text-nav-muted hover:bg-nav-hover hover:text-nav-fg inline-flex items-center justify-center rounded-lg p-1.5 transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -171,26 +161,14 @@ export function MobileNav({
                       className={cn(
                         'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all',
                         active
-                          ? 'text-brand-900 dark:text-white'
-                          : 'text-brand-500 dark:text-brand-300 hover:text-brand-800 hover:bg-black/4 dark:hover:bg-white/6 dark:hover:text-white',
+                          ? 'bg-nav-active text-nav-fg border-primary border-[1.5px]'
+                          : 'text-nav-muted hover:bg-nav-hover hover:text-nav-fg',
                       )}
-                      style={
-                        active
-                          ? {
-                              background:
-                                'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)',
-                              border: '1.5px solid var(--color-brand-primary)',
-                            }
-                          : undefined
-                      }
                       aria-current={active ? 'page' : undefined}
                     >
                       <item.icon
                         size={18}
-                        className={cn(
-                          'shrink-0',
-                          active ? 'text-gold-800 dark:text-gold-400' : 'text-brand-400',
-                        )}
+                        className={cn('shrink-0', active ? 'text-nav-fg' : 'text-nav-muted')}
                       />
                       {item.label}
                     </Link>
@@ -199,11 +177,8 @@ export function MobileNav({
               </nav>
 
               <div
-                className="space-y-3 border-t px-3 pt-3 pb-6"
-                style={{
-                  borderColor: 'var(--nav-border)',
-                  paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
-                }}
+                className="border-nav-border space-y-3 border-t px-3 pt-3 pb-6"
+                style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
               >
                 <div className="px-3">
                   <ThemeToggle />
@@ -216,16 +191,16 @@ export function MobileNav({
                       setOpen(false)
                       void switchMode()
                     }}
-                    className="text-brand-500 dark:text-brand-300 hover:text-brand-800 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:bg-black/4 disabled:opacity-50 dark:hover:bg-white/6 dark:hover:text-white"
+                    className="text-nav-muted hover:bg-nav-hover hover:text-nav-fg flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50"
                   >
-                    <ArrowLeftRight size={18} className="text-brand-400" aria-hidden="true" />
+                    <ArrowLeftRight size={18} className="text-nav-muted" aria-hidden="true" />
                     {switching
                       ? 'Switching…'
                       : t('switchTo', { mode: isVendorMode ? t('planning') : t('vendor') })}
                   </button>
                 )}
                 <div className="flex items-center gap-3 px-3 py-2">
-                  <div className="bg-brand-200 dark:bg-brand-600 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-black/8 dark:ring-white/10">
+                  <div className="bg-hover ring-border flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -234,21 +209,17 @@ export function MobileNav({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-brand-700 text-sm font-semibold dark:text-white">
-                        {initials}
-                      </span>
+                      <span className="text-nav-fg text-sm font-semibold">{initials}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-brand-800 truncate text-sm font-medium dark:text-white">
-                      {displayName}
-                    </p>
+                    <p className="text-nav-fg truncate text-sm font-medium">{displayName}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => void signOutToHome()}
-                  className="text-brand-500 dark:text-brand-300 hover:text-brand-800 w-full rounded-xl px-3 py-2.5 text-left text-sm transition-all hover:bg-black/4 dark:hover:bg-white/6 dark:hover:text-white"
+                  className="text-nav-muted hover:bg-nav-hover hover:text-nav-fg w-full rounded-xl px-3 py-2.5 text-left text-sm transition-all"
                 >
                   {t('signOut')}
                 </button>

@@ -85,17 +85,14 @@ export function Sidebar({
     exact ? pathname === href : pathname.startsWith(href)
 
   return (
-    <aside
-      className="hidden h-full w-64 shrink-0 border-r md:flex md:flex-col"
-      style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}
-    >
+    <aside className="bg-nav border-nav-border hidden h-full w-64 shrink-0 border-r md:flex md:flex-col">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="shrink-0 border-b px-5 py-5" style={{ borderColor: 'var(--nav-border)' }}>
+      <div className="border-nav-border shrink-0 border-b px-5 py-5">
         <Link href={isVendorMode ? '/vendor/dashboard' : '/'} className="flex items-center gap-2.5">
-          <div className="bg-gold-600 shadow-gold-900/30 flex h-8 w-8 items-center justify-center rounded-lg shadow-lg">
-            <span className="text-brand-900 font-display text-sm font-bold">D</span>
+          <div className="bg-primary text-primary-fg flex h-8 w-8 items-center justify-center rounded-lg shadow-lg">
+            <span className="font-display text-sm font-bold">D</span>
           </div>
-          <span className="font-display text-brand-900 text-lg font-semibold tracking-tight dark:text-white">
+          <span className="font-display text-nav-fg text-lg font-semibold tracking-tight">
             Djanora
           </span>
         </Link>
@@ -106,15 +103,12 @@ export function Sidebar({
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
                 isVendorMode
-                  ? 'bg-gold-600/15 text-gold-600 dark:text-gold-400 border-gold-600/25'
-                  : 'bg-brand-100 dark:bg-brand-700/50 text-brand-500 dark:text-brand-300 border-brand-200 dark:border-white/10',
+                  ? 'bg-primary/15 text-primary border-primary/25'
+                  : 'bg-hover text-nav-muted border-nav-border',
               )}
             >
               <span
-                className={cn(
-                  'h-1.5 w-1.5 rounded-full',
-                  isVendorMode ? 'bg-gold-500' : 'bg-brand-400',
-                )}
+                className={cn('h-1.5 w-1.5 rounded-full', isVendorMode ? 'bg-primary' : 'bg-muted')}
               />
               {isVendorMode ? t('vendorMode') : t('planningMode')}
             </span>
@@ -133,36 +127,25 @@ export function Sidebar({
               href={item.href}
               className={cn(
                 'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                active
-                  ? 'text-brand-900 dark:text-white'
-                  : 'text-brand-500 dark:text-brand-300 hover:text-brand-800 hover:bg-black/4 dark:hover:bg-white/6 dark:hover:text-white',
+                active ? 'text-nav-fg' : 'text-nav-muted hover:bg-nav-hover hover:text-nav-fg',
               )}
               aria-current={active ? 'page' : undefined}
             >
               {active && (
-                <span
-                  className="absolute inset-0 rounded-xl"
-                  style={{
-                    background: 'color-mix(in srgb, var(--color-brand-primary) 18%, transparent)',
-                    border: '1.5px solid var(--color-brand-primary)',
-                  }}
-                />
+                <span className="bg-nav-active border-primary absolute inset-0 rounded-xl border-[1.5px]" />
               )}
               <item.icon
                 size={18}
                 className={cn(
                   'relative z-10 shrink-0 transition-colors',
-                  active
-                    ? 'text-gold-800 dark:text-gold-400'
-                    : 'text-brand-400 group-hover:text-brand-600 dark:group-hover:text-brand-200',
+                  active ? 'text-nav-fg' : 'text-nav-muted group-hover:text-nav-fg',
                 )}
                 aria-hidden="true"
               />
               <span className="relative z-10 flex-1">{item.label}</span>
               {badge != null && badge > 0 && (
                 <span
-                  className="relative z-10 ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                  style={{ background: '#c9973a', color: '#fff' }}
+                  className="bg-primary text-primary-fg relative z-10 ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
                   aria-label={`${badge} unread`}
                 >
                   {badge > 99 ? '99+' : badge}
@@ -174,10 +157,7 @@ export function Sidebar({
       </nav>
 
       {/* ── Footer ─────────────────────────────────────────────── */}
-      <div
-        className="flex shrink-0 flex-col gap-1 border-t px-3 pt-3 pb-4"
-        style={{ borderColor: 'var(--nav-border)' }}
-      >
+      <div className="border-nav-border flex shrink-0 flex-col gap-1 border-t px-3 pt-3 pb-4">
         {/* Language + Theme */}
         <div className="flex flex-col items-start gap-1 px-2 py-1.5">
           <LanguageSwitcher />
@@ -190,9 +170,9 @@ export function Sidebar({
             type="button"
             disabled={switching}
             onClick={() => void switchMode()}
-            className="text-brand-500 dark:text-brand-300 hover:text-brand-800 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:bg-black/4 disabled:opacity-50 dark:hover:bg-white/6 dark:hover:text-white"
+            className="text-nav-muted hover:bg-nav-hover hover:text-nav-fg flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50"
           >
-            <ArrowLeftRight size={18} className="text-brand-400" aria-hidden="true" />
+            <ArrowLeftRight size={18} className="text-nav-muted" aria-hidden="true" />
             {switching
               ? 'Switching…'
               : t('switchTo', { mode: isVendorMode ? t('planning') : t('vendor') })}
@@ -201,26 +181,22 @@ export function Sidebar({
 
         {/* User row */}
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-          <div className="bg-brand-200 dark:bg-brand-600 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-black/8 dark:ring-white/10">
+          <div className="bg-hover ring-border flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-brand-700 text-xs font-semibold dark:text-white">
-                {initials}
-              </span>
+              <span className="text-nav-fg text-xs font-semibold">{initials}</span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-brand-800 truncate text-sm font-medium dark:text-white">
-              {displayName}
-            </p>
+            <p className="text-nav-fg truncate text-sm font-medium">{displayName}</p>
           </div>
           <NotificationBell vendorMode={isVendorMode} />
           <button
             type="button"
             onClick={() => void signOutToHome()}
-            className="text-brand-400 hover:text-brand-600 dark:text-brand-500 dark:hover:text-brand-200 rounded p-1 transition-colors"
+            className="text-nav-muted hover:text-nav-fg rounded p-1 transition-colors"
             aria-label={t('signOut')}
           >
             <LogOut size={15} aria-hidden="true" />

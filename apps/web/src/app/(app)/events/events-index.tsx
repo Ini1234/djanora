@@ -153,7 +153,7 @@ export function EventsIndex({ initialEvents }: { initialEvents?: Event[] }) {
         </div>
         <Link
           href="/events/new"
-          className="bg-gold-600 hover:bg-gold-500 text-brand-900 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+          className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
         >
           <Plus size={16} /> New Event
         </Link>
@@ -172,8 +172,8 @@ export function EventsIndex({ initialEvents }: { initialEvents?: Event[] }) {
           className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="bg-gold-500/10 mb-4 rounded-2xl p-4">
-            <CalendarDays size={32} className="text-gold-600 dark:text-gold-400" />
+          <div className="bg-primary/10 mb-4 rounded-2xl p-4">
+            <CalendarDays size={32} className="text-primary" />
           </div>
           <h2
             className="font-display mb-2 text-xl font-semibold"
@@ -186,7 +186,7 @@ export function EventsIndex({ initialEvents }: { initialEvents?: Event[] }) {
           </p>
           <Link
             href="/events/new"
-            className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
+            className="bg-primary hover:bg-primary-hover text-primary-fg flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
           >
             <Plus size={15} /> Plan your first event
           </Link>

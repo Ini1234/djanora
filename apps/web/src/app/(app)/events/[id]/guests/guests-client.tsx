@@ -51,31 +51,31 @@ function rsvpBadge(status: string | undefined) {
   switch (status) {
     case 'ATTENDING':
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-400">
+        <span className="border-success/30 bg-success/15 text-success inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
           <CheckCircle2 size={9} /> Attending
         </span>
       )
     case 'DECLINED':
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-400">
+        <span className="border-danger/30 bg-danger/15 text-danger inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
           <XCircle size={9} /> Declined
         </span>
       )
     case 'MAYBE':
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-400">
+        <span className="border-warning/30 bg-warning/15 text-warning inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
           <HelpCircle size={9} /> Maybe
         </span>
       )
     case 'PENDING':
       return (
-        <span className="bg-brand-600/20 border-brand-500/30 text-brand-400 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
+        <span className="bg-hover border-border text-muted inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
           <Clock size={9} /> Awaiting
         </span>
       )
     default:
       return (
-        <span className="text-brand-500 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/8 px-1.5 py-0.5 text-[10px]">
+        <span className="text-muted border-border bg-hover inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px]">
           Not invited
         </span>
       )
@@ -133,57 +133,57 @@ function AddGuestForm({ eventId, onAdded }: { eventId: string; onAdded: (g: Gues
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/4 p-5">
-      <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
-        <UserPlus size={15} className="text-gold-400" /> Add Guest
+    <div className="border-border bg-surface rounded-2xl border p-5">
+      <h3 className="text-fg mb-4 flex items-center gap-2 font-semibold">
+        <UserPlus size={15} className="text-primary" /> Add Guest
       </h3>
 
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="text-brand-400 mb-1 block text-xs">First Name *</label>
+          <label className="text-muted mb-1 block text-xs">First Name *</label>
           <input
             value={form.firstName}
             onChange={(e) => update('firstName', e.target.value)}
             placeholder="Adaeze"
-            className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-brand-400 mb-1 block text-xs">Last Name</label>
+          <label className="text-muted mb-1 block text-xs">Last Name</label>
           <input
             value={form.lastName}
             onChange={(e) => update('lastName', e.target.value)}
             placeholder="Okafor"
-            className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-brand-400 mb-1 block text-xs">Email</label>
+          <label className="text-muted mb-1 block text-xs">Email</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
             placeholder="adaeze@example.com"
-            className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-brand-400 mb-1 block text-xs">Phone</label>
+          <label className="text-muted mb-1 block text-xs">Phone</label>
           <input
             type="tel"
             value={form.phone}
             onChange={(e) => update('phone', e.target.value)}
             placeholder="+1 613 555 0100"
-            className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-brand-400 mb-1 block text-xs">Table No.</label>
+          <label className="text-muted mb-1 block text-xs">Table No.</label>
           <input
             value={form.tableNumber}
             onChange={(e) => update('tableNumber', e.target.value)}
             placeholder="Table 5"
-            className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
           />
         </div>
         <div className="flex items-end">
@@ -193,7 +193,7 @@ function AddGuestForm({ eventId, onAdded }: { eventId: string; onAdded: (g: Gues
               onClick={() => update('plusOneAllowed', !form.plusOneAllowed)}
               className={cn(
                 'relative h-5 w-10 rounded-full transition-colors',
-                form.plusOneAllowed ? 'bg-gold-600' : 'bg-white/10',
+                form.plusOneAllowed ? 'bg-primary' : 'bg-hover',
               )}
             >
               <span
@@ -203,27 +203,27 @@ function AddGuestForm({ eventId, onAdded }: { eventId: string; onAdded: (g: Gues
                 )}
               />
             </button>
-            <span className="text-brand-300 text-sm">Plus one allowed</span>
+            <span className="text-muted text-sm">Plus one allowed</span>
           </label>
         </div>
       </div>
 
       <div className="mb-4">
-        <label className="text-brand-400 mb-1 block text-xs">Note</label>
+        <label className="text-muted mb-1 block text-xs">Note</label>
         <input
           value={form.note}
           onChange={(e) => update('note', e.target.value)}
           placeholder="Dietary requirements, relationship, etc."
-          className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+          className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
         />
       </div>
 
-      {error && <p className="mb-3 text-xs text-red-400">{error}</p>}
+      {error && <p className="text-danger mb-3 text-xs">{error}</p>}
 
       <button
         onClick={() => startTransition(submit)}
         disabled={isPending}
-        className="bg-gold-600/15 hover:bg-gold-600/25 border-gold-500/30 text-gold-300 flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        className="bg-primary/15 hover:bg-primary/25 border-primary/30 text-primary flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         <UserPlus size={14} />
         {isPending ? 'Adding…' : 'Add Guest'}
@@ -275,10 +275,10 @@ function InvitePanel({
 
   if (success) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
-        <Check size={16} className="shrink-0 text-emerald-400" />
-        <p className="text-sm text-emerald-300">Invite sent to {guestDisplayName(guest)}!</p>
-        <button onClick={onClose} className="text-brand-500 hover:text-brand-300 ml-auto">
+      <div className="border-success/25 bg-success/10 flex items-center gap-3 rounded-xl border p-4">
+        <Check size={16} className="text-success shrink-0" />
+        <p className="text-success text-sm">Invite sent to {guestDisplayName(guest)}!</p>
+        <button onClick={onClose} className="text-muted hover:text-fg ml-auto">
           <X size={14} />
         </button>
       </div>
@@ -286,16 +286,16 @@ function InvitePanel({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-white/4 p-4">
+    <div className="border-border bg-surface space-y-3 rounded-xl border p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 text-sm font-medium break-words text-white">
+        <p className="text-fg min-w-0 text-sm font-medium break-words">
           Send invite to {guestDisplayName(guest)}
         </p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="tap-target text-brand-500 hover:text-brand-300 inline-flex shrink-0 items-center justify-center"
+          className="tap-target text-muted hover:text-fg inline-flex shrink-0 items-center justify-center"
         >
           <X size={14} />
         </button>
@@ -315,8 +315,8 @@ function InvitePanel({
               className={cn(
                 'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
                 via === opt && !disabled
-                  ? 'bg-gold-600/20 border-gold-500/40 text-gold-300'
-                  : 'text-brand-400 hover:text-brand-200 border-white/10 bg-white/4 disabled:cursor-not-allowed disabled:opacity-30',
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'text-muted hover:text-fg border-border bg-surface disabled:cursor-not-allowed disabled:opacity-30',
               )}
             >
               {opt === 'email' && <Mail size={11} />}
@@ -329,29 +329,29 @@ function InvitePanel({
       </div>
 
       <div>
-        <label className="text-brand-400 mb-1 block text-xs">Personal message (optional)</label>
+        <label className="text-muted mb-1 block text-xs">Personal message (optional)</label>
         <textarea
           value={customNote}
           onChange={(e) => setCustomNote(e.target.value)}
           placeholder="We'd love to see you there! Please RSVP by…"
           rows={2}
-          className="placeholder:text-brand-500 focus:border-gold-500/50 w-full resize-none rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+          className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full resize-none rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
         />
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
 
       <button
         onClick={() => startTransition(send)}
         disabled={isPending || (!canEmail && !canSms)}
-        className="bg-gold-600/15 hover:bg-gold-600/25 border-gold-500/30 text-gold-300 flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        className="bg-primary/15 hover:bg-primary/25 border-primary/30 text-primary flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Send size={13} />
         {isPending ? 'Sending…' : 'Send Invite'}
       </button>
 
       {!canEmail && !canSms && (
-        <p className="text-xs text-red-400">Add an email or phone number to send an invite.</p>
+        <p className="text-danger text-xs">Add an email or phone number to send an invite.</p>
       )}
     </div>
   )
@@ -432,7 +432,7 @@ function GuestRow({
   const rsvp = guest.invite?.rsvpStatus
 
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 p-4 transition-colors hover:border-white/12">
+    <div className="border-border bg-surface hover:border-border rounded-xl border p-4 transition-colors">
       {isEditing ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -445,12 +445,12 @@ function GuestRow({
               { field: 'note', label: 'Note', placeholder: 'Any info…' },
             ].map(({ field, label, placeholder }) => (
               <div key={field}>
-                <label className="text-brand-500 mb-0.5 block text-[10px]">{label}</label>
+                <label className="text-muted mb-0.5 block text-[10px]">{label}</label>
                 <input
                   value={editForm[field as keyof typeof editForm] as string}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, [field]: e.target.value }))}
                   placeholder={placeholder}
-                  className="placeholder:text-brand-500 focus:border-gold-500/50 w-full rounded-lg border border-white/10 bg-white/6 px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                  className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none"
                 />
               </div>
             ))}
@@ -463,7 +463,7 @@ function GuestRow({
               }
               className={cn(
                 'relative h-4 w-8 shrink-0 rounded-full transition-colors',
-                editForm.plusOneAllowed ? 'bg-gold-600' : 'bg-white/10',
+                editForm.plusOneAllowed ? 'bg-primary' : 'bg-hover',
               )}
             >
               <span
@@ -473,19 +473,19 @@ function GuestRow({
                 )}
               />
             </button>
-            <span className="text-brand-400 text-xs">Plus one allowed</span>
+            <span className="text-muted text-xs">Plus one allowed</span>
           </label>
           <div className="flex gap-2">
             <button
               onClick={() => startTransition(save)}
               disabled={isPending}
-              className="bg-gold-600/15 hover:bg-gold-600/25 border-gold-500/30 text-gold-300 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
+              className="bg-primary/15 hover:bg-primary/25 border-primary/30 text-primary flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
             >
               <Check size={12} /> Save
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="text-brand-400 hover:text-brand-200 flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-3 py-1.5 text-xs transition-colors"
+              className="text-muted hover:text-fg border-border bg-surface flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors"
             >
               <X size={12} /> Cancel
             </button>
@@ -495,21 +495,21 @@ function GuestRow({
         <>
           <div className="flex items-start gap-3">
             {/* Avatar initial */}
-            <div className="bg-gold-600/20 border-gold-500/30 text-gold-400 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold">
+            <div className="bg-primary/15 border-primary/30 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold">
               {guest.firstName.charAt(0).toUpperCase()}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium text-white">{guestDisplayName(guest)}</p>
+                <p className="text-fg text-sm font-medium">{guestDisplayName(guest)}</p>
                 {rsvpBadge(rsvp)}
                 {guest.plusOneAllowed && (
-                  <span className="bg-brand-700/40 border-brand-500/30 text-brand-400 rounded-full border px-1.5 py-0.5 text-[10px]">
+                  <span className="bg-hover border-border text-muted rounded-full border px-1.5 py-0.5 text-[10px]">
                     +1
                   </span>
                 )}
                 {guest.tableNumber && (
-                  <span className="text-brand-400 rounded-full border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px]">
+                  <span className="text-muted border-border bg-input rounded-full border px-1.5 py-0.5 text-[10px]">
                     {guest.tableNumber}
                   </span>
                 )}
@@ -517,35 +517,35 @@ function GuestRow({
 
               <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
                 {guest.email && (
-                  <span className="text-brand-400 flex items-center gap-1 text-xs">
+                  <span className="text-muted flex items-center gap-1 text-xs">
                     <Mail size={9} /> {guest.email}
                   </span>
                 )}
                 {guest.phone && (
-                  <span className="text-brand-400 flex items-center gap-1 text-xs">
+                  <span className="text-muted flex items-center gap-1 text-xs">
                     <Phone size={9} /> {guest.phone}
                   </span>
                 )}
               </div>
 
-              {guest.note && <p className="text-brand-500 mt-0.5 text-xs italic">{guest.note}</p>}
-              {unlockNote && <p className="text-brand-400 mt-1 text-xs">{unlockNote}</p>}
+              {guest.note && <p className="text-muted mt-0.5 text-xs italic">{guest.note}</p>}
+              {unlockNote && <p className="text-muted mt-1 text-xs">{unlockNote}</p>}
 
               {/* RSVP response details */}
               {guest.invite?.rsvpStatus === 'ATTENDING' && (
                 <div className="mt-1.5 space-y-0.5">
                   {guest.invite.plusOneName && (
-                    <p className="text-brand-400 text-xs">
-                      Plus one: <span className="text-brand-200">{guest.invite.plusOneName}</span>
+                    <p className="text-muted text-xs">
+                      Plus one: <span className="text-fg">{guest.invite.plusOneName}</span>
                     </p>
                   )}
                   {guest.invite.dietaryNote && (
-                    <p className="text-brand-400 text-xs">
-                      Dietary: <span className="text-brand-200">{guest.invite.dietaryNote}</span>
+                    <p className="text-muted text-xs">
+                      Dietary: <span className="text-fg">{guest.invite.dietaryNote}</span>
                     </p>
                   )}
                   {guest.invite.guestMessage && (
-                    <p className="text-brand-400 text-xs italic">
+                    <p className="text-muted text-xs italic">
                       &ldquo;{guest.invite.guestMessage}&rdquo;
                     </p>
                   )}
@@ -563,7 +563,7 @@ function GuestRow({
                     setIsEditing(false)
                   }}
                   title="Copy site link"
-                  className="text-brand-400 hover:text-gold-300 hover:bg-gold-600/10 rounded-lg p-1.5 transition-colors"
+                  className="text-muted hover:text-primary hover:bg-primary/10 rounded-lg p-1.5 transition-colors"
                 >
                   <Link2 size={13} />
                 </button>
@@ -573,7 +573,7 @@ function GuestRow({
                     setIsEditing(false)
                   }}
                   title="Send invite"
-                  className="text-brand-400 hover:text-gold-300 hover:bg-gold-600/10 rounded-lg p-1.5 transition-colors"
+                  className="text-muted hover:text-primary hover:bg-primary/10 rounded-lg p-1.5 transition-colors"
                 >
                   <Send size={13} />
                 </button>
@@ -583,7 +583,7 @@ function GuestRow({
                     setShowInvite(false)
                   }}
                   title="Edit guest"
-                  className="text-brand-400 hover:text-brand-200 rounded-lg p-1.5 transition-colors hover:bg-white/6"
+                  className="text-muted hover:text-fg hover:bg-hover rounded-lg p-1.5 transition-colors"
                 >
                   <Edit2 size={13} />
                 </button>
@@ -591,7 +591,7 @@ function GuestRow({
                   onClick={() => startTransition(remove)}
                   disabled={isPending}
                   title="Remove guest"
-                  className="text-brand-500 rounded-lg p-1.5 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
+                  className="text-muted hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors disabled:opacity-40"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -662,12 +662,12 @@ function BulkInviteBar({
     const ok = results.filter((r) => r.success).length
     const fail = results.filter((r) => !r.success).length
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
-        <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
-        <p className="text-sm text-emerald-300">
+      <div className="border-success/25 bg-success/10 flex items-center gap-3 rounded-xl border p-3">
+        <CheckCircle2 size={15} className="text-success shrink-0" />
+        <p className="text-success text-sm">
           {ok} invite{ok !== 1 ? 's' : ''} sent{fail > 0 ? `, ${fail} failed` : ''}.
         </p>
-        <button onClick={onClear} className="text-brand-500 hover:text-brand-300 ml-auto">
+        <button onClick={onClear} className="text-muted hover:text-fg ml-auto">
           <X size={14} />
         </button>
       </div>
@@ -675,18 +675,18 @@ function BulkInviteBar({
   }
 
   return (
-    <div className="bg-gold-600/8 border-gold-500/25 space-y-3 rounded-xl border p-3">
+    <div className="bg-primary/10 border-primary/25 space-y-3 rounded-xl border p-3">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-label="Optional personal message"
-          className="text-gold-300 hover:text-gold-200 shrink-0"
+          className="text-primary hover:text-fg shrink-0"
         >
           <ChevronRight size={14} className={cn('transition-transform', expanded && 'rotate-90')} />
         </button>
-        <span className="text-gold-300 text-sm font-medium">
+        <span className="text-primary text-sm font-medium">
           {selected.size} guest{selected.size !== 1 ? 's' : ''} selected
         </span>
         <div className="flex gap-1.5">
@@ -703,8 +703,8 @@ function BulkInviteBar({
                 className={cn(
                   'flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
                   via === opt && !disabled
-                    ? 'bg-gold-600/25 border-gold-500/50 text-gold-200'
-                    : 'text-brand-400 hover:text-brand-200 border-white/10 bg-white/4 disabled:cursor-not-allowed disabled:opacity-30',
+                    ? 'bg-primary/25 border-primary/50 text-primary'
+                    : 'text-muted hover:text-fg border-border bg-surface disabled:cursor-not-allowed disabled:opacity-30',
                 )}
               >
                 {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -720,7 +720,7 @@ function BulkInviteBar({
           onChange={(e) => setCustomNote(e.target.value)}
           placeholder="Optional personal message for all selected guests…"
           rows={2}
-          className="placeholder:text-brand-500 focus:border-gold-500/50 w-full resize-none rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm text-white transition-colors focus:outline-none"
+          className="placeholder:text-muted focus:border-primary/50 border-border bg-input text-fg w-full resize-none rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none"
         />
       )}
 
@@ -728,14 +728,14 @@ function BulkInviteBar({
         <button
           onClick={() => startTransition(sendAll)}
           disabled={isPending}
-          className="bg-gold-600/15 hover:bg-gold-600/25 border-gold-500/30 text-gold-300 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
+          className="bg-primary/15 hover:bg-primary/25 border-primary/30 text-primary flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
         >
           <Send size={12} />{' '}
           {isPending ? 'Sending…' : `Send ${selected.size} Invite${selected.size !== 1 ? 's' : ''}`}
         </button>
         <button
           onClick={onClear}
-          className="text-brand-400 hover:text-brand-200 rounded-lg border border-white/10 bg-white/4 px-3 py-1.5 text-xs transition-colors"
+          className="text-muted hover:text-fg border-border bg-surface rounded-lg border px-3 py-1.5 text-xs transition-colors"
         >
           Clear
         </button>
@@ -835,17 +835,17 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
       {/* Stats bar */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: 'Total', value: guests.length, color: 'text-white' },
-          { label: 'Attending', value: attending, color: 'text-emerald-400' },
-          { label: 'Declined', value: declined, color: 'text-red-400' },
-          { label: 'Awaiting', value: awaiting + notInvited, color: 'text-gold-400' },
+          { label: 'Total', value: guests.length, color: 'text-fg' },
+          { label: 'Attending', value: attending, color: 'text-success' },
+          { label: 'Declined', value: declined, color: 'text-danger' },
+          { label: 'Awaiting', value: awaiting + notInvited, color: 'text-primary' },
         ].map(({ label, value, color }) => (
           <div
             key={label}
-            className="rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-center"
+            className="border-border bg-surface rounded-xl border px-4 py-3 text-center"
           >
             <p className={cn('text-2xl font-semibold', color)}>{value}</p>
-            <p className="text-brand-400 mt-0.5 text-xs">{label}</p>
+            <p className="text-muted mt-0.5 text-xs">{label}</p>
           </div>
         ))}
       </div>
@@ -853,19 +853,19 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search size={13} className="text-brand-500 absolute top-1/2 left-3 -translate-y-1/2" />
+          <Search size={13} className="text-muted absolute top-1/2 left-3 -translate-y-1/2" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search guests…"
-            className="placeholder:text-brand-500 focus:border-gold-500/40 w-full rounded-xl border border-white/10 bg-white/4 py-2.5 pr-3 pl-9 text-sm text-white transition-colors focus:outline-none"
+            className="placeholder:text-muted focus:border-primary/40 border-border bg-surface text-fg w-full rounded-xl border py-2.5 pr-3 pl-9 text-sm transition-colors focus:outline-none"
           />
         </div>
 
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="text-brand-200 focus:border-gold-500/40 rounded-xl border border-white/10 bg-white/4 px-3 py-2.5 text-sm [color-scheme:dark] transition-colors focus:outline-none sm:w-40"
+          className="text-fg focus:border-primary/40 border-border bg-surface rounded-xl border px-3 py-2.5 text-sm transition-colors focus:outline-none sm:w-40"
         >
           <option value="all">All guests</option>
           <option value="attending">Attending</option>
@@ -880,7 +880,7 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
           headers={GUEST_HEADERS}
           rows={guestExportRows(guests)}
           canImport={canEdit('GUESTS')}
-          triggerClassName="flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-medium text-brand-200 transition-colors hover:bg-white/8"
+          triggerClassName="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-hover"
           onAskDjan={({ filename, grid, truncated }) => {
             openChat({
               eventId,
@@ -895,8 +895,8 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
             className={cn(
               'flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors',
               showAdd
-                ? 'bg-gold-600/20 border-gold-500/40 text-gold-200'
-                : 'bg-gold-600/10 hover:bg-gold-600/20 border-gold-500/25 text-gold-400',
+                ? 'bg-primary/15 border-primary/40 text-primary'
+                : 'bg-primary/10 hover:bg-primary/20 border-primary/25 text-primary',
             )}
           >
             <UserPlus size={14} />
@@ -936,21 +936,21 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
           <div className="mb-3 flex items-center gap-2">
             <button
               onClick={toggleSelectAll}
-              className="text-brand-400 hover:text-brand-200 flex items-center gap-1.5 text-xs transition-colors"
+              className="text-muted hover:text-fg flex items-center gap-1.5 text-xs transition-colors"
             >
               <div
                 className={cn(
                   'h-3.5 w-3.5 rounded border transition-colors',
                   selected.size === filtered.length && filtered.length > 0
-                    ? 'bg-gold-500 border-gold-500'
-                    : 'border-white/20',
+                    ? 'bg-primary border-primary'
+                    : 'border-border',
                 )}
               />
               {selected.size === filtered.length && filtered.length > 0
                 ? 'Deselect all'
                 : 'Select all'}
             </button>
-            <span className="text-brand-500 text-xs">
+            <span className="text-muted text-xs">
               {filtered.length} guest{filtered.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -960,9 +960,9 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
           {loading ? (
             <TableSkeleton rows={6} cols={3} />
           ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-white/6 bg-white/2 py-12 text-center">
-              <Users size={28} className="text-brand-600 mx-auto mb-3" />
-              <p className="text-brand-400 text-sm">
+            <div className="border-border bg-surface rounded-2xl border py-12 text-center">
+              <Users size={28} className="text-muted mx-auto mb-3" />
+              <p className="text-muted text-sm">
                 {guests.length === 0
                   ? 'No guests yet. Add your first guest above.'
                   : 'No guests match your search or filter.'}
@@ -980,7 +980,7 @@ export function GuestsClient({ eventId, initialGuests, event }: Props) {
                     <div
                       className={cn(
                         'h-3.5 w-3.5 rounded border transition-colors',
-                        selected.has(guest.id) ? 'bg-gold-500 border-gold-500' : 'border-white/20',
+                        selected.has(guest.id) ? 'bg-primary border-primary' : 'border-border',
                       )}
                     />
                   </button>

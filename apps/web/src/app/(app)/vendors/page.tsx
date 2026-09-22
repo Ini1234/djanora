@@ -34,7 +34,7 @@ function Avatar({ name, avatarUrl }: { name: string; avatarUrl: string | null })
     .slice(0, 2)
   return (
     <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-black/8 dark:ring-white/10"
+      className="ring-border flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1"
       style={{ background: 'var(--card-bg)' }}
     >
       {avatarUrl ? (
@@ -145,7 +145,7 @@ export default function VendorsPage() {
             placeholder="Search name or city…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="focus:ring-gold-500/40 w-full rounded-xl border py-2 pr-8 pl-8 text-sm transition focus:ring-2 focus:outline-none"
+            className="focus:ring-border w-full rounded-xl border py-2 pr-8 pl-8 text-sm transition focus:ring-2 focus:outline-none"
             style={{
               background: 'var(--input-bg)',
               borderColor: 'var(--color-border)',
@@ -176,7 +176,7 @@ export default function VendorsPage() {
           <SlidersHorizontal size={14} />
           Filter
           {activeCategory !== 'ALL' && (
-            <span className="bg-gold-500 h-1.5 w-1.5 shrink-0 rounded-full" />
+            <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
           )}
         </button>
       </div>
@@ -351,7 +351,7 @@ export default function VendorsPage() {
                       {v.isVerified && (
                         <BadgeCheck
                           size={13}
-                          className="text-gold-700 dark:text-gold-400 shrink-0"
+                          className="text-primary shrink-0"
                           aria-label="Verified"
                         />
                       )}
@@ -362,7 +362,7 @@ export default function VendorsPage() {
                         className="mt-0.5 flex items-center gap-1 text-xs md:hidden"
                         style={{ color: 'var(--color-muted)' }}
                       >
-                        <Star size={10} className="text-gold-600 fill-gold-600 shrink-0" />
+                        <Star size={10} className="text-primary fill-primary shrink-0" />
                         {v.averageRating.toFixed(1)}
                         <span>({v.totalReviews})</span>
                       </span>

@@ -516,7 +516,7 @@ function ItemDrawer({
                     startTransition(save)
                   }
                 }}
-                className="placeholder:text-muted border-gold-500/30 focus:border-gold-500/60 text-foreground w-full border-b bg-transparent pb-1 text-sm font-medium transition-colors focus:outline-none"
+                className="placeholder:text-muted border-primary/30 focus:border-primary/60 text-foreground w-full border-b bg-transparent pb-1 text-sm font-medium transition-colors focus:outline-none"
                 placeholder="Task title"
               />
             ) : (
@@ -539,7 +539,7 @@ function ItemDrawer({
                 <button
                   onClick={() => startTransition(save)}
                   disabled={!title.trim() || isPending}
-                  className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:opacity-40"
+                  className="bg-primary/15 border-primary/25 text-foreground hover:bg-primary/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:opacity-40"
                 >
                   <Check size={11} /> {isPending ? 'Saving…' : 'Save'}
                 </button>
@@ -594,7 +594,7 @@ function ItemDrawer({
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="text-foreground focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-sm transition-colors focus:outline-none"
+                    className="text-foreground focus:border-primary/30 border-border flex-1 border-b bg-transparent pb-0.5 text-sm transition-colors focus:outline-none"
                   />
                   {dueDate && (
                     <button
@@ -604,7 +604,7 @@ function ItemDrawer({
                         setNotifyEmail(false)
                         setNotifySms(false)
                       }}
-                      className="text-muted transition-colors hover:text-red-400"
+                      className="text-muted hover:text-danger transition-colors"
                     >
                       <X size={11} />
                     </button>
@@ -695,9 +695,9 @@ function ItemDrawer({
                         className={cn(
                           'shrink-0',
                           isOverdue(liveItem.dueDate, liveItem.isCompleted)
-                            ? 'text-red-400'
+                            ? 'text-danger'
                             : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
-                              ? 'text-amber-400'
+                              ? 'text-warning'
                               : 'text-muted',
                         )}
                       />
@@ -705,9 +705,9 @@ function ItemDrawer({
                         className={cn(
                           'text-sm',
                           isOverdue(liveItem.dueDate, liveItem.isCompleted)
-                            ? 'text-red-300'
+                            ? 'text-danger'
                             : isDueSoon(liveItem.dueDate, liveItem.isCompleted)
-                              ? 'text-amber-300'
+                              ? 'text-warning'
                               : 'text-foreground',
                         )}
                       >
@@ -778,10 +778,10 @@ function ItemDrawer({
                                 ? vendor.id
                                 : `${vendor.vendorProfileId ?? vendor.userVendorContactId ?? name}-${index}`
                             }
-                            className="border-gold-500/20 bg-gold-500/5 space-y-2.5 rounded-xl border p-3"
+                            className="border-primary/20 bg-primary/5 space-y-2.5 rounded-xl border p-3"
                           >
                             <div className="flex items-start gap-2">
-                              <div className="bg-gold-500/10 border-gold-500/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
+                              <div className="bg-primary/10 border-primary/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
                                 {isContact ? (
                                   <BookUser size={14} className="text-foreground" />
                                 ) : (
@@ -1031,7 +1031,7 @@ function VendorSection({
         className={cn(
           'flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] transition-all',
           needsVendor
-            ? 'bg-gold-500/10 border-gold-500/30 text-foreground'
+            ? 'bg-primary/10 border-primary/30 text-foreground'
             : 'text-muted hover:text-foreground border-border hover:border-border',
         )}
       >
@@ -1069,7 +1069,7 @@ function VendorSection({
               {vendors.map((vendor, index) => (
                 <div
                   key={vendorDraftKey(vendor) || `${vendor.name}-${index}`}
-                  className="bg-gold-500/10 border-gold-500/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5"
+                  className="bg-primary/10 border-primary/20 flex items-center gap-1.5 rounded-lg border px-2 py-1.5"
                 >
                   {vendor.userVendorContactId ? (
                     <BookUser size={11} className="text-foreground shrink-0" />
@@ -1090,7 +1090,7 @@ function VendorSection({
                   <button
                     type="button"
                     onClick={() => onVendorsChange(vendors.filter((_, i) => i !== index))}
-                    className="text-muted transition-colors hover:text-red-400"
+                    className="text-muted hover:text-danger transition-colors"
                     aria-label={`Remove ${vendor.name || 'vendor'}`}
                   >
                     <X size={10} />
@@ -1214,7 +1214,7 @@ function VendorSection({
                                 <BadgeCheck size={10} className="text-foreground shrink-0" />
                               )}
                               {v.averageRating !== null && (
-                                <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
+                                <span className="text-warning flex items-center gap-0.5 text-[9px]">
                                   <Star size={7} fill="currentColor" />
                                   {v.averageRating.toFixed(1)}
                                 </span>
@@ -1288,7 +1288,7 @@ function VendorSection({
                                 userVendorContactId: null,
                               })
                             }
-                            className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
+                            className="bg-primary/15 border-primary/25 text-foreground hover:bg-primary/25 rounded border px-1.5 py-0.5 text-[9px] transition-colors"
                           >
                             Add
                           </button>
@@ -1455,7 +1455,7 @@ function AddRow({
   ])
 
   return (
-    <div className="border-gold-500/20 bg-foreground/5 mx-0.5 space-y-2.5 rounded-xl border p-3">
+    <div className="border-primary/20 bg-foreground/5 mx-0.5 space-y-2.5 rounded-xl border p-3">
       <input
         ref={ref}
         value={title}
@@ -1469,7 +1469,7 @@ function AddRow({
           if (e.key === 'Escape') onClose()
         }}
         placeholder="What needs to be done?"
-        className="placeholder:text-muted focus:border-gold-500/30 border-border text-foreground w-full border-b bg-transparent pb-1.5 text-sm transition-colors focus:outline-none"
+        className="placeholder:text-muted focus:border-primary/30 border-border text-foreground w-full border-b bg-transparent pb-1.5 text-sm transition-colors focus:outline-none"
       />
 
       {expanded && (
@@ -1484,7 +1484,7 @@ function AddRow({
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="text-muted focus:border-gold-500/30 border-border flex-1 border-b bg-transparent pb-0.5 text-xs transition-colors focus:outline-none"
+              className="text-muted focus:border-primary/30 border-border flex-1 border-b bg-transparent pb-0.5 text-xs transition-colors focus:outline-none"
             />
             {dueDate && (
               <button
@@ -1494,7 +1494,7 @@ function AddRow({
                   setNotifyEmail(false)
                   setNotifySms(false)
                 }}
-                className="text-muted transition-colors hover:text-red-400"
+                className="text-muted hover:text-danger transition-colors"
               >
                 <X size={10} />
               </button>
@@ -1535,7 +1535,7 @@ function AddRow({
           type="button"
           onClick={() => void submit()}
           disabled={!title.trim()}
-          className="bg-gold-600/15 border-gold-500/25 text-foreground hover:bg-gold-600/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-primary/15 border-primary/25 text-foreground hover:bg-primary/25 flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={11} /> Add task
         </button>
@@ -1763,7 +1763,7 @@ export function ChecklistSection({
           </div>
           <div className="flex items-center gap-2">
             {overdueCount > 0 && (
-              <span className="rounded-full border border-red-500/20 bg-red-500/12 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
+              <span className="border-danger/20 bg-danger/12 text-danger rounded-full border px-1.5 py-0.5 text-[10px] font-medium">
                 {overdueCount} overdue
               </span>
             )}
@@ -1807,7 +1807,7 @@ export function ChecklistSection({
                   'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap transition-all',
                   active
                     ? opt.value === 'overdue'
-                      ? 'border-red-500/25 bg-red-500/12 text-red-300'
+                      ? 'border-danger/25 bg-danger/12 text-danger'
                       : 'border-border bg-foreground/5 text-foreground'
                     : 'text-muted hover:text-foreground border-transparent',
                 )}
@@ -1990,9 +1990,9 @@ export function ChecklistSection({
                           className={cn(
                             'border-border bg-background w-[8.5rem] border-b py-0.5 text-xs tabular-nums focus:outline-none',
                             isOverdue(item.dueDate, item.isCompleted)
-                              ? 'text-red-400'
+                              ? 'text-danger'
                               : isDueSoon(item.dueDate, item.isCompleted)
-                                ? 'text-amber-400'
+                                ? 'text-warning'
                                 : 'text-foreground',
                           )}
                         />
@@ -2001,9 +2001,9 @@ export function ChecklistSection({
                           className={cn(
                             'text-xs tabular-nums',
                             isOverdue(item.dueDate, item.isCompleted)
-                              ? 'text-red-400'
+                              ? 'text-danger'
                               : isDueSoon(item.dueDate, item.isCompleted)
-                                ? 'text-amber-400'
+                                ? 'text-warning'
                                 : 'text-muted',
                           )}
                         >
@@ -2035,7 +2035,7 @@ export function ChecklistSection({
                           <button
                             type="button"
                             onClick={() => deleteItem(item.id)}
-                            className="text-muted rounded-md p-1 transition-colors hover:bg-red-500/8 hover:text-red-400"
+                            className="text-muted hover:bg-danger/8 hover:text-danger rounded-md p-1 transition-colors"
                             aria-label="Delete"
                           >
                             <Trash2 size={11} />

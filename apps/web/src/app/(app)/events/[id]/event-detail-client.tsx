@@ -243,7 +243,7 @@ function EditEventModal({
           </h2>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+            className="hover:bg-hover flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
             style={{ color: 'var(--color-muted)' }}
           >
             <X size={15} />
@@ -616,7 +616,7 @@ export function EventDetailClient({
                     <button
                       type="button"
                       onClick={() => setEditOpen(true)}
-                      className="tap-target flex shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-black/8 dark:hover:bg-white/8"
+                      className="tap-target hover:bg-hover flex shrink-0 items-center justify-center rounded-xl transition-colors"
                       style={{
                         color: 'var(--color-muted)',
                         border: '1px solid var(--color-border)',

@@ -189,25 +189,25 @@ export function OnboardingWizard({
   if (!mounted) return null
 
   return (
-    <div className="bg-brand-900 relative flex min-h-screen flex-col overflow-hidden">
+    <div className="bg-inverse relative flex min-h-screen flex-col overflow-hidden">
       <div className="pattern-adire absolute inset-0 opacity-5" aria-hidden="true" />
       <div
-        className="bg-gold-600/10 pointer-events-none absolute -top-48 -right-48 h-[500px] w-[500px] rounded-full blur-3xl"
+        className="bg-primary/10 pointer-events-none absolute -top-48 -right-48 h-[500px] w-[500px] rounded-full blur-3xl"
         aria-hidden="true"
       />
       <div
-        className="bg-brand-600/20 pointer-events-none absolute -bottom-48 -left-48 h-[500px] w-[500px] rounded-full blur-3xl"
+        className="bg-inverse-fg/10 pointer-events-none absolute -bottom-48 -left-48 h-[500px] w-[500px] rounded-full blur-3xl"
         aria-hidden="true"
       />
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between border-b border-white/8 px-6 py-5">
-        <span className="font-display text-lg font-semibold text-white">Djanora</span>
+      <header className="border-border relative z-10 flex items-center justify-between border-b px-6 py-5">
+        <span className="font-display text-inverse-fg text-lg font-semibold">Djanora</span>
 
         {/* Role badge + progress */}
         <div className="flex items-center gap-3">
           {role === 'VENDOR' && step > 2 && (
-            <span className="bg-gold-500/12 border-gold-500/25 text-gold-400 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]">
+            <span className="bg-inverse-fg/15 border-inverse-fg/25 text-inverse-fg flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]">
               <Store size={10} />
               Vendor setup
             </span>
@@ -225,7 +225,11 @@ export function OnboardingWizard({
                 animate={{
                   width: i === step ? 28 : 6,
                   backgroundColor:
-                    i < step ? '#c9973a' : i === step ? '#e2bf6a' : 'rgba(255,255,255,0.18)',
+                    i < step
+                      ? 'var(--inverse-fg)'
+                      : i === step
+                        ? 'var(--inverse-fg)'
+                        : 'var(--hover)',
                 }}
                 transition={{ duration: 0.3 }}
                 className="h-1.5 rounded-full"
@@ -234,7 +238,7 @@ export function OnboardingWizard({
           </div>
         </div>
 
-        <span className="text-brand-500 text-sm">
+        <span className="text-inverse-muted text-sm">
           {step} / {totalSteps}
         </span>
       </header>
@@ -321,7 +325,7 @@ export function OnboardingWizard({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               role="alert"
-              className="mt-6 rounded-xl border border-red-500/30 bg-red-900/30 px-4 py-3 text-sm text-red-300"
+              className="border-danger/30 bg-danger/10 text-danger mt-6 rounded-xl border px-4 py-3 text-sm"
             >
               {error}
             </motion.p>
@@ -333,7 +337,7 @@ export function OnboardingWizard({
               type="button"
               onClick={() => go(step - 1)}
               disabled={step === 1}
-              className="text-brand-400 flex items-center gap-1.5 text-sm font-medium transition-all hover:text-white disabled:opacity-0"
+              className="text-inverse-muted hover:text-inverse-fg flex items-center gap-1.5 text-sm font-medium transition-all disabled:opacity-0"
             >
               <ChevronLeft size={16} />
               Back
@@ -345,7 +349,7 @@ export function OnboardingWizard({
               disabled={!canAdvance || loading}
               whileHover={canAdvance && !loading ? { scale: 1.02 } : {}}
               whileTap={canAdvance && !loading ? { scale: 0.98 } : {}}
-              className="bg-gold-600 hover:bg-gold-500 text-brand-900 flex items-center gap-2 rounded-full px-8 py-3.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              className="bg-inverse-fg text-inverse flex items-center gap-2 rounded-full px-8 py-3.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
               {step === totalSteps
@@ -358,7 +362,7 @@ export function OnboardingWizard({
           </div>
 
           {step === totalSteps && (
-            <p className="text-brand-500 mt-4 text-center text-xs">
+            <p className="text-inverse-muted mt-4 text-center text-xs">
               {role === 'VENDOR'
                 ? 'You can update your profile any time from your vendor dashboard.'
                 : 'Step 3 is optional — update anytime in your profile.'}
@@ -392,19 +396,21 @@ function StepName({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">Welcome</p>
-        <h1 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
+          Welcome
+        </p>
+        <h1 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           Let&apos;s set up
           <br />
           your account
         </h1>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           Confirm how you&apos;d like to be known on Djanora.
         </p>
       </div>
       <div className="space-y-4">
         <div>
-          <label htmlFor="firstName" className="text-brand-200 mb-2 block text-sm font-medium">
+          <label htmlFor="firstName" className="text-inverse-fg mb-2 block text-sm font-medium">
             First name
           </label>
           <input
@@ -415,12 +421,12 @@ function StepName({
             placeholder="Ada"
             value={firstName}
             onChange={(e) => onFirstName(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-base text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-base transition focus:outline-none"
           />
         </div>
         <div>
-          <label htmlFor="lastName" className="text-brand-200 mb-2 block text-sm font-medium">
-            Last name <span className="text-brand-500 font-normal">(optional)</span>
+          <label htmlFor="lastName" className="text-inverse-fg mb-2 block text-sm font-medium">
+            Last name <span className="text-inverse-muted font-normal">(optional)</span>
           </label>
           <input
             id="lastName"
@@ -429,7 +435,7 @@ function StepName({
             placeholder="Okafor"
             value={lastName}
             onChange={(e) => onLastName(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-base text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-base transition focus:outline-none"
           />
         </div>
       </div>
@@ -443,15 +449,15 @@ function StepRole({ value, onChange }: { value: Role | null; onChange: (v: Role)
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
           Your role
         </p>
-        <h2 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <h2 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           How are you
           <br />
           using Djanora?
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           Choose your primary role — this shapes your entire experience.
         </p>
       </div>
@@ -480,24 +486,24 @@ function StepRole({ value, onChange }: { value: Role | null; onChange: (v: Role)
             className={cn(
               'relative flex w-full items-center gap-5 rounded-2xl border px-5 py-5 text-left transition-all duration-200',
               value === opt.value
-                ? 'border-gold-500/80 bg-white/10 shadow-lg shadow-black/20'
-                : 'border-white/10 bg-white/5 hover:border-white/22 hover:bg-white/8',
+                ? 'border-inverse-fg/80 bg-inverse-fg/10 shadow-lg shadow-black/20'
+                : 'border-border bg-hover hover:border-border hover:bg-hover',
             )}
           >
             <span className="shrink-0 text-4xl">{opt.emoji}</span>
             <div className="min-w-0 flex-1">
-              <p className="mb-0.5 text-lg font-semibold text-white">{opt.label}</p>
-              <p className="text-brand-300 text-sm leading-relaxed">{opt.desc}</p>
+              <p className="text-inverse-fg mb-0.5 text-lg font-semibold">{opt.label}</p>
+              <p className="text-inverse-muted text-sm leading-relaxed">{opt.desc}</p>
             </div>
             <span
               className={cn(
                 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                value === opt.value ? 'border-gold-500 bg-gold-500' : 'border-white/20',
+                value === opt.value ? 'border-inverse-fg bg-inverse-fg' : 'border-inverse-fg/20',
               )}
             >
               {value === opt.value && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                  <Check size={12} className="text-brand-900" />
+                  <Check size={12} className="text-inverse" />
                 </motion.span>
               )}
             </span>
@@ -532,26 +538,26 @@ function StepAbout({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
           About you
         </p>
-        <h2 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <h2 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           Tell us a little
           <br />
           about yourself
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           All optional — helps us personalise your experience.
         </p>
       </div>
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-brand-200 text-sm font-medium">
+          <p className="text-inverse-fg text-sm font-medium">
             Cultural background
-            <span className="text-brand-500 ml-1 font-normal">(select all that apply)</span>
+            <span className="text-inverse-muted ml-1 font-normal">(select all that apply)</span>
           </p>
           {tribes.length > 0 && (
-            <span className="bg-gold-500/15 border-gold-500/30 text-gold-400 rounded-full border px-2 py-0.5 text-xs">
+            <span className="bg-inverse-fg/15 border-inverse-fg/30 text-inverse-fg rounded-full border px-2 py-0.5 text-xs">
               {tribes.length} selected
             </span>
           )}
@@ -568,21 +574,26 @@ function StepAbout({
                 className={cn(
                   'flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all duration-200',
                   active
-                    ? 'border-gold-500/80 bg-white/10'
-                    : 'border-white/10 bg-white/5 hover:border-white/22 hover:bg-white/8',
+                    ? 'border-inverse-fg/80 bg-inverse-fg/10'
+                    : 'border-border bg-hover hover:border-border hover:bg-hover',
                 )}
               >
                 <span
                   className={cn(
                     'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors',
-                    active ? 'border-gold-500 bg-gold-500' : 'border-white/20 bg-transparent',
+                    active
+                      ? 'border-inverse-fg bg-inverse-fg'
+                      : 'border-inverse-fg/20 bg-transparent',
                   )}
                 >
-                  {active && <Check size={9} className="text-brand-900" />}
+                  {active && <Check size={9} className="text-inverse" />}
                 </span>
                 <span className="text-xl">{t.flag}</span>
                 <span
-                  className={cn('text-sm font-medium', active ? 'text-white' : 'text-brand-200')}
+                  className={cn(
+                    'text-sm font-medium',
+                    active ? 'text-inverse-fg' : 'text-inverse-muted',
+                  )}
                 >
                   {t.label}
                 </span>
@@ -593,7 +604,7 @@ function StepAbout({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="city" className="text-brand-200 mb-2 block text-sm font-medium">
+          <label htmlFor="city" className="text-inverse-fg mb-2 block text-sm font-medium">
             Where do you live?
           </label>
           <input
@@ -603,13 +614,13 @@ function StepAbout({
             placeholder="Ottawa"
             value={city}
             onChange={(e) => onCity(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-sm transition focus:outline-none"
           />
         </div>
         <div>
           <label
             htmlFor="countryOfOrigin"
-            className="text-brand-200 mb-2 block text-sm font-medium"
+            className="text-inverse-fg mb-2 block text-sm font-medium"
           >
             What&apos;s your nationality or heritage?
           </label>
@@ -620,12 +631,12 @@ function StepAbout({
             placeholder="Nigeria"
             value={countryOfOrigin}
             onChange={(e) => onCountryOfOrigin(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-sm transition focus:outline-none"
           />
         </div>
       </div>
       <div>
-        <label htmlFor="dateOfBirth" className="text-brand-200 mb-2 block text-sm font-medium">
+        <label htmlFor="dateOfBirth" className="text-inverse-fg mb-2 block text-sm font-medium">
           Date of birth
         </label>
         <input
@@ -635,9 +646,9 @@ function StepAbout({
           max={ADULT_DOB_MAX}
           value={dateOfBirth}
           onChange={(e) => onDateOfBirth(e.target.value)}
-          className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white [color-scheme:dark] transition focus:bg-white/12 focus:outline-none"
+          className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-sm transition focus:outline-none"
         />
-        <p className="text-brand-500 mt-1.5 text-xs">
+        <p className="text-inverse-muted mt-1.5 text-xs">
           You must be 18+ to book or contract vendors on Djanora.
         </p>
       </div>
@@ -662,22 +673,22 @@ function StepVendorBusiness({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
           Your business
         </p>
-        <h2 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <h2 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           Tell us about
           <br />
           your business
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           This is how planners will find and recognise you on Djanora.
         </p>
       </div>
 
       <div className="space-y-5">
         <div>
-          <label htmlFor="businessName" className="text-brand-200 mb-2 block text-sm font-medium">
+          <label htmlFor="businessName" className="text-inverse-fg mb-2 block text-sm font-medium">
             Business name
           </label>
           <input
@@ -687,18 +698,18 @@ function StepVendorBusiness({
             placeholder="e.g. Mama Nkechi Catering"
             value={businessName}
             onChange={(e) => onBusinessName(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-base text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-base transition focus:outline-none"
           />
         </div>
 
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <label className="text-brand-200 text-sm font-medium">
+            <label className="text-inverse-fg text-sm font-medium">
               Services offered
-              <span className="text-brand-500 ml-1 font-normal">(select all that apply)</span>
+              <span className="text-inverse-muted ml-1 font-normal">(select all that apply)</span>
             </label>
             {categories.length > 0 && (
-              <span className="bg-gold-500/15 border-gold-500/30 text-gold-400 rounded-full border px-2 py-0.5 text-xs">
+              <span className="bg-inverse-fg/15 border-inverse-fg/30 text-inverse-fg rounded-full border px-2 py-0.5 text-xs">
                 {categories.length} selected
               </span>
             )}
@@ -715,17 +726,19 @@ function StepVendorBusiness({
                   className={cn(
                     'flex items-center gap-2.5 rounded-xl border px-4 py-3 text-left text-sm transition-all duration-200',
                     active
-                      ? 'border-gold-500/80 bg-white/10 text-white'
-                      : 'text-brand-200 border-white/10 bg-white/5 hover:border-white/22 hover:bg-white/8',
+                      ? 'border-inverse-fg/80 bg-inverse-fg/10 text-inverse-fg'
+                      : 'text-inverse-muted border-border bg-hover hover:border-border hover:bg-hover',
                   )}
                 >
                   <span
                     className={cn(
                       'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors',
-                      active ? 'border-gold-500 bg-gold-500' : 'border-white/20 bg-transparent',
+                      active
+                        ? 'border-inverse-fg bg-inverse-fg'
+                        : 'border-inverse-fg/20 bg-transparent',
                     )}
                   >
-                    {active && <Check size={9} className="text-brand-900" />}
+                    {active && <Check size={9} className="text-inverse" />}
                   </span>
                   {getVendorCategoryLabel(key, tCat)}
                 </button>
@@ -733,7 +746,7 @@ function StepVendorBusiness({
             })}
           </div>
           {categories.length === 0 && (
-            <p className="text-brand-500 mt-2 text-xs">Pick at least one to continue.</p>
+            <p className="text-inverse-muted mt-2 text-xs">Pick at least one to continue.</p>
           )}
         </div>
       </div>
@@ -761,23 +774,23 @@ function StepVendorService({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
           Your service
         </p>
-        <h2 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <h2 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           Describe your
           <br />
           service
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           All optional — you can update this anytime.
         </p>
       </div>
 
       <div className="space-y-5">
         <div>
-          <label htmlFor="bio" className="text-brand-200 mb-2 block text-sm font-medium">
-            Bio <span className="text-brand-500 font-normal">(optional)</span>
+          <label htmlFor="bio" className="text-inverse-fg mb-2 block text-sm font-medium">
+            Bio <span className="text-inverse-muted font-normal">(optional)</span>
           </label>
           <textarea
             id="bio"
@@ -785,14 +798,16 @@ function StepVendorService({
             placeholder="Tell planners what makes your service special…"
             value={bio}
             onChange={(e) => onBio(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full resize-none rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full resize-none rounded-xl border px-4 py-3.5 text-sm transition focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="text-brand-200 mb-3 block text-sm font-medium">
+          <label className="text-inverse-fg mb-3 block text-sm font-medium">
             Communities you serve{' '}
-            <span className="text-brand-500 font-normal">(optional — select all that apply)</span>
+            <span className="text-inverse-muted font-normal">
+              (optional — select all that apply)
+            </span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             {TRIBES.map((t) => {
@@ -805,13 +820,13 @@ function StepVendorService({
                   className={cn(
                     'flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all duration-200',
                     active
-                      ? 'border-gold-500/80 bg-white/10 text-white'
-                      : 'text-brand-200 border-white/10 bg-white/5 hover:border-white/22 hover:bg-white/8',
+                      ? 'border-inverse-fg/80 bg-inverse-fg/10 text-inverse-fg'
+                      : 'text-inverse-muted border-border bg-hover hover:border-border hover:bg-hover',
                   )}
                 >
                   <span className="text-lg">{t.flag}</span>
                   {t.label}
-                  {active && <Check size={13} className="text-gold-400 ml-auto shrink-0" />}
+                  {active && <Check size={13} className="text-inverse-fg ml-auto shrink-0" />}
                 </button>
               )
             })}
@@ -819,9 +834,9 @@ function StepVendorService({
         </div>
 
         <div>
-          <label htmlFor="vendorCity" className="text-brand-200 mb-2 block text-sm font-medium">
-            <Globe size={13} className="text-brand-400 mr-1.5 inline" />
-            City / region <span className="text-brand-500 font-normal">(optional)</span>
+          <label htmlFor="vendorCity" className="text-inverse-fg mb-2 block text-sm font-medium">
+            <Globe size={13} className="text-inverse-muted mr-1.5 inline" />
+            City / region <span className="text-inverse-muted font-normal">(optional)</span>
           </label>
           <input
             id="vendorCity"
@@ -829,7 +844,7 @@ function StepVendorService({
             placeholder="e.g. Ottawa, ON"
             value={city}
             onChange={(e) => onCity(e.target.value)}
-            className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3.5 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+            className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3.5 text-sm transition focus:outline-none"
           />
         </div>
       </div>
@@ -865,28 +880,28 @@ function StepVendorPricing({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-gold-400 mb-3 text-sm font-medium tracking-widest uppercase">
+        <p className="text-inverse-fg mb-3 text-sm font-medium tracking-widest uppercase">
           Pricing & links
         </p>
-        <h2 className="font-display mb-3 text-4xl leading-tight font-semibold text-white sm:text-5xl">
+        <h2 className="font-display text-inverse-fg mb-3 text-4xl leading-tight font-semibold sm:text-5xl">
           Help planners
           <br />
           plan their budget
         </h2>
-        <p className="text-brand-300 text-base leading-relaxed">
+        <p className="text-inverse-muted text-base leading-relaxed">
           All optional — gives planners an idea of what to expect.
         </p>
       </div>
 
       <div className="space-y-5">
         <div>
-          <label className="text-brand-200 mb-3 block text-sm font-medium">
-            <Calendar size={13} className="text-brand-400 mr-1.5 inline" />
+          <label className="text-inverse-fg mb-3 block text-sm font-medium">
+            <Calendar size={13} className="text-inverse-muted mr-1.5 inline" />
             Estimated price range (CA$)
           </label>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="priceFrom" className="text-brand-400 mb-1.5 block text-xs">
+              <label htmlFor="priceFrom" className="text-inverse-muted mb-1.5 block text-xs">
                 From
               </label>
               <input
@@ -896,11 +911,11 @@ function StepVendorPricing({
                 placeholder="500"
                 value={priceFrom}
                 onChange={(e) => onPriceFrom(e.target.value)}
-                className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+                className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3 text-sm transition focus:outline-none"
               />
             </div>
             <div>
-              <label htmlFor="priceTo" className="text-brand-400 mb-1.5 block text-xs">
+              <label htmlFor="priceTo" className="text-inverse-muted mb-1.5 block text-xs">
                 To
               </label>
               <input
@@ -910,15 +925,15 @@ function StepVendorPricing({
                 placeholder="2000"
                 value={priceTo}
                 onChange={(e) => onPriceTo(e.target.value)}
-                className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+                className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3 text-sm transition focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <p className="text-brand-200 text-sm font-medium">
-            Links <span className="text-brand-500 font-normal">(optional)</span>
+          <p className="text-inverse-fg text-sm font-medium">
+            Links <span className="text-inverse-muted font-normal">(optional)</span>
           </p>
           {[
             {
@@ -944,7 +959,7 @@ function StepVendorPricing({
             },
           ].map((field) => (
             <div key={field.id}>
-              <label htmlFor={field.id} className="text-brand-400 mb-1.5 block text-xs">
+              <label htmlFor={field.id} className="text-inverse-muted mb-1.5 block text-xs">
                 {field.label}
               </label>
               <input
@@ -953,7 +968,7 @@ function StepVendorPricing({
                 placeholder={field.placeholder}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                className="placeholder:text-brand-500 focus:border-gold-500/60 w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-sm text-white transition focus:bg-white/12 focus:outline-none"
+                className="placeholder:text-muted focus:border-primary border-border bg-input text-fg focus:bg-surface-hover w-full rounded-xl border px-4 py-3 text-sm transition focus:outline-none"
               />
             </div>
           ))}

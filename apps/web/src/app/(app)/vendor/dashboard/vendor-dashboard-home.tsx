@@ -98,19 +98,19 @@ function CompletenessChecklist({ p }: { p: MyVendorProfile }) {
       {remaining.map((item) => {
         const inner = (
           <>
-            <AlertCircle size={15} className="text-gold-500 mt-0.5 shrink-0" />
+            <AlertCircle size={15} className="text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="text-brand-800 text-sm font-medium dark:text-white">{item.label}</p>
-              <p className="text-brand-500 mt-0.5 text-xs">{item.hint}</p>
+              <p className="text-fg text-sm font-medium">{item.label}</p>
+              <p className="text-muted mt-0.5 text-xs">{item.hint}</p>
             </div>
           </>
         )
-        const className = 'flex items-start gap-3 py-2.5 px-3 rounded-xl bg-black/3 dark:bg-white/3'
+        const className = 'flex items-start gap-3 py-2.5 px-3 rounded-xl bg-hover'
         return item.href ? (
           <Link
             key={item.label}
             href={item.href}
-            className={`${className} transition-colors hover:bg-black/6 dark:hover:bg-white/6`}
+            className={`${className} hover:bg-hover transition-colors`}
           >
             {inner}
           </Link>
@@ -133,19 +133,17 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       {/* ── Greeting + profile header ─────────────────────────────────── */}
       <motion.div {...fadeUp(0)}>
-        <p className="text-brand-400 dark:text-brand-400 mb-1 text-sm font-medium">
-          {getGreeting()}
-        </p>
+        <p className="text-muted mb-1 text-sm font-medium">{getGreeting()}</p>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-brand-900 text-3xl font-semibold sm:text-4xl dark:text-white">
+            <h1 className="font-display text-fg text-3xl font-semibold sm:text-4xl">
               {firstName} 🎪
             </h1>
             {profile && (
-              <p className="text-brand-500 dark:text-brand-400 mt-1 text-sm">
+              <p className="text-muted mt-1 text-sm">
                 {profile.businessName}
                 {profile.reviewStatus === 'APPROVED' && (
-                  <span className="text-gold-600 dark:text-gold-400 ml-2 inline-flex items-center gap-1">
+                  <span className="text-primary ml-2 inline-flex items-center gap-1">
                     <BadgeCheck size={13} /> Verified
                   </span>
                 )}
@@ -155,7 +153,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
           {profile && (
             <Link
               href="/settings"
-              className="text-brand-500 dark:text-brand-300 hover:text-brand-800 flex items-center gap-2 rounded-xl border border-black/8 bg-black/4 px-4 py-2 text-sm font-medium transition-all hover:border-black/14 dark:border-white/10 dark:bg-white/6 dark:hover:border-white/20 dark:hover:text-white"
+              className="text-muted hover:text-fg border-border bg-hover hover:bg-hover flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all"
             >
               <Edit3 size={14} />
               Edit profile
@@ -167,13 +165,9 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
       {profile && profile.reviewStatus && profile.reviewStatus !== 'APPROVED' && (
         <motion.div
           {...fadeUp(0)}
-          className="rounded-2xl border px-4 py-3 text-sm"
-          style={{
-            borderColor: 'var(--color-border)',
-            background: 'color-mix(in srgb, var(--color-brand-primary) 10%, transparent)',
-          }}
+          className="border-border bg-primary/10 rounded-2xl border px-4 py-3 text-sm"
         >
-          <p className="font-medium">
+          <p className="text-fg font-medium">
             {profile.reviewStatus === 'PENDING' &&
               'Djanora is reviewing your profile. Hosts cannot find you yet.'}
             {profile.reviewStatus === 'REJECTED' &&
@@ -181,13 +175,10 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
             {profile.reviewStatus === 'SUSPENDED' &&
               'Your listing is hidden from hosts while we review it.'}
           </p>
-          {profile.reviewNote && (
-            <p className="text-brand-500 mt-1 text-xs">{profile.reviewNote}</p>
-          )}
+          {profile.reviewNote && <p className="text-muted mt-1 text-xs">{profile.reviewNote}</p>}
           <Link
             href={contactHref('vendor_review')}
-            className="mt-2 inline-block text-xs font-medium underline-offset-2 hover:underline"
-            style={{ color: 'var(--color-text-secondary)' }}
+            className="text-muted mt-2 inline-block text-xs font-medium underline-offset-2 hover:underline"
           >
             {tContact('reviewLink')}
           </Link>
@@ -200,13 +191,13 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
           {profile.categories.map((cat) => (
             <span
               key={cat}
-              className="bg-gold-500/12 dark:bg-gold-500/15 border-gold-500/25 text-gold-700 dark:text-gold-400 rounded-full border px-3 py-1.5 text-xs font-medium"
+              className="bg-primary/15 text-primary border-primary/25 rounded-full border px-3 py-1.5 text-xs font-medium"
             >
               {getVendorCategoryLabel(cat, tCat)}
             </span>
           ))}
           {profile.city && (
-            <span className="text-brand-600 dark:text-brand-300 rounded-full border border-black/8 bg-black/5 px-3 py-1.5 text-xs font-medium dark:border-white/12 dark:bg-white/8">
+            <span className="text-muted border-border bg-hover rounded-full border px-3 py-1.5 text-xs font-medium">
               📍 {profile.city}
             </span>
           )}
@@ -226,32 +217,32 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                 : profile?.bookingCount === 1
                   ? '1 event booked'
                   : `${profile?.bookingCount} events booked`,
-            color: 'text-blue-500 dark:text-blue-400',
-            bg: 'bg-blue-500/10',
+            color: 'text-primary',
+            bg: 'bg-primary/10',
           },
           {
             icon: Star,
             label: 'Rating',
             value: profile?.averageRating ? profile.averageRating.toFixed(1) : '—',
             sub: profile?.totalReviews ? `${profile.totalReviews} reviews` : 'No reviews yet',
-            color: 'text-gold-600 dark:text-gold-400',
-            bg: 'bg-gold-500/10',
+            color: 'text-primary',
+            bg: 'bg-primary/10',
           },
           {
             icon: ImageIcon,
             label: 'Portfolio',
             value: profile ? String(profile.portfolioCount) : '0',
             sub: profile?.portfolioCount === 0 ? 'Add looks' : 'Looks published',
-            color: 'text-emerald-600 dark:text-emerald-400',
-            bg: 'bg-emerald-500/10',
+            color: 'text-success',
+            bg: 'bg-success/10',
           },
           {
             icon: TrendingUp,
             label: 'Profile views',
             value: profile ? String(profile.profileViews ?? 0) : '0',
             sub: 'Public listing visits',
-            color: 'text-violet-500 dark:text-violet-400',
-            bg: 'bg-violet-500/10',
+            color: 'text-primary',
+            bg: 'bg-primary/10',
           },
           {
             icon: MessageSquare,
@@ -263,13 +254,13 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                 : profile?.inquiryCount === 1
                   ? '1 message received'
                   : `${profile?.inquiryCount} messages received`,
-            color: 'text-brand-400',
-            bg: 'bg-brand-500/10 dark:bg-white/6',
+            color: 'text-muted',
+            bg: 'bg-hover',
           },
         ].map((stat) => (
           <div
             key={stat.label}
-            className="flex items-start gap-4 rounded-2xl border border-black/8 bg-white/60 px-5 py-5 dark:border-white/8 dark:bg-white/5"
+            className="border-border bg-surface flex items-start gap-4 rounded-2xl border px-5 py-5"
           >
             <div
               className={cn(
@@ -280,11 +271,9 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
               <stat.icon size={16} className={stat.color} aria-hidden="true" />
             </div>
             <div>
-              <p className="text-brand-900 font-display text-xl font-semibold dark:text-white">
-                {stat.value}
-              </p>
-              <p className="text-brand-600 dark:text-brand-200 text-sm font-medium">{stat.label}</p>
-              <p className="text-brand-400 dark:text-brand-500 mt-0.5 text-xs">{stat.sub}</p>
+              <p className="text-fg font-display text-xl font-semibold">{stat.value}</p>
+              <p className="text-muted text-sm font-medium">{stat.label}</p>
+              <p className="text-muted mt-0.5 text-xs">{stat.sub}</p>
             </div>
           </div>
         ))}
@@ -295,25 +284,19 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
         {/* Profile completeness card */}
         <motion.div
           {...fadeUp(3)}
-          className="rounded-2xl border border-black/8 bg-white/60 p-6 lg:col-span-2 dark:border-white/8 dark:bg-white/4"
+          className="border-border bg-surface rounded-2xl border p-6 lg:col-span-2"
         >
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="font-display text-brand-900 text-base font-semibold dark:text-white">
-                Profile completeness
-              </h2>
-              <p className="text-brand-500 dark:text-brand-400 mt-0.5 text-xs">
+              <h2 className="font-display text-fg text-base font-semibold">Profile completeness</h2>
+              <p className="text-muted mt-0.5 text-xs">
                 A complete profile gets significantly more bookings
               </p>
             </div>
             <span
               className={cn(
                 'font-display text-sm font-bold',
-                score === 100
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : score >= 60
-                    ? 'text-gold-600 dark:text-gold-400'
-                    : 'text-brand-500',
+                score === 100 ? 'text-success' : score >= 60 ? 'text-primary' : 'text-muted',
               )}
             >
               {score}%
@@ -321,39 +304,34 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
           </div>
 
           {/* Progress bar */}
-          <div className="mb-6 h-2 overflow-hidden rounded-full bg-black/8 dark:bg-white/10">
+          <div className="bg-hover mb-6 h-2 overflow-hidden rounded-full">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${score}%` }}
               transition={{ duration: 0.7, ease: 'easeOut', delay: 0.4 }}
               className={cn(
                 'h-full rounded-full',
-                score === 100 ? 'bg-emerald-500' : score >= 60 ? 'bg-gold-500' : 'bg-brand-400',
+                score === 100 ? 'bg-success' : score >= 60 ? 'bg-primary' : 'bg-hover',
               )}
             />
           </div>
 
           {profile ? (
             score === 100 ? (
-              <div className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              <div className="text-success flex items-center gap-2 text-sm font-medium">
                 <BadgeCheck size={16} /> Profile is fully complete — great work!
               </div>
             ) : (
               <CompletenessChecklist p={profile} />
             )
           ) : (
-            <p className="text-brand-400 text-sm">Profile data unavailable.</p>
+            <p className="text-muted text-sm">Profile data unavailable.</p>
           )}
         </motion.div>
 
         {/* Quick actions */}
-        <motion.div
-          {...fadeUp(4)}
-          className="rounded-2xl border border-black/8 bg-white/60 p-6 dark:border-white/8 dark:bg-white/4"
-        >
-          <h2 className="font-display text-brand-900 mb-4 text-base font-semibold dark:text-white">
-            Quick actions
-          </h2>
+        <motion.div {...fadeUp(4)} className="border-border bg-surface rounded-2xl border p-6">
+          <h2 className="font-display text-fg mb-4 text-base font-semibold">Quick actions</h2>
           <div className="space-y-2">
             {[
               { icon: Edit3, label: 'Edit profile', href: '/settings', sub: 'Update your details' },
@@ -383,20 +361,18 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
               <Link
                 key={action.label}
                 href={action.href}
-                className="group flex items-center gap-3 rounded-xl border border-transparent bg-black/3 px-3 py-3 transition-all hover:border-black/8 hover:bg-black/6 dark:bg-white/3 dark:hover:border-white/10 dark:hover:bg-white/6"
+                className="group bg-hover hover:bg-hover hover:border-border flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 transition-all"
               >
-                <div className="bg-gold-500/12 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
-                  <action.icon size={14} className="text-gold-600 dark:text-gold-400" />
+                <div className="bg-primary/15 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+                  <action.icon size={14} className="text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-brand-800 truncate text-sm font-medium dark:text-white">
-                    {action.label}
-                  </p>
-                  <p className="text-brand-400 dark:text-brand-500 text-xs">{action.sub}</p>
+                  <p className="text-fg truncate text-sm font-medium">{action.label}</p>
+                  <p className="text-muted text-xs">{action.sub}</p>
                 </div>
                 <ChevronRight
                   size={14}
-                  className="text-brand-400 group-hover:text-brand-600 dark:group-hover:text-brand-200 shrink-0 transition-colors"
+                  className="text-muted group-hover:text-fg shrink-0 transition-colors"
                 />
               </Link>
             ))}
@@ -407,26 +383,19 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
       {/* ── Bio + links preview (if set) ───────────────────────────────── */}
       {profile &&
         (profile.bio || profile.websiteUrl || profile.instagramUrl || profile.facebookUrl) && (
-          <motion.div
-            {...fadeUp(5)}
-            className="rounded-2xl border border-black/8 bg-white/60 p-6 dark:border-white/8 dark:bg-white/4"
-          >
+          <motion.div {...fadeUp(5)} className="border-border bg-surface rounded-2xl border p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-brand-900 text-base font-semibold dark:text-white">
-                Your profile preview
-              </h2>
-              <span className="text-brand-400 text-xs">What planners see</span>
+              <h2 className="font-display text-fg text-base font-semibold">Your profile preview</h2>
+              <span className="text-muted text-xs">What planners see</span>
             </div>
 
             {profile.bio && (
-              <p className="text-brand-700 dark:text-brand-300 mb-4 line-clamp-3 text-sm leading-relaxed">
-                {profile.bio}
-              </p>
+              <p className="text-muted mb-4 line-clamp-3 text-sm leading-relaxed">{profile.bio}</p>
             )}
 
             {(profile.estimatedPriceFrom || profile.estimatedPriceTo) && (
-              <p className="text-brand-800 dark:text-brand-200 mb-4 text-sm font-medium">
-                <span className="text-brand-400 dark:text-brand-500 mr-1">Starting from</span>
+              <p className="text-fg mb-4 text-sm font-medium">
+                <span className="text-muted mr-1">Starting from</span>
                 CA${(profile.estimatedPriceFrom ?? 0).toLocaleString('en-CA')}
                 {profile.estimatedPriceTo
                   ? ` – $${profile.estimatedPriceTo.toLocaleString('en-CA')}`
@@ -439,7 +408,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                 {profile.tribesServed.map((t) => (
                   <span
                     key={t}
-                    className="bg-brand-100 text-brand-600 dark:text-brand-300 border-brand-200 rounded-full border px-2.5 py-1 text-xs dark:border-white/10 dark:bg-white/8"
+                    className="bg-hover text-muted border-border rounded-full border px-2.5 py-1 text-xs"
                   >
                     {TRIBE_LABELS[t] ?? t}
                   </span>
@@ -453,7 +422,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                   href={profile.websiteUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                  className="text-muted hover:text-fg flex items-center gap-1.5 text-xs transition-colors"
                 >
                   <Globe size={13} /> Website
                 </a>
@@ -463,7 +432,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                   href={profile.instagramUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                  className="text-muted hover:text-fg flex items-center gap-1.5 text-xs transition-colors"
                 >
                   <Link2 size={13} /> Instagram
                 </a>
@@ -473,7 +442,7 @@ export function VendorDashboardHome({ firstName, profile }: Props) {
                   href={profile.facebookUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-500 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1.5 text-xs transition-colors dark:hover:text-white"
+                  className="text-muted hover:text-fg flex items-center gap-1.5 text-xs transition-colors"
                 >
                   <Sparkles size={13} /> Facebook
                 </a>

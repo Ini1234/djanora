@@ -1814,7 +1814,7 @@ export function EventSiteEditor({ event }: { event: Event }) {
                               <button
                                 type="button"
                                 onClick={() => void deletePhoto(photo.id)}
-                                className="absolute top-1 right-1 min-h-11 min-w-11 rounded bg-black/60 px-2 text-xs text-white"
+                                className="bg-overlay text-inverse-fg absolute top-1 right-1 min-h-11 min-w-11 rounded px-2 text-xs"
                               >
                                 Remove
                               </button>

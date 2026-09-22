@@ -9,7 +9,7 @@ type ResolvedTheme = 'light' | 'dark'
 const STORAGE_KEY = 'theme'
 const DEFAULT_THEME: Theme = 'dark'
 
-const BOOTSTRAP = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}')||'${DEFAULT_THEME}';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;var d=document.documentElement;d.classList.toggle('light',r==='light');d.classList.toggle('dark',r==='dark');d.style.colorScheme=r;}catch(e){}})();`
+const BOOTSTRAP = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}')||'${DEFAULT_THEME}';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;var d=document.documentElement;d.setAttribute('data-theme',r);d.classList.toggle('light',r==='light');d.classList.toggle('dark',r==='dark');d.style.colorScheme=r;}catch(e){}})();`
 
 function systemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -18,6 +18,7 @@ function systemTheme(): ResolvedTheme {
 function apply(theme: Theme) {
   const resolved: ResolvedTheme = theme === 'system' ? systemTheme() : theme
   const root = document.documentElement
+  root.setAttribute('data-theme', resolved)
   root.classList.toggle('light', resolved === 'light')
   root.classList.toggle('dark', resolved === 'dark')
   root.style.colorScheme = resolved

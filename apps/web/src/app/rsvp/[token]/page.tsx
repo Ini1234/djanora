@@ -58,14 +58,11 @@ export default async function RsvpPage({ params }: Props) {
 
   if (!data) {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center px-4"
-        style={{ background: 'var(--page-bg)' }}
-      >
+      <div className="bg-page flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
           <p className="mb-4 text-4xl">🔗</p>
-          <h1 className="mb-2 text-xl font-semibold text-white">Invite not found</h1>
-          <p className="text-brand-400 text-sm">This invite link may have expired or is invalid.</p>
+          <h1 className="text-fg mb-2 text-xl font-semibold">Invite not found</h1>
+          <p className="text-muted text-sm">This invite link may have expired or is invalid.</p>
         </div>
       </div>
     )
@@ -85,37 +82,33 @@ export default async function RsvpPage({ params }: Props) {
     <main
       id="main-content"
       tabIndex={-1}
-      className="flex min-h-screen items-center justify-center px-4 py-12"
-      style={{ background: 'var(--page-bg)' }}
+      className="bg-page flex min-h-screen items-center justify-center px-4 py-12"
     >
       <div className="w-full max-w-md">
         {/* Card */}
-        <div
-          className="overflow-hidden rounded-3xl border"
-          style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
-        >
+        <div className="border-border bg-surface overflow-hidden rounded-3xl border">
           {/* Header band */}
-          <div className="bg-brand-900 dark:bg-brand-800 px-6 pt-8 pb-6">
-            <p className="text-gold-500 mb-2 text-xs font-medium tracking-[2px] uppercase">
+          <div className="bg-inverse px-6 pt-8 pb-6">
+            <p className="text-inverse-fg mb-2 text-xs font-medium tracking-[2px] uppercase">
               You&apos;re Invited
             </p>
-            <h1 className="font-display text-2xl leading-tight font-bold text-white">
+            <h1 className="font-display text-inverse-fg text-2xl leading-tight font-bold">
               {event.title}
             </h1>
-            <p className="text-brand-400 mt-1 text-sm">
+            <p className="text-inverse-muted mt-1 text-sm">
               {EVENT_TYPE_LABELS[event.eventType] ?? event.eventType}
             </p>
 
             <div className="mt-4 space-y-1.5">
               {eventDate && (
-                <div className="text-brand-300 flex items-center gap-2 text-sm">
-                  <CalendarDays size={13} className="text-gold-500 shrink-0" />
+                <div className="text-inverse-muted flex items-center gap-2 text-sm">
+                  <CalendarDays size={13} className="text-inverse-fg shrink-0" />
                   {eventDate}
                 </div>
               )}
               {event.location && (
-                <div className="text-brand-300 flex items-center gap-2 text-sm">
-                  <MapPin size={13} className="text-gold-500 shrink-0" />
+                <div className="text-inverse-muted flex items-center gap-2 text-sm">
+                  <MapPin size={13} className="text-inverse-fg shrink-0" />
                   {event.location}
                 </div>
               )}
@@ -128,9 +121,7 @@ export default async function RsvpPage({ params }: Props) {
           </div>
         </div>
 
-        <p className="text-brand-600 mt-6 text-center text-xs">
-          Powered by Djanora · Event Planning
-        </p>
+        <p className="text-muted mt-6 text-center text-xs">Powered by Djanora · Event Planning</p>
       </div>
     </main>
   )

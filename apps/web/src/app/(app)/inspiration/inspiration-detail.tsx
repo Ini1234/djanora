@@ -219,7 +219,7 @@ export function InspirationDetail({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="bg-overlay absolute inset-0 backdrop-blur-sm" onClick={onClose} />
         <div
           className="relative flex max-h-[var(--app-vh)] w-full max-w-4xl flex-col overflow-hidden border shadow-2xl sm:max-h-[90vh] sm:flex-row sm:rounded-2xl"
           style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
@@ -256,7 +256,7 @@ export function InspirationDetail({
                 <button
                   type="button"
                   onClick={() => setIdx((i) => (i - 1 + media.length) % media.length)}
-                  className="absolute top-1/2 left-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
+                  className="bg-overlay text-inverse-fg absolute top-1/2 left-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full"
                   aria-label="Previous"
                 >
                   <ChevronLeft size={16} />
@@ -264,7 +264,7 @@ export function InspirationDetail({
                 <button
                   type="button"
                   onClick={() => setIdx((i) => (i + 1) % media.length)}
-                  className="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
+                  className="bg-overlay text-inverse-fg absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full"
                   aria-label="Next"
                 >
                   <ChevronRight size={16} />
@@ -274,7 +274,7 @@ export function InspirationDetail({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white sm:hidden"
+              className="bg-overlay text-inverse-fg absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full sm:hidden"
               aria-label="Close"
             >
               <X size={16} />

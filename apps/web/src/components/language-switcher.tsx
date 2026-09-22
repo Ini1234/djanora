@@ -20,8 +20,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-0.5 rounded-full border p-0.5 text-xs font-semibold',
-        'border-black/10 bg-black/4 dark:border-white/10 dark:bg-white/6',
+        'border-nav-border bg-hover flex items-center gap-0.5 rounded-full border p-0.5 text-xs font-semibold',
         className,
       )}
       aria-label="Language"
@@ -35,8 +34,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           className={cn(
             'rounded-full px-2.5 py-0.5 tracking-wide uppercase transition-all duration-150',
             locale === lang
-              ? 'bg-gold-600 text-brand-900 shadow-sm'
-              : 'text-brand-500 dark:text-brand-400 hover:text-brand-800 dark:hover:text-white',
+              ? 'bg-primary text-primary-fg shadow-sm'
+              : 'text-nav-muted hover:text-nav-fg',
           )}
           aria-pressed={locale === lang}
           aria-label={lang === 'en' ? 'English' : 'Français'}

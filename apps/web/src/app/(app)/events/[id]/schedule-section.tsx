@@ -1008,7 +1008,7 @@ function ScheduleForm({
         onToggle={(id) => setInspirationItemIds((prev) => toggleId(prev, id))}
         icon={<Sparkles size={10} />}
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
@@ -1022,7 +1022,7 @@ function ScheduleForm({
           type="button"
           onClick={submit}
           disabled={isPending || (Boolean(initial) && !inspirationsReady)}
-          className="bg-gold-600 text-brand-900 hover:bg-gold-500 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+          className="bg-primary hover:bg-primary-hover text-primary-fg inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-40"
         >
           {isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
           Save

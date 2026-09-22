@@ -262,10 +262,7 @@ export function LikesClient() {
                     >
                       {v.businessName}
                       {v.isVerified && (
-                        <BadgeCheck
-                          size={13}
-                          className="text-gold-700 dark:text-gold-400 ml-1 inline"
-                        />
+                        <BadgeCheck size={13} className="text-primary ml-1 inline" />
                       )}
                     </p>
                     <p className="truncate text-xs" style={{ color: 'var(--color-muted)' }}>
@@ -326,7 +323,7 @@ export function LikesClient() {
 
       {saveLook && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSaveLook(null)} />
+          <div className="bg-overlay absolute inset-0" onClick={() => setSaveLook(null)} />
           <div
             className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
             style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
