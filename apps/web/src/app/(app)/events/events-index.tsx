@@ -102,14 +102,15 @@ function EventList({ events, past }: { events: Event[]; past?: boolean }) {
   )
 }
 
-export function EventsIndex() {
-  const [events, setEvents] = useState<Event[]>([])
-  const [loading, setLoading] = useState(true)
+export function EventsIndex({ initialEvents }: { initialEvents?: Event[] }) {
+  const [events, setEvents] = useState<Event[]>(initialEvents ?? [])
+  const [loading, setLoading] = useState(!initialEvents)
   const { upcoming, past } = splitByTiming(events)
   const next = upcoming[0] ?? null
   const rest = upcoming.slice(1)
 
   useEffect(() => {
+    if (initialEvents) return
     let cancelled = false
     proxyClient
       .get<Event[]>('/events')
@@ -125,7 +126,7 @@ export function EventsIndex() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initialEvents])
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">

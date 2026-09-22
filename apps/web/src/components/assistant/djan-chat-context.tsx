@@ -1,11 +1,30 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+
+export type DjanSheetKind = 'guests' | 'budget' | 'checklist' | 'schedule' | 'party'
+
+export type DjanSheetAttachment = {
+  kind: DjanSheetKind
+  filename: string
+  grid: string[][]
+  truncated?: boolean
+}
 
 type DjanChatContextValue = {
   open: boolean
   eventId?: string
-  openChat: (opts?: { eventId?: string }) => void
+  pendingSheet?: DjanSheetAttachment
+  openChat: (opts?: { eventId?: string; sheet?: DjanSheetAttachment }) => void
+  consumePendingSheet: () => DjanSheetAttachment | undefined
   closeChat: () => void
   toggleChat: () => void
 }
@@ -15,10 +34,21 @@ const DjanChatContext = createContext<DjanChatContextValue | null>(null)
 export function DjanChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [eventId, setEventId] = useState<string | undefined>()
+  const [pendingSheet, setPendingSheet] = useState<DjanSheetAttachment | undefined>()
+  const pendingRef = useRef<DjanSheetAttachment | undefined>(undefined)
 
-  const openChat = useCallback((opts?: { eventId?: string }) => {
+  const openChat = useCallback((opts?: { eventId?: string; sheet?: DjanSheetAttachment }) => {
     setEventId(opts?.eventId)
+    pendingRef.current = opts?.sheet
+    setPendingSheet(opts?.sheet)
     setOpen(true)
+  }, [])
+
+  const consumePendingSheet = useCallback(() => {
+    const taken = pendingRef.current
+    pendingRef.current = undefined
+    setPendingSheet(undefined)
+    return taken
   }, [])
 
   const closeChat = useCallback(() => setOpen(false), [])
@@ -28,8 +58,16 @@ export function DjanChatProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ open, eventId, openChat, closeChat, toggleChat }),
-    [open, eventId, openChat, closeChat, toggleChat],
+    () => ({
+      open,
+      eventId,
+      pendingSheet,
+      openChat,
+      consumePendingSheet,
+      closeChat,
+      toggleChat,
+    }),
+    [open, eventId, pendingSheet, openChat, consumePendingSheet, closeChat, toggleChat],
   )
 
   return <DjanChatContext.Provider value={value}>{children}</DjanChatContext.Provider>

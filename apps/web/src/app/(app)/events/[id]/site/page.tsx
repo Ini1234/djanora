@@ -12,7 +12,10 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const event = await getEvent(id)
-  return { title: event ? `${event.title} · Site` : 'Site' }
+  return {
+    title: event ? `${event.title} · Site` : 'Site',
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function EventSitePage({ params }: Props) {

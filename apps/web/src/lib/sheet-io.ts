@@ -98,6 +98,45 @@ export function parseCsv(input: string): string[][] {
   return rows.filter((cells) => cells.some((cell) => cell.trim()))
 }
 
+export const SHEET_GRID_ROW_CAP = 100
+export const SHEET_GRID_COL_CAP = 20
+export const SHEET_CELL_CAP = 200
+
+function gridFromAoa(aoa: unknown[][]): { grid: string[][]; truncated: boolean } {
+  const raw = aoa.map((row) => (Array.isArray(row) ? row : [row]))
+  const width = Math.min(Math.max(0, ...raw.map((row) => row.length)), SHEET_GRID_COL_CAP)
+  const padded = raw
+    .map((row) =>
+      Array.from({ length: width }, (_, i) =>
+        String(row[i] ?? '')
+          .trim()
+          .slice(0, SHEET_CELL_CAP),
+      ),
+    )
+    .filter((row) => row.some((cell) => cell))
+  return {
+    grid: padded.slice(0, SHEET_GRID_ROW_CAP),
+    truncated: padded.length > SHEET_GRID_ROW_CAP,
+  }
+}
+
+export async function parseGridFile(file: File): Promise<{ grid: string[][]; truncated: boolean }> {
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods')) {
+    const XLSX = await import('xlsx')
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    if (!sheet) return { grid: [], truncated: false }
+    const aoa = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, {
+      header: 1,
+      defval: '',
+      raw: false,
+    })
+    return gridFromAoa(aoa)
+  }
+  return gridFromAoa(parseCsv(await file.text()))
+}
+
 function tableFromAoa(aoa: unknown[][]): SheetTable {
   const grid = aoa.map((row) => (Array.isArray(row) ? row : [row]))
   if (grid.length === 0) return { headers: [], rows: [] }

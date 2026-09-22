@@ -4,7 +4,16 @@ import { cache } from 'react'
 import { getBackendClerkToken } from '@/lib/clerk-token'
 import { backend } from '@/lib/backend'
 import { BackendUnavailableError, classifyAxiosFailure } from '@/lib/backend-errors'
-import type { Event, Guest, MyVendorProfile, UserMe, VendorPost } from '@/lib/api.types'
+import type {
+  Event,
+  EventBudgetItem,
+  EventChecklistItem,
+  EventScheduleItem,
+  Guest,
+  MyVendorProfile,
+  UserMe,
+  VendorPost,
+} from '@/lib/api.types'
 
 const RSC_TIMEOUT_MS = 15_000
 
@@ -50,6 +59,18 @@ export const getEvent = cache(async (id: string): Promise<Event | null> => {
 
 export const getGuests = cache(async (eventId: string): Promise<Guest[]> => {
   return (await serverFetch<Guest[]>(`/events/${eventId}/guests`)) ?? []
+})
+
+export const getEventChecklist = cache(async (eventId: string) => {
+  return serverFetch<EventChecklistItem[]>(`/events/${eventId}/checklist`)
+})
+
+export const getEventBudget = cache(async (eventId: string) => {
+  return serverFetch<EventBudgetItem[]>(`/events/${eventId}/budget`)
+})
+
+export const getEventSchedule = cache(async (eventId: string) => {
+  return serverFetch<EventScheduleItem[]>(`/events/${eventId}/schedule`)
 })
 
 export const getMyVendorProfile = cache(async (): Promise<MyVendorProfile | null> => {

@@ -3,7 +3,6 @@ import {
   Sparkles,
   MapPin,
   ChevronRight,
-  Star,
   Users,
   CalendarDays,
   Wallet,
@@ -15,8 +14,10 @@ import {
   Shirt,
   CheckCircle2,
 } from 'lucide-react'
-import { Navbar } from '@/components/layout/navbar'
+import { JsonLd } from '@/components/json-ld'
 import { Footer } from '@/components/layout/footer'
+import { Navbar } from '@/components/layout/navbar'
+import { PLAN_STEPS, PRODUCT_FAQ, faqJsonLd, howToJsonLd } from '@/lib/seo'
 
 const vendorCategories = [
   { icon: Utensils, label: 'Catering', description: 'Menus for any celebration' },
@@ -27,26 +28,11 @@ const vendorCategories = [
   { icon: Shirt, label: 'Fashion & Styling', description: 'Looks for the day' },
 ]
 
-const steps = [
-  {
-    number: '01',
-    title: 'Create your event',
-    description:
-      'Add the date, location, and what you are celebrating. Invite collaborators so everyone sees the same plan.',
-  },
-  {
-    number: '02',
-    title: 'Set your budget',
-    description:
-      'Enter your total budget and we break it down by category — catering, decor, photography and more.',
-  },
-  {
-    number: '03',
-    title: 'Find & book vendors',
-    description:
-      'Browse local vendors, send inquiries, get quotes, and keep bookings in one place.',
-  },
-]
+const steps = PLAN_STEPS.map((step, index) => ({
+  number: String(index + 1).padStart(2, '0'),
+  title: step.name,
+  description: step.text,
+}))
 
 const features = [
   {
@@ -57,13 +43,12 @@ const features = [
   {
     icon: Wallet,
     title: 'Smart budget tracker',
-    description:
-      'See exactly where your money goes. Budget items update automatically as you book vendors.',
+    description: 'See exactly where your money goes. Budget items update as you book vendors.',
   },
   {
     icon: Users,
-    title: 'Vetted local vendors',
-    description: 'Every vendor on Djanora is reviewed by the community and ready to book.',
+    title: 'Reviewed local vendors',
+    description: 'Vendor profiles appear to hosts only after Djanora reviews them.',
   },
   {
     icon: CalendarDays,
@@ -77,16 +62,21 @@ export function LandingPage() {
   return (
     <>
       <Navbar />
+      <JsonLd
+        data={howToJsonLd({
+          name: 'Plan your event in 3 steps',
+          description: 'How hosts use Djanora to plan a celebration.',
+          steps: PLAN_STEPS.map((step) => ({ name: step.name, text: step.text })),
+        })}
+      />
+      <JsonLd data={faqJsonLd([...PRODUCT_FAQ])} />
 
       <main id="main-content">
-        {/* ── HERO ────────────────────────────────────────────── */}
         <section
           className="relative overflow-hidden px-4 pt-32 pb-20 sm:px-6 lg:px-8"
           aria-labelledby="hero-heading"
         >
-          {/* Subtle dot pattern background */}
           <div className="pattern-adire absolute inset-0 opacity-40" aria-hidden="true" />
-          {/* Gradient overlay */}
           <div
             className="absolute inset-0 bg-gradient-to-b from-[var(--color-background)] via-transparent to-[var(--color-background)]"
             aria-hidden="true"
@@ -109,9 +99,13 @@ export function LandingPage() {
               Your way.
             </h1>
 
-            <p className="text-muted mx-auto mb-10 max-w-2xl text-lg leading-relaxed sm:text-xl">
-              Djanora helps you plan your event — budget, vendors, guests, and the day-of schedule —
-              all in one place.
+            <p className="text-muted mx-auto mb-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
+              Djanora is event planning software for hosts and vendors. It keeps budget, vendors,
+              guests, and the day-of schedule in one place.
+            </p>
+            <p className="text-muted mx-auto mb-10 max-w-2xl text-base leading-relaxed">
+              It is free to start. Djanora is not a payments processor — hosts contract with vendors
+              directly, and we do not take a booking commission.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -119,39 +113,25 @@ export function LandingPage() {
                 Start planning for free
                 <ChevronRight size={18} aria-hidden="true" />
               </Link>
-              <Link href="/vendors" className="btn btn-secondary btn-lg">
-                Browse vendors
+              <Link href="/for-vendors" className="btn btn-secondary btn-lg">
+                For vendors
               </Link>
             </div>
 
-            {/* Social proof */}
             <div className="text-muted mt-12 flex flex-wrap items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-1.5">
-                <div className="flex" aria-label="5 star rating">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      className="fill-foreground text-foreground"
-                      aria-hidden="true"
-                    />
-                  ))}
-                </div>
-                <span>Loved by Ottawa families</span>
-              </div>
-              <span aria-hidden="true" className="text-border hidden sm:block">
-                •
-              </span>
               <span>Budget, vendors, and guests in one place</span>
               <span aria-hidden="true" className="text-border hidden sm:block">
                 •
               </span>
-              <span>100% free to start</span>
+              <span>Free to start. No credit card.</span>
+              <span aria-hidden="true" className="text-border hidden sm:block">
+                •
+              </span>
+              <span>Based in Ottawa, Ontario</span>
             </div>
           </div>
         </section>
 
-        {/* ── VENDOR CATEGORIES ───────────────────────────────── */}
         <section
           className="bg-[var(--page-bg)] px-4 py-16 sm:px-6 lg:px-8"
           aria-labelledby="categories-heading"
@@ -161,9 +141,12 @@ export function LandingPage() {
               id="categories-heading"
               className="font-display text-foreground mb-2 text-center text-2xl font-semibold"
             >
-              Everything you need, in one place
+              Vendors hosts look for
             </h2>
-            <p className="text-muted mb-10 text-center">Vendors for every part of the day</p>
+            <p className="text-muted mb-10 text-center">
+              Catering, music, photography, decor, hosts, and styling — after Djanora reviews the
+              profile.
+            </p>
 
             <ul
               className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
@@ -171,24 +154,18 @@ export function LandingPage() {
               aria-label="Vendor categories"
             >
               {vendorCategories.map(({ icon: Icon, label, description }) => (
-                <li key={label}>
-                  <Link
-                    href={`/vendors?category=${label.toLowerCase().replace(/ /g, '-')}`}
-                    className="card hover:border-foreground/20 group flex flex-col items-center p-4 text-center transition-all hover:shadow-md"
-                  >
-                    <span className="group-hover:bg-border mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--page-bg)] transition-colors">
-                      <Icon size={22} className="text-foreground" aria-hidden="true" />
-                    </span>
-                    <span className="text-foreground mb-1 text-sm font-semibold">{label}</span>
-                    <span className="text-muted text-xs leading-relaxed">{description}</span>
-                  </Link>
+                <li key={label} className="card flex flex-col items-center p-4 text-center">
+                  <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--page-bg)]">
+                    <Icon size={22} className="text-foreground" aria-hidden="true" />
+                  </span>
+                  <span className="text-foreground mb-1 text-sm font-semibold">{label}</span>
+                  <span className="text-muted text-xs leading-relaxed">{description}</span>
                 </li>
               ))}
             </ul>
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ────────────────────────────────────── */}
         <section
           id="how-it-works"
           className="px-4 py-24 sm:px-6 lg:px-8"
@@ -203,7 +180,8 @@ export function LandingPage() {
                 Plan your event in 3 steps
               </h2>
               <p className="text-muted mx-auto max-w-xl text-lg">
-                No more Googling vendors, guessing at traditions, or spreadsheet budgets.
+                Create the event, set a budget, then inquire with approved vendors from the same
+                plan.
               </p>
             </div>
 
@@ -233,7 +211,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ── FEATURES ────────────────────────────────────────── */}
         <section
           className="panel-inverse px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="features-heading"
@@ -244,7 +221,7 @@ export function LandingPage() {
                 id="features-heading"
                 className="font-display text-inverse-foreground mb-4 text-4xl font-semibold"
               >
-                Built for planners and vendors
+                Built for hosts and vendors
               </h2>
               <p className="text-inverse-muted mx-auto max-w-xl text-lg">
                 Keep the plan, the people, and the budget together so nothing slips through.
@@ -268,7 +245,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ── FOR VENDORS ─────────────────────────────────────── */}
         <section
           id="for-vendors"
           className="px-4 py-24 sm:px-6 lg:px-8"
@@ -284,17 +260,17 @@ export function LandingPage() {
                   id="vendors-cta-heading"
                   className="font-display text-foreground mb-6 text-4xl leading-tight font-semibold"
                 >
-                  Reach planners who are ready to book
+                  Reach hosts who are already planning
                 </h2>
                 <p className="text-muted mb-8 text-lg leading-relaxed">
-                  Create a portfolio, showcase your work, and get discovered by people planning
-                  events. No commission on bookings — you keep what you earn.
+                  Create a profile, show your work, and get inquiries from people who already have a
+                  date and a budget. No booking commission.
                 </p>
 
                 <ul className="mb-8 flex flex-col gap-3" role="list">
                   {[
                     'Free to create a profile',
-                    'Reach planners who are ready to book',
+                    'Djanora reviews listings before hosts see them',
                     'Manage inquiries in one dashboard',
                     'No booking commissions',
                   ].map((item) => (
@@ -305,31 +281,55 @@ export function LandingPage() {
                   ))}
                 </ul>
 
-                <Link href="/vendor/sign-up" className="btn btn-primary btn-lg">
-                  Join as a vendor
+                <Link href="/for-vendors" className="btn btn-primary btn-lg">
+                  How vendor listing works
                   <ChevronRight size={18} aria-hidden="true" />
                 </Link>
               </div>
 
-              {/* Visual card */}
-              <div
-                className="panel-inverse relative overflow-hidden rounded-3xl p-8"
-                aria-hidden="true"
-              >
-                <div className="pattern-adire absolute inset-0 opacity-10" />
+              <div className="panel-inverse relative overflow-hidden rounded-3xl p-8">
+                <div className="pattern-adire absolute inset-0 opacity-10" aria-hidden="true" />
                 <div className="relative">
-                  <div className="mb-4 text-4xl">🎊</div>
-                  <p className="font-display mb-2 text-2xl font-semibold">
-                    &ldquo;Finally, a platform that keeps the whole event in one place.&rdquo;
+                  <p className="text-inverse-muted mb-3 text-xs font-semibold tracking-widest uppercase">
+                    What you keep
                   </p>
-                  <p className="text-inverse-muted text-sm">— Ottawa vendor community</p>
+                  <p className="font-display mb-2 text-2xl font-semibold">
+                    You keep the booking. Djanora is the plan, not the middleman.
+                  </p>
+                  <p className="text-inverse-muted text-sm">
+                    Hosts and vendors contract with each other. We do not process the payment.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── FINAL CTA ───────────────────────────────────────── */}
+        <section
+          id="faq"
+          className="bg-[var(--page-bg)] px-4 py-24 sm:px-6 lg:px-8"
+          aria-labelledby="faq-heading"
+        >
+          <div className="mx-auto max-w-3xl">
+            <h2
+              id="faq-heading"
+              className="font-display text-foreground mb-10 text-center text-4xl font-semibold"
+            >
+              Questions about Djanora
+            </h2>
+            <dl className="space-y-6">
+              {PRODUCT_FAQ.map((item) => (
+                <div key={item.question} className="card p-6">
+                  <dt className="font-display text-foreground text-lg font-semibold">
+                    {item.question}
+                  </dt>
+                  <dd className="text-muted mt-2 text-sm leading-relaxed">{item.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
         <section
           className="border-border border-y px-4 py-24 sm:px-6 lg:px-8"
           aria-labelledby="final-cta-heading"
@@ -342,8 +342,8 @@ export function LandingPage() {
               Your event starts here
             </h2>
             <p className="text-muted mb-10 text-lg">
-              Free to start. No credit card required. Plan your event with vendors, budget, and
-              guests in one place.
+              Free to start. No credit card required. Plan with vendors, budget, and guests in one
+              place.
             </p>
             <Link href="/sign-up" className="btn btn-primary btn-lg text-lg">
               Start planning your event

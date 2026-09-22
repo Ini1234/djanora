@@ -12,6 +12,15 @@ import { isSessionCookieName } from '@/lib/clerk-token'
 import { isSandboxHost } from '@/lib/is-sandbox-host'
 import { SandboxBanner } from '@/components/sandbox-banner'
 import { SkipLink } from '@/components/skip-link'
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+  indexRobots,
+  noindexRobots,
+  organizationJsonLd,
+  websiteJsonLd,
+} from '@/lib/seo'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -21,49 +30,33 @@ const playfair = Playfair_Display({
   weight: ['400', '500', '600', '700'],
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://djanora.com'),
-  title: {
-    default: 'Djanora | Plan Your Event',
-    template: '%s | Djanora',
-  },
-  description:
-    'Plan your event with confidence. Djanora keeps budget, vendors, guests, and the day-of schedule in one place.',
-  keywords: [
-    'event planning',
-    'event planner',
-    'book vendors',
-    'event budget',
-    'guest list',
-    'event schedule',
-    'catering',
-    'photography',
-    'event vendors',
-    'plan your event',
-  ],
-  authors: [{ name: 'Djanora' }],
-  creator: 'Djanora',
-  openGraph: {
-    type: 'website',
-    locale: 'en_CA',
-    url: 'https://djanora.com',
-    siteName: 'Djanora',
-    title: 'Djanora — Plan Your Event',
-    description:
-      'Connect with trusted vendors. Plan your event on budget — guests, schedule, and bookings in one place.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Djanora — plan your event' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Djanora — Plan Your Event',
-    description: 'Plan your event on budget — vendors, guests, and schedule in one place.',
-    images: ['/og-image.jpg'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const headerList = await headers()
+  const sandbox = isSandboxHost(headerList.get('x-forwarded-host') ?? headerList.get('host'))
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: `${SITE_NAME} | Plan Your Event`,
+      template: '%s | Djanora',
+    },
+    description: SITE_DESCRIPTION,
+    authors: [{ name: SITE_NAME }],
+    creator: SITE_NAME,
+    openGraph: {
+      type: 'website',
+      locale: 'en_CA',
+      url: SITE_URL,
+      siteName: SITE_NAME,
+      title: `${SITE_NAME} — Plan Your Event`,
+      description: SITE_DESCRIPTION,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${SITE_NAME} — Plan Your Event`,
+      description: SITE_DESCRIPTION,
+    },
+    robots: sandbox ? noindexRobots : indexRobots,
+  }
 }
 
 export const viewport: Viewport = {
@@ -73,20 +66,7 @@ export const viewport: Viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Djanora',
-  url: 'https://djanora.com',
-  description:
-    'Event planning platform for planners and vendors — budget, vendors, guests, and schedule in one place.',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: 'https://djanora.com/vendors?q={search_term_string}',
-    'query-input': 'required name=search_term_string',
-  },
+  viewportFit: 'cover',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -107,7 +87,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="flex min-h-full flex-col bg-[var(--color-background)] text-[var(--color-foreground)]">
         <SkipLink />
         <SandboxBanner />
-        <JsonLd data={websiteJsonLd} />
+        {!sandbox && (
+          <>
+            <JsonLd data={organizationJsonLd()} />
+            <JsonLd data={websiteJsonLd()} />
+          </>
+        )}
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
             <ClerkAuthProvider>

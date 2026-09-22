@@ -70,6 +70,47 @@ export function makeStoredMessage(
   }
 }
 
+export function confirmTokensIn(messages: StoredChatMessage[]): string[] {
+  const tokens: string[] = []
+  for (const message of messages) {
+    for (const card of confirmsOf(message)) {
+      tokens.push(card.confirm_token)
+    }
+  }
+  return tokens
+}
+
+export function withoutConfirmTokens(
+  messages: StoredChatMessage[],
+  tokens: Set<string>,
+): StoredChatMessage[] {
+  if (tokens.size === 0) return messages
+  let changed = false
+  const next = messages.map((message) => {
+    if (!isRecord(message.parts) || !Array.isArray(message.parts.confirms)) return message
+    const confirms = message.parts.confirms.filter((item) => {
+      return (
+        !isRecord(item) || typeof item.confirm_token !== 'string' || !tokens.has(item.confirm_token)
+      )
+    })
+    if (confirms.length === message.parts.confirms.length) return message
+    changed = true
+    const parts = { ...message.parts }
+    if (confirms.length) parts.confirms = confirms
+    else delete parts.confirms
+    return { ...message, parts: Object.keys(parts).length ? parts : null }
+  })
+  return changed ? next : messages
+}
+
+function confirmsOf(message: StoredChatMessage): { confirm_token: string }[] {
+  if (!isRecord(message.parts) || !Array.isArray(message.parts.confirms)) return []
+  return message.parts.confirms.flatMap((item) => {
+    if (!isRecord(item) || typeof item.confirm_token !== 'string' || !item.confirm_token) return []
+    return [{ confirm_token: item.confirm_token }]
+  })
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }

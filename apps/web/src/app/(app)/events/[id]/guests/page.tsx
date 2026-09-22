@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Users } from 'lucide-react'
-import { getEvent } from '@/lib/api.server'
+import { getEvent, getGuests } from '@/lib/api.server'
 import { GuestsClient } from './guests-client'
 import { EventAccessProvider } from '../event-access-context'
 
@@ -13,12 +13,15 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const event = await getEvent(id)
-  return { title: event ? `${event.title} · Guests` : 'Guests' }
+  return {
+    title: event ? `${event.title} · Guests` : 'Guests',
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function GuestsPage({ params }: Props) {
   const { id } = await params
-  const event = await getEvent(id)
+  const [event, guests] = await Promise.all([getEvent(id), getGuests(id)])
 
   if (!event) notFound()
   const viewer = event.viewer
@@ -45,7 +48,7 @@ export default async function GuestsPage({ params }: Props) {
       </div>
 
       <EventAccessProvider eventId={id} viewer={event.viewer}>
-        <GuestsClient eventId={id} event={event} />
+        <GuestsClient eventId={id} event={event} initialGuests={guests} />
       </EventAccessProvider>
     </div>
   )

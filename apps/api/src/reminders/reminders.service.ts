@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service'
 import { NotificationType } from '@prisma/client'
+import { mapPool } from '../common/map-pool'
+import { REMINDER_BATCH_CAP } from '../common/list-cap'
 
 @Injectable()
 export class RemindersService {
@@ -43,11 +45,13 @@ export class RemindersService {
           include: { user: true },
         },
       },
+      take: REMINDER_BATCH_CAP,
+      orderBy: { dueDate: 'asc' },
     })
 
     this.logger.log(`Found ${items.length} checklist item(s) to remind`)
 
-    for (const item of items) {
+    await mapPool(items, 4, async (item) => {
       const { user } = item.event
       const dueDateLabel = item.dueDate
         ? new Date(item.dueDate).toLocaleDateString('en-CA', {
@@ -57,7 +61,6 @@ export class RemindersService {
           })
         : 'today'
 
-      // ── In-app notification (always) ─────────────────────────────────
       await this.notifications.create(
         user.id,
         NotificationType.EVENT_REMINDER,
@@ -70,7 +73,6 @@ export class RemindersService {
         },
       )
 
-      // ── Email ─────────────────────────────────────────────────────────
       if (item.notifyByEmail) {
         await this.delivery.sendEmail({
           to: user.email,
@@ -85,7 +87,6 @@ export class RemindersService {
         })
       }
 
-      // ── SMS ───────────────────────────────────────────────────────────
       if (item.notifyBySms && user.phone) {
         await this.delivery.sendSms({
           to: user.phone,
@@ -93,12 +94,11 @@ export class RemindersService {
         })
       }
 
-      // ── Stamp notifiedAt ─────────────────────────────────────────────
       await this.prisma.eventChecklist.update({
         where: { id: item.id },
         data: { notifiedAt: now },
       })
-    }
+    })
 
     this.logger.log('Reminder job complete.')
   }
@@ -129,11 +129,13 @@ export class RemindersService {
         vendorProfile: { select: { id: true, slug: true, businessName: true } },
         event: { select: { id: true, title: true } },
       },
+      take: REMINDER_BATCH_CAP,
+      orderBy: { bookedAt: 'asc' },
     })
 
-    for (const inquiry of inquiries) {
+    await mapPool(inquiries, 4, async (inquiry) => {
       const event = inquiry.event
-      if (!event) continue
+      if (!event) return
 
       const already = await this.prisma.review.findUnique({
         where: {
@@ -149,7 +151,7 @@ export class RemindersService {
           where: { id: inquiry.id },
           data: { reviewRequestedAt: new Date() },
         })
-        continue
+        return
       }
 
       await this.notifications.create(
@@ -167,7 +169,7 @@ export class RemindersService {
         where: { id: inquiry.id },
         data: { reviewRequestedAt: new Date() },
       })
-    }
+    })
 
     this.logger.log(`Review-request job complete (${inquiries.length} booked inquiries).`)
   }

@@ -24,7 +24,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={() => setTheme(next)}
         aria-label={`Switch theme (current: ${theme})`}
-        className="text-brand-400 hover:text-brand-200 light:hover:bg-black/6 rounded-lg p-1.5 transition-colors hover:bg-white/6 dark:hover:bg-white/6"
+        className="tap-target text-brand-400 hover:text-brand-200 light:hover:bg-black/6 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-white/6 dark:hover:bg-white/6"
       >
         <Current size={15} aria-hidden="true" />
       </button>

@@ -60,6 +60,23 @@ export class NotificationDeliveryService {
     }
   }
 
+  async sendContactEmail(opts: { replyTo: string; subject: string; html: string }): Promise<void> {
+    const to = this.contactEmail()
+    const from = this.fromAddress('notification')
+    const result = await this.resend.emails.send({
+      from,
+      to,
+      replyTo: opts.replyTo,
+      subject: opts.subject,
+      html: opts.html,
+    })
+    if (result.error) {
+      this.logger.error(`Failed to send contact email to ${to}`, result.error)
+      throw new Error(result.error.message)
+    }
+    this.logger.log(`Contact email sent to ${to}: ${opts.subject}`)
+  }
+
   private fromAddress(kind: TransactionalEmailKind): string {
     const specific =
       kind === 'invitation'

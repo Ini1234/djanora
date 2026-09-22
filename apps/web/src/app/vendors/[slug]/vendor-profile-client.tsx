@@ -92,6 +92,14 @@ function SaveLookModal({ post, onClose }: { post: VendorLook; onClose: () => voi
   const [done, setDone] = useState(false)
 
   useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
     proxyClient
       .get('/events')
       .then(({ data }) => {
@@ -123,17 +131,35 @@ function SaveLookModal({ post, onClose }: { post: VendorLook; onClose: () => voi
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center">
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-look-title"
+    >
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
         className="relative w-full max-w-sm space-y-3 rounded-2xl p-5"
-        style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+        style={{
+          background: 'var(--color-card)',
+          border: '1px solid var(--color-border)',
+          paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 0px))',
+        }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+          <h3
+            id="save-look-title"
+            className="text-sm font-semibold"
+            style={{ color: 'var(--color-foreground)' }}
+          >
             Save to mood board
           </h3>
-          <button type="button" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="tap-target inline-flex items-center justify-center rounded-lg"
+          >
             <X size={16} style={{ color: 'var(--color-muted)' }} />
           </button>
         </div>

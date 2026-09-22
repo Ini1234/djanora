@@ -4,7 +4,9 @@
 #
 # Required GitHub secret:
 #   AZUREAPPSERVICE_PUBLISHPROFILE_A20C9377A1E64FA495F5219F5618391A
-# Runtime env (set on the Azure app, not here): DATABASE_URL, WEB_URL,
+# Health: Azure should probe GET /api/health/ready (503 if Postgres is down).
+# Runtime env (set on the Azure app, not here): DATABASE_URL, optional DIRECT_URL
+#   (unpooled, migrations only), WEB_URL,
 #   NEXT_PUBLIC_API_URL, CLERK_* (include CLERK_PUBLISHABLE_KEY or
 #   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY for MCP OAuth discovery), RESEND_* (RESEND_FROM_INVITATIONS,
 #   RESEND_FROM_NOTIFICATIONS, optional DJANORA_CONTACT_EMAIL),

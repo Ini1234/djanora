@@ -4,7 +4,7 @@ import { InspirationService } from './inspiration.service'
 describe('re-embed admin gate', () => {
   it('404s when the caller is not ADMIN', async () => {
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) },
+      user: { findFirst: jest.fn().mockResolvedValue({ role: 'USER' }) },
     }
     const svc = new InspirationService(prisma as any, {} as any, {} as any, {} as any, {} as any)
 

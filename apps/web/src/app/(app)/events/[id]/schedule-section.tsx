@@ -22,7 +22,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
-import { useLazyGet } from '@/lib/use-lazy-get'
+import { useEventGet } from '@/lib/use-event-get'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { getVendorCategoryLabel } from '@/lib/vendor-categories'
 import { useTranslations } from 'next-intl'
@@ -90,13 +90,13 @@ export function ScheduleSection({
   const tCat = useTranslations('vendorCategories')
   const { canEdit, canSee } = useEventAccess()
   const { reload: reloadMoodBoard } = useMoodBoardLinks()
-  const fetchedSchedule = useLazyGet<EventScheduleItem[]>(
+  const fetchedSchedule = useEventGet<EventScheduleItem[]>(
     initialItems ? null : `/events/${eventId}/schedule`,
   )
-  const fetchedBudget = useLazyGet<EventBudgetItem[]>(
+  const fetchedBudget = useEventGet<EventBudgetItem[]>(
     budgetProp || !canSee('BUDGET') ? null : `/events/${eventId}/budget`,
   )
-  const fetchedChecklist = useLazyGet<EventChecklistItem[]>(
+  const fetchedChecklist = useEventGet<EventChecklistItem[]>(
     checklistProp || !canSee('CHECKLIST') ? null : `/events/${eventId}/checklist`,
   )
   const [items, setItems] = useHydratedState(

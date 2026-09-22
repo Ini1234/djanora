@@ -8,14 +8,26 @@ import { UsersService } from '../users/users.service'
 import { AssistantAgentService, type AgentTurn } from './assistant.agent'
 import { AssistantRateLimitService } from './assistant.rate-limit'
 import { sanitizePageContext, type PageContext } from './assistant.navigate'
+import { sanitizeSheetContext } from './assistant.sheet'
+import { sha256Hex } from '../mcp/mcp.hash'
 import {
+  confirmTokensIn,
   emptyTranscript,
   makeStoredMessage,
   parseTranscript,
+  withoutConfirmTokens,
   withTranscriptIdentity,
   type ChatTranscript,
   type StoredChatMessage,
 } from './assistant.transcript'
+import {
+  importConfirmMessage,
+  isAlreadyDone,
+  isJobFailure,
+  jobFailureCopy,
+  jobResultCode,
+} from './assistant.copy'
+import { isUnusedAssistantThread, nextThreadTitle } from './assistant.title'
 
 export type MessageParts = {
   confirms?: AgentTurn['confirms']
@@ -38,7 +50,7 @@ export class AssistantService {
 
   async listThreads(clerkId: string) {
     const user = await this.users.ensureFromClerk(clerkId)
-    return this.prisma.assistantThread.findMany({
+    const threads = await this.prisma.assistantThread.findMany({
       where: { userId: user.id },
       orderBy: { updatedAt: 'desc' },
       take: 50,
@@ -52,6 +64,7 @@ export class AssistantService {
         currentEvent: { select: { id: true, title: true } },
       },
     })
+    return threads.filter((thread) => !isUnusedAssistantThread(thread))
   }
 
   async createThread(clerkId: string, eventId?: string) {
@@ -79,7 +92,12 @@ export class AssistantService {
       thread.userId,
       thread.sessionId,
     )
-    return this.presentThread(thread, transcript.messages)
+    const messages = await this.hideSettledConfirms(transcript.messages)
+    if (messages !== transcript.messages) {
+      transcript.messages = messages
+      await this.saveTranscript(thread.transcriptKey, transcript)
+    }
+    return this.presentThread(thread, messages)
   }
 
   async deleteThread(clerkId: string, threadId: string) {
@@ -103,10 +121,17 @@ export class AssistantService {
       thread.userId,
       thread.sessionId,
     )
-    return this.presentThread(updated, transcript.messages)
+    const messages = await this.hideSettledConfirms(transcript.messages)
+    return this.presentThread(updated, messages)
   }
 
-  async postMessage(clerkId: string, threadId: string, content: string, pageContext?: PageContext) {
+  async postMessage(
+    clerkId: string,
+    threadId: string,
+    content: string,
+    pageContext?: PageContext,
+    sheetContext?: unknown,
+  ) {
     this.rate.hit(clerkId)
     const thread = await this.ownedThread(clerkId, threadId)
     const user = await this.users.ensureFromClerk(clerkId)
@@ -123,6 +148,7 @@ export class AssistantService {
       activeMode: user.activeMode,
       userMessage: text,
       pageContext: sanitizePageContext(pageContext),
+      sheetContext: sanitizeSheetContext(sheetContext),
       history: transcript.messages.map((m) => ({
         role: m.role === 'user' ? 'USER' : 'ASSISTANT',
         content: m.content,
@@ -146,7 +172,12 @@ export class AssistantService {
       where: { id: threadId },
       data: {
         currentEventId,
-        title: thread.title ?? text.slice(0, 80),
+        title:
+          nextThreadTitle({
+            userMessage: text,
+            currentTitle: thread.title,
+            jobs: turn.jobs,
+          }) ?? thread.title,
         updatedAt: new Date(),
       },
       include: { currentEvent: { select: { id: true, title: true } } },
@@ -167,22 +198,34 @@ export class AssistantService {
     const thread = await this.ownedThread(clerkId, threadId)
     const args = { ...input.args, confirm_token: input.confirmToken }
     const result = await this.agent.executeTool(clerkId, thread.sessionId, input.tool, args)
-    const failed = isRecord(result) && typeof result.code === 'string' && result.code !== 'ok'
-    const content = failed
-      ? `Could not finish ${input.tool}: ${String(result.message ?? result.code)}`
-      : `Confirmed: ${input.tool} ran.`
     const transcript = await this.loadTranscript(
       thread.transcriptKey,
       thread.userId,
       thread.sessionId,
     )
+    transcript.messages = withoutConfirmTokens(transcript.messages, new Set([input.confirmToken]))
+    if (isAlreadyDone(result)) {
+      await this.saveTranscript(thread.transcriptKey, transcript)
+      return { thread: this.presentThread(thread, transcript.messages), result }
+    }
+    const content = isJobFailure(result)
+      ? jobFailureCopy(jobResultCode(result) ?? 'unavailable')
+      : importConfirmMessage(input.tool, result)
     transcript.messages.push(
       makeStoredMessage('assistant', content, { jobs: [input.tool], result }),
     )
     await this.saveTranscript(thread.transcriptKey, transcript)
     const updated = await this.prisma.assistantThread.update({
       where: { id: threadId },
-      data: { updatedAt: new Date() },
+      data: {
+        title:
+          nextThreadTitle({
+            userMessage: '',
+            currentTitle: thread.title,
+            jobs: [input.tool],
+          }) ?? thread.title,
+        updatedAt: new Date(),
+      },
       include: { currentEvent: { select: { id: true, title: true } } },
     })
     return { thread: this.presentThread(updated, transcript.messages), result }
@@ -224,6 +267,24 @@ export class AssistantService {
     )
   }
 
+  private async hideSettledConfirms(messages: StoredChatMessage[]) {
+    const tokens = confirmTokensIn(messages)
+    if (!tokens.length) return messages
+    const hashes = tokens.map((token) => sha256Hex(token))
+    const rows = await this.prisma.mcpConfirmToken.findMany({
+      where: { tokenHash: { in: hashes } },
+      select: { tokenHash: true, spentAt: true, expiresAt: true },
+    })
+    const settledHashes = new Set(
+      rows
+        .filter((row) => row.spentAt || row.expiresAt.getTime() <= Date.now())
+        .map((row) => row.tokenHash),
+    )
+    if (!settledHashes.size) return messages
+    const settled = new Set(tokens.filter((token, index) => settledHashes.has(hashes[index])))
+    return withoutConfirmTokens(messages, settled)
+  }
+
   private presentThread(
     thread: {
       id: string
@@ -247,8 +308,4 @@ export class AssistantService {
       messages,
     }
   }
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
 }

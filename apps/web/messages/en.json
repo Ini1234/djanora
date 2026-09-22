@@ -26,7 +26,7 @@
     "exportCsv": "Export CSV",
     "exportExcel": "Export Excel",
     "exportNotion": "Export Notion template",
-    "import": "Import spreadsheet",
+    "import": "Import with Djan",
     "importPreview": "Review import",
     "importDone": "Import complete",
     "previewCount": "{count} rows found",
@@ -36,7 +36,7 @@
     "emptyFile": "That file has no rows.",
     "parseFailed": "Could not read that file.",
     "importFailed": "Import failed.",
-    "tooManyRows": "Only the first 500 rows were imported."
+    "tooManyRows": "Djan can read 100 rows at a time. Split the rest."
   },
   "vendorCategories": {
     "CATERER": "Caterer / Food",
@@ -69,7 +69,41 @@
     "switchTo": "Switch to {mode} mode",
     "signOut": "Sign out",
     "planning": "Planning",
-    "vendor": "Vendor"
+    "vendor": "Vendor",
+    "admin": "Admin"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Review vendors before they appear to hosts.",
+    "queue": "Review queue",
+    "vendors": "Vendors",
+    "users": "Users",
+    "empty": "Nothing in this list.",
+    "business": "Business",
+    "category": "Category",
+    "status": "Status",
+    "applied": "Applied",
+    "city": "City",
+    "bio": "Bio",
+    "price": "Price range",
+    "links": "Links",
+    "reason": "Reason (required to reject or suspend)",
+    "lastNote": "Last note",
+    "approve": "Approve",
+    "reject": "Reject",
+    "suspend": "Suspend",
+    "restore": "Restore",
+    "person": "Person",
+    "role": "Role",
+    "actions": "Actions",
+    "promote": "Make admin",
+    "demote": "Remove admin",
+    "actionFailed": "That action failed.",
+    "status_PENDING": "Pending",
+    "status_APPROVED": "Approved",
+    "status_REJECTED": "Rejected",
+    "status_SUSPENDED": "Suspended",
+    "pendingCount": "{count} waiting"
   },
   "dashboard": {
     "welcome": "Welcome back",
@@ -311,5 +345,22 @@
     "generic": "Something went wrong. Please try again.",
     "networkError": "Network error. Check your connection.",
     "notFound": "Not found."
+  },
+  "contact": {
+    "title": "Contact us",
+    "subtitle": "Account, vendor review, and product questions. We read this inbox.",
+    "name": "Name",
+    "email": "Email",
+    "reason": "What is this about?",
+    "reason_general": "General question",
+    "reason_vendor_review": "Vendor review",
+    "reason_account": "Account",
+    "reason_bug": "Something is broken",
+    "reason_other": "Other",
+    "message": "Message",
+    "failed": "Could not send that message. Try again.",
+    "sentTitle": "Message sent",
+    "sentBody": "We’ll reply to you at this email. You can also write {email}.",
+    "reviewLink": "Question about this review? Contact us"
   }
 }

@@ -13,6 +13,7 @@ import {
   LogOut,
   Sparkles,
   Heart,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NotificationBell } from './notification-bell'
@@ -73,7 +74,12 @@ export function Sidebar({
     { href: '/settings', label: t('settings'), icon: Settings },
   ]
 
-  const nav = isVendorMode ? VENDOR_NAV : HOST_NAV
+  const nav = [
+    ...(isVendorMode ? VENDOR_NAV : HOST_NAV),
+    ...(role === 'ADMIN'
+      ? [{ href: '/admin', label: t.has('admin') ? t('admin') : 'Admin', icon: Shield }]
+      : []),
+  ]
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href)

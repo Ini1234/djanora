@@ -5,8 +5,13 @@ import { Pool } from 'pg'
 
 /**
  * Long-running Nest talks to Neon over TCP via `pg`.
- * Direct Neon computes suspend when idle; a pooled client then looks
- * alive until the next query hits a dead socket (P1008 / SocketTimeout).
+ *
+ * Production: always-on compute + pooled DATABASE_URL (PgBouncer).
+ * Migrations use DIRECT_URL (see prisma.config.ts). Connection budget:
+ * instances × pool.max must stay under Neon max − 5. Keep max at 5
+ * until instance count is known.
+ *
+ * Transient retries remain: Azure/Neon can still drop idle sockets.
  */
 function isTransientDbError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false
@@ -69,5 +74,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect()
     await this.pool.end()
+  }
+
+  /** Ready probe: one round-trip, no Prisma client cache. */
+  async ping() {
+    await this.pool.query('SELECT 1')
   }
 }

@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { EventActivityAction, EventSurface, Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService, type SsePayload } from '../sse/sse.service'
 import { EventAccessService, ALL_SURFACES } from './event-access.service'
+import { applyUnreadRows, emptyUnreadCounts } from './unread-counts'
 
 export const OVERVIEW_SURFACE = 'OVERVIEW'
 export const OPENED_SURFACE = 'OPENED'
@@ -29,6 +30,8 @@ export type ActivityLogInput = {
 
 @Injectable()
 export class EventActivityService {
+  private readonly logger = new Logger(EventActivityService.name)
+
   constructor(
     private prisma: PrismaService,
     private access: EventAccessService,
@@ -72,7 +75,10 @@ export class EventActivityService {
       await this.emitToEvent(input.eventId, input.surface, payload, input.actorId)
       void this.touchEvent(input.eventId)
       return row
-    } catch {
+    } catch (err) {
+      this.logger.warn(
+        `Failed to write event activity for ${input.eventId}: ${err instanceof Error ? err.message : 'unknown'}`,
+      )
       return null
     }
   }
@@ -83,7 +89,11 @@ export class EventActivityService {
         where: { id: eventId },
         data: { updatedAt: new Date() },
       })
-      .catch(() => {})
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to touch event ${eventId}: ${err instanceof Error ? err.message : 'unknown'}`,
+        )
+      })
   }
 
   async recordOpen(userId: string, eventId: string) {
@@ -96,7 +106,11 @@ export class EventActivityService {
         create: { eventId, userId, surface: OPENED_SURFACE, seenAt: now },
         update: { seenAt: now },
       })
-      .catch(() => {})
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to record event open ${eventId}: ${err instanceof Error ? err.message : 'unknown'}`,
+        )
+      })
   }
 
   async list(clerkId: string, eventId: string, opts: { limit?: number; cursor?: string } = {}) {
@@ -163,45 +177,42 @@ export class EventActivityService {
     const access = await this.access.require(clerkId, eventId)
     const visible = access.isHost ? ALL_SURFACES : access.surfaces
     const keys = [OVERVIEW_SURFACE, ...visible]
+    const counts = emptyUnreadCounts(keys)
 
-    const reads = await this.prisma.eventSurfaceRead.findMany({
-      where: { eventId, userId: access.user.id, surface: { in: keys } },
-    })
-    const seenAt = new Map(reads.map((r) => [r.surface, r.seenAt]))
+    const surfaceFilter =
+      visible.length === 0
+        ? Prisma.sql`AND a.surface IS NULL`
+        : Prisma.sql`AND (a.surface IS NULL OR a.surface IN (${Prisma.join(visible)}))`
 
-    const counts: Record<string, number> = {}
-    for (const key of keys) counts[key] = 0
+    const concealFilter =
+      access.isHost || !access.memberId
+        ? Prisma.sql``
+        : Prisma.sql`AND (
+            a.subject_type IS DISTINCT FROM 'CHECKLIST_ITEM'
+            OR a.subject_id IS NULL
+            OR NOT EXISTS (
+              SELECT 1 FROM event_checklist_concealments c
+              WHERE c.checklist_id = a.subject_id
+                AND c.event_member_id = ${access.memberId}
+            )
+          )`
 
-    const activities = await this.prisma.eventActivity.findMany({
-      where: {
-        eventId,
-        actorId: { not: access.user.id },
-        OR: [{ surface: null }, { surface: { in: visible } }],
-      },
-      select: { surface: true, createdAt: true, subjectType: true, subjectId: true },
-    })
+    const rows = await this.prisma.$queryRaw<Array<{ key: string; count: number }>>(Prisma.sql`
+      SELECT COALESCE(a.surface::text, ${OVERVIEW_SURFACE}) AS key, COUNT(*)::int AS count
+      FROM event_activities a
+      LEFT JOIN event_surface_reads r
+        ON r.event_id = a.event_id
+       AND r.user_id = ${access.user.id}
+       AND r.surface = COALESCE(a.surface::text, ${OVERVIEW_SURFACE})
+      WHERE a.event_id = ${eventId}
+        AND a.actor_id <> ${access.user.id}
+        ${surfaceFilter}
+        AND (r.seen_at IS NULL OR a.created_at > r.seen_at)
+        ${concealFilter}
+      GROUP BY 1
+    `)
 
-    const visibleChecklistIds = await this.access.filterVisibleChecklistIds(
-      access,
-      activities
-        .filter((row) => row.subjectType === 'CHECKLIST_ITEM' && row.subjectId)
-        .map((row) => row.subjectId!),
-    )
-
-    for (const row of activities) {
-      if (
-        row.subjectType === 'CHECKLIST_ITEM' &&
-        row.subjectId &&
-        !visibleChecklistIds.has(row.subjectId)
-      ) {
-        continue
-      }
-      const key = this.unreadKey(row.surface)
-      const seen = seenAt.get(key)
-      if (!seen || row.createdAt > seen) counts[key] = (counts[key] ?? 0) + 1
-    }
-
-    return counts
+    return applyUnreadRows(counts, rows)
   }
 
   async markSeen(clerkId: string, eventId: string, surface: string) {

@@ -111,7 +111,7 @@ export function ToastContainer({ vendorMode = false }: { vendorMode?: boolean })
 
   return (
     <div
-      className="fixed right-5 bottom-5 z-[9999] flex max-h-[calc(100vh-5rem)] flex-col-reverse gap-2 overflow-hidden"
+      className="fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] z-[9999] flex max-h-[calc(var(--app-vh)-5rem)] flex-col-reverse gap-2 overflow-hidden"
       aria-live="polite"
       aria-label="Notifications"
     >

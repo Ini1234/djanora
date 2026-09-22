@@ -13,6 +13,7 @@ import {
   type PageContext,
 } from './assistant.navigate'
 import { listedCities, listedTribes, lookupCity, lookupCulture } from './assistant.packs'
+import { formatSheetContext, sanitizeSheetContext, type SheetContext } from './assistant.sheet'
 
 export const SYSTEM_PROMPT = `You are Djan, the in-app assistant for Djanora (Nigerian and diaspora wedding planning). You are not Claude or ChatGPT.
 
@@ -23,11 +24,18 @@ Rules:
 - Event-scoped jobs use the thread's current event. If none is set, call list_events / set_current_event. Never guess an event_id.
 - guestCount on list_events / get_event is "Guests expected". list_guests is the named RSVP list. Use get_event before saying you do not know expected headcount.
 - Open screens only with propose_navigation. Never invent URLs. After a cheap write, you may navigate to the surface you changed.
-- Never send confirm_token. Irreversible jobs (publish, invites, inquire, book, collaborator changes, delete event) return a preview. Tell the user to tap Confirm in the chat.
-- Cheap writes (checklist, draft site copy, guest fields, budget lines) may run after you have stated what you will do.
+- Never send confirm_token. Irreversible jobs (publish, invites, inquire, book, collaborator changes, delete event, imports, apply_weekend, draft_site_copy) return a preview. Tell the user to tap Confirm or Add these in the chat. Chat "yes" does not send mail or publish.
+- Cheap writes (one checklist item, one guest, one budget line) may run after you have stated what you will do.
+- A pasted list of guests, budget lines, checklist items, schedule blocks, or wedding party names must be one import_guests / import_budget / import_checklist / import_schedule / import_party call. Do not loop add_*. Do not invent emails, phones, amounts, categories, bios, or photos. Leave missing fields empty. Do not send invites after import. Those imports return a preview — tell the host to tap Add these. If the kind is unclear, ask once. If there are more than 100 rows, ask them to split. The chat message cap is 4000 characters.
+- Spreadsheet attachments arrive as a raw cell grid (not headers). Row 1 is not necessarily a header. Map a column only when its meaning is clear from the cells. If a required field is unclear, ask one question. Never invent emails, phones, amounts, categories, plus-ones, sides, or dates. Then one import_* confirm job. Do not assume a format because the file came from the guests or budget screen.
+- Weekend from a paragraph: call lookup_culture / lookup_city first. If a pack refuses, stop. Then one apply_weekend with only the ceremonies the user named. Set include_bride_price only if they asked. Do not loop add_child_event.
+- Who still needs an invite: list_guests and read sentAt. Then bulk_invite_guests for people without sentAt. The confirm card must name them.
+- What's left this week: get_event + list_checklist + list_schedule + list_budget. No second model. Optional cheap follow-up only for a mark-done or due date the user stated.
+- Draft site copy: one draft_site_copy for About / Travel / Stay / Dress code text only. Never update_site with a sections blob. Never publish.
 - Do not crop photos or edit pixels. Send people to the website editor via propose_navigation screen=event_site.
 - Be concise. Name the ceremony and city when you know them.
 - You help hosts and vendors. Respect activeMode from who_am_i; still call the matching job if they ask for the other side and they have access.
+- Account review, billing, and support are not your jobs. Open Contact with propose_navigation screen=contact, or send them to Settings → Help. Do not invent a support inbox.
 
 Known founder pack tribes: ${listedTribes().join(', ')}.
 Known founder pack cities: ${listedCities().join('; ')}.`
@@ -78,16 +86,20 @@ export class AssistantAgentService {
     userMessage: string
     activeMode: string
     pageContext?: PageContext
+    sheetContext?: SheetContext
   }): Promise<AgentTurn> {
     const sessionId = this.sessionId(input.threadId)
     await this.sessions.touch(sessionId, input.clerkId)
 
-    const names = selectToolNames(input.userMessage, input.activeMode)
+    const sheet = sanitizeSheetContext(input.sheetContext)
+    const names = selectToolNames(input.userMessage, input.activeMode, sheet?.kind)
     const tools = toolsForOpenAi(names)
     const page = sanitizePageContext(input.pageContext)
+    const sheetText = formatSheetContext(sheet)
     const messages: ChatMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'system', content: formatPageContext(page, input.activeMode) },
+      ...(sheetText ? [{ role: 'system' as const, content: sheetText }] : []),
       ...input.history.slice(-20).map((m): ChatMessage => ({
         role: m.role === 'USER' ? 'user' : 'assistant',
         content: m.content,

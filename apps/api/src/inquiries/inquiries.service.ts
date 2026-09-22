@@ -21,6 +21,10 @@ import { SseService } from '../sse/sse.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { EventAccessService, allowsAction } from '../events/event-access.service'
 import { coverUrlForLook } from '../inspiration/post-shape'
+import { liveUserWhere } from '../common/active-user'
+import { listedVendorWhere } from '../vendors/vendor-listing'
+import { requireInquiryParticipant } from './inquiry-access'
+import { INQUIRY_LIST_CAP, INQUIRY_MESSAGE_CAP } from '../common/list-cap'
 
 const SHARE_PREVIEW = {
   calendar: 'Shared a calendar',
@@ -37,6 +41,20 @@ export class InquiriesService {
     private readonly notifications: NotificationsService,
     private readonly access: EventAccessService,
   ) {}
+
+  private duplicateInquiry(eventId: string | null, inquiryId?: string) {
+    return new HttpException(
+      {
+        statusCode: HttpStatus.CONFLICT,
+        error: 'Conflict',
+        message: eventId
+          ? 'You have already sent an inquiry to this vendor for this event'
+          : 'You have already sent an inquiry to this vendor',
+        inquiryId,
+      },
+      HttpStatus.CONFLICT,
+    )
+  }
 
   private lastActivityAt(inquiry: { createdAt: Date; messages?: { createdAt: Date }[] }) {
     const lastMsgAt = inquiry.messages?.[0]?.createdAt
@@ -109,7 +127,7 @@ export class InquiriesService {
   }
 
   async createInquiry(clerkId: string, dto: CreateInquiryDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const eventId = dto.eventId?.trim() || null
@@ -122,6 +140,7 @@ export class InquiriesService {
 
     const vendor = await this.prisma.vendorProfile.findFirst({
       where: {
+        ...listedVendorWhere(),
         OR: [{ id: dto.vendorProfileId }, { slug: dto.vendorProfileId }],
       },
     })
@@ -156,38 +175,39 @@ export class InquiriesService {
       },
     })
     if (existing) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.CONFLICT,
-          error: 'Conflict',
-          message: eventId
-            ? 'You have already sent an inquiry to this vendor for this event'
-            : 'You have already sent an inquiry to this vendor',
-          inquiryId: existing.id,
-        },
-        HttpStatus.CONFLICT,
-      )
+      throw this.duplicateInquiry(eventId, existing.id)
     }
 
-    const inquiry = await this.prisma.inquiry.create({
-      data: {
-        eventId,
-        senderId: user.id,
-        vendorProfileId,
-        message: dto.message,
-        eventDate: dto.eventDate ? new Date(dto.eventDate) : null,
-        originInspirationItemId: originPost?.id ?? null,
-      },
-      select: {
-        id: true,
-        status: true,
-        message: true,
-        createdAt: true,
-        vendorProfile: {
-          select: { id: true, businessName: true, slug: true, userId: true },
+    const inquiry = await this.prisma.inquiry
+      .create({
+        data: {
+          eventId,
+          senderId: user.id,
+          vendorProfileId,
+          message: dto.message,
+          eventDate: dto.eventDate ? new Date(dto.eventDate) : null,
+          originInspirationItemId: originPost?.id ?? null,
         },
-      },
-    })
+        select: {
+          id: true,
+          status: true,
+          message: true,
+          createdAt: true,
+          vendorProfile: {
+            select: { id: true, businessName: true, slug: true, userId: true },
+          },
+        },
+      })
+      .catch(async (err) => {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          const raced = await this.prisma.inquiry.findFirst({
+            where: { vendorProfileId, senderId: user.id, eventId },
+            select: { id: true },
+          })
+          throw this.duplicateInquiry(eventId, raced?.id)
+        }
+        throw err
+      })
 
     if (originPost) {
       await this.prisma.inquiryMessage.create({
@@ -230,8 +250,8 @@ export class InquiriesService {
 
   /** All inquiries received by the current user's vendor profile. */
   async getVendorInquiries(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: { vendorProfile: { select: { id: true } } },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -239,6 +259,7 @@ export class InquiriesService {
 
     const inquiries = await this.prisma.inquiry.findMany({
       where: { vendorProfileId: user.vendorProfile.id },
+      take: INQUIRY_LIST_CAP,
       select: {
         id: true,
         status: true,
@@ -275,8 +296,8 @@ export class InquiriesService {
 
   /** Accept or decline an inquiry — only the receiving vendor may do this. */
   async updateInquiryStatus(clerkId: string, inquiryId: string, status: 'ACCEPTED' | 'DECLINED') {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: { vendorProfile: { select: { id: true } } },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -295,11 +316,12 @@ export class InquiriesService {
   }
 
   async getMyInquiries(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const inquiries = await this.prisma.inquiry.findMany({
       where: { senderId: user.id },
+      take: INQUIRY_LIST_CAP,
       select: {
         id: true,
         status: true,
@@ -334,28 +356,15 @@ export class InquiriesService {
 
   /** Get messages in a thread — accessible only by the sender or the receiving vendor. */
   async getMessages(clerkId: string, inquiryId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      include: { vendorProfile: { select: { id: true } } },
-    })
-    if (!user) throw new NotFoundException('User not found')
-
-    const inquiry = await this.prisma.inquiry.findUnique({
-      where: { id: inquiryId },
-      select: { senderId: true, vendorProfileId: true },
-    })
-    if (!inquiry) throw new NotFoundException('Inquiry not found')
-
-    const isParticipant =
-      inquiry.senderId === user.id ||
-      (user.vendorProfile && inquiry.vendorProfileId === user.vendorProfile.id)
-    if (!isParticipant) throw new NotFoundException('Inquiry not found')
+    const { user } = await requireInquiryParticipant(this.prisma, clerkId, inquiryId)
 
     const msgs = await this.prisma.inquiryMessage.findMany({
       where: { inquiryId },
       select: this.messageSelect,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: INQUIRY_MESSAGE_CAP,
     })
+    msgs.reverse()
 
     return msgs.map((m) => ({
       ...m,
@@ -367,8 +376,8 @@ export class InquiriesService {
   /** Post a reply or vendor share card — accessible only by the sender or the receiving vendor. */
   async postMessage(clerkId: string, inquiryId: string, dto: PostInquiryMessageDto) {
     const kind = dto.kind ?? 'TEXT'
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: { vendorProfile: { select: { id: true, businessName: true } } },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -497,7 +506,7 @@ export class InquiriesService {
 
   /** Host accepts a vendor quote. Not a booking and not a contract. */
   async acceptQuote(clerkId: string, inquiryId: string, messageId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const inquiry = await this.prisma.inquiry.findUnique({
@@ -597,7 +606,7 @@ export class InquiriesService {
 
   /** Host rejects a vendor quote. Does not close the inquiry. */
   async rejectQuote(clerkId: string, inquiryId: string, messageId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const inquiry = await this.prisma.inquiry.findUnique({
@@ -674,7 +683,7 @@ export class InquiriesService {
 
   /** Host confirms they booked the person outside Djanora. Requires an accepted quote. */
   async bookQuote(clerkId: string, inquiryId: string, messageId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     const inquiry = await this.prisma.inquiry.findUnique({
@@ -773,11 +782,7 @@ export class InquiriesService {
       throw new BadRequestException('Message cannot be empty')
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      include: { vendorProfile: { select: { id: true } } },
-    })
-    if (!user) throw new NotFoundException('User not found')
+    const { user } = await requireInquiryParticipant(this.prisma, clerkId, inquiryId)
 
     const existing = await this.prisma.inquiryMessage.findFirst({
       where: { id: messageId, inquiryId },
@@ -797,11 +802,6 @@ export class InquiriesService {
       },
     })
     if (!existing) throw new NotFoundException('Message not found')
-
-    const isParticipant =
-      existing.inquiry.senderId === user.id ||
-      (user.vendorProfile && existing.inquiry.vendorProfileId === user.vendorProfile.id)
-    if (!isParticipant) throw new NotFoundException('Message not found')
 
     if (existing.senderId !== user.id) {
       throw new ForbiddenException('You can only edit your own messages')
@@ -849,11 +849,7 @@ export class InquiriesService {
 
   /** Unsend a sent message — sender only, within five minutes of creation. */
   async unsendMessage(clerkId: string, inquiryId: string, messageId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      include: { vendorProfile: { select: { id: true } } },
-    })
-    if (!user) throw new NotFoundException('User not found')
+    const { user } = await requireInquiryParticipant(this.prisma, clerkId, inquiryId)
 
     const existing = await this.prisma.inquiryMessage.findFirst({
       where: { id: messageId, inquiryId },
@@ -873,11 +869,6 @@ export class InquiriesService {
       },
     })
     if (!existing) throw new NotFoundException('Message not found')
-
-    const isParticipant =
-      existing.inquiry.senderId === user.id ||
-      (user.vendorProfile && existing.inquiry.vendorProfileId === user.vendorProfile.id)
-    if (!isParticipant) throw new NotFoundException('Message not found')
 
     if (existing.senderId !== user.id) {
       throw new ForbiddenException('You can only unsend your own messages')
@@ -929,22 +920,7 @@ export class InquiriesService {
 
   /** Mark all messages from the other participant as read by the current user. */
   async markMessagesRead(clerkId: string, inquiryId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
-      include: { vendorProfile: { select: { id: true } } },
-    })
-    if (!user) throw new NotFoundException('User not found')
-
-    const inquiry = await this.prisma.inquiry.findUnique({
-      where: { id: inquiryId },
-      select: { senderId: true, vendorProfileId: true },
-    })
-    if (!inquiry) throw new NotFoundException('Inquiry not found')
-
-    const isParticipant =
-      inquiry.senderId === user.id ||
-      (user.vendorProfile && inquiry.vendorProfileId === user.vendorProfile.id)
-    if (!isParticipant) throw new NotFoundException('Inquiry not found')
+    const { user } = await requireInquiryParticipant(this.prisma, clerkId, inquiryId)
 
     const unreadMessages = await this.prisma.inquiryMessage.findMany({
       where: {
@@ -984,6 +960,7 @@ export class InquiriesService {
 
     const inquiries = await this.prisma.inquiry.findMany({
       where: { eventId },
+      take: INQUIRY_LIST_CAP,
       select: {
         id: true,
         vendorProfileId: true,

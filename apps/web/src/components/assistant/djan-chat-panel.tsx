@@ -11,7 +11,13 @@ import {
   type NavAction,
   type ThreadSummary,
 } from './use-djan-chat'
+import { useDjanChatLauncher, type DjanSheetAttachment } from './djan-chat-context'
 import { isSafeAppHref } from './djan-nav'
+
+function sheetPrompt(sheet: DjanSheetAttachment) {
+  const extra = sheet.truncated ? ' Only the first 100 rows were attached.' : ''
+  return `I attached ${sheet.filename} from the ${sheet.kind} screen.${extra} Read the cells. Map a column only when its meaning is clear. If a required field is unclear, ask me one question. Never invent values. Then preview one import.`
+}
 
 type DjanChatPanelProps = {
   enabled?: boolean
@@ -64,6 +70,7 @@ export function DjanChatPanel({
     clearThread,
     go,
   } = useDjanChat({ enabled, eventId, threadId, autoSelectLatest: !isPage })
+  const { pendingSheet, consumePendingSheet } = useDjanChatLauncher()
   const [historyOpen, setHistoryOpen] = useState(false)
   const [composing, setComposing] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -87,16 +94,10 @@ export function DjanChatPanel({
     setHistoryOpen(false)
   }
 
-  const startNew = async () => {
-    if (isPage) {
-      clearThread()
-      onThreadChange?.(null)
-      setComposing(true)
-      setHistoryOpen(false)
-      return
-    }
-    const created = await newChat()
-    onThreadChange?.(created.id)
+  const startNew = () => {
+    newChat()
+    onThreadChange?.(null)
+    setComposing(true)
     setHistoryOpen(false)
   }
 
@@ -116,13 +117,26 @@ export function DjanChatPanel({
     void sendAndSync(draft)
   }
 
-  const sendAndSync = async (text: string) => {
-    const id = await send(text)
+  const sendAndSync = async (text: string, sheet?: DjanSheetAttachment) => {
+    const id = await send(text, sheet ? { sheet } : undefined)
     if (id) {
       setComposing(false)
       onThreadChange?.(id)
     }
   }
+
+  useEffect(() => {
+    if (!pendingSheet) return
+    if (configured === false) {
+      consumePendingSheet()
+      return
+    }
+    if (busy || configured !== true) return
+    if (eventId && thread && thread.currentEventId !== eventId) return
+    const sheet = consumePendingSheet()
+    if (!sheet) return
+    void sendAndSync(sheetPrompt(sheet), sheet)
+  }, [pendingSheet, busy, configured, consumePendingSheet, eventId, thread])
 
   const conversation = (
     <>
@@ -168,7 +182,7 @@ export function DjanChatPanel({
             </button>
             <button
               type="button"
-              onClick={() => void startNew()}
+              onClick={startNew}
               aria-label="New chat"
               className={iconBtn}
               style={{ color: 'var(--color-text-secondary)', outlineColor: 'var(--ring)' }}
@@ -420,7 +434,7 @@ export function DjanChatPanel({
           </div>
           <button
             type="button"
-            onClick={() => void startNew()}
+            onClick={startNew}
             aria-label="New chat"
             className={iconBtn}
             style={{ color: 'var(--color-text-secondary)', outlineColor: 'var(--ring)' }}
@@ -538,6 +552,112 @@ function NavLink({ nav, onOpen }: { nav: NavAction; onOpen: (href: string) => vo
   )
 }
 
+function field(row: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = row[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  }
+  return ''
+}
+
+function asRow(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
+function importPreviewRows(card: ConfirmCard): { title: string; detail: string }[] | null {
+  if (card.tool === 'import_guests' && Array.isArray(card.args.guests)) {
+    return card.args.guests.map((item) => {
+      const row = asRow(item)
+      const title = [field(row, 'first_name', 'firstName'), field(row, 'last_name', 'lastName')]
+        .filter(Boolean)
+        .join(' ')
+      const detail = [
+        field(row, 'email'),
+        field(row, 'phone'),
+        row.plus_one_allowed === true || row.plusOneAllowed === true ? '+1' : '',
+        field(row, 'table_number', 'tableNumber')
+          ? `table ${field(row, 'table_number', 'tableNumber')}`
+          : '',
+        field(row, 'note'),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return { title: title || 'Guest', detail }
+    })
+  }
+  if (card.tool === 'import_budget' && Array.isArray(card.args.items)) {
+    return card.args.items.map((item) => {
+      const row = asRow(item)
+      const amount = field(row, 'allocated_amount', 'allocatedAmount')
+      const detail = [
+        field(row, 'category'),
+        amount ? amount : '',
+        field(row, 'vendor_name', 'vendorName'),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return { title: field(row, 'label', 'name') || 'Budget line', detail }
+    })
+  }
+  if (card.tool === 'import_checklist' && Array.isArray(card.args.items)) {
+    return card.args.items.map((item) => {
+      const row = asRow(item)
+      const detail = [field(row, 'due_date', 'dueDate'), field(row, 'description', 'notes')]
+        .filter(Boolean)
+        .join(' · ')
+      return { title: field(row, 'title', 'name') || 'Checklist item', detail }
+    })
+  }
+  if (card.tool === 'import_schedule' && Array.isArray(card.args.items)) {
+    return card.args.items.map((item) => {
+      const row = asRow(item)
+      const detail = [
+        field(row, 'date'),
+        field(row, 'start_time', 'startTime'),
+        field(row, 'end_time', 'endTime'),
+        field(row, 'location'),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return { title: field(row, 'title', 'name') || 'Schedule block', detail }
+    })
+  }
+  if (card.tool === 'import_party' && Array.isArray(card.args.members)) {
+    return card.args.members.map((item) => {
+      const row = asRow(item)
+      const detail = [field(row, 'role'), field(row, 'side')].filter(Boolean).join(' · ')
+      return { title: field(row, 'name') || 'Party member', detail }
+    })
+  }
+  if (card.tool === 'apply_weekend' && Array.isArray(card.args.ceremonies)) {
+    return card.args.ceremonies.map((item) => {
+      const row = asRow(item)
+      const detail = [field(row, 'event_type', 'eventType'), field(row, 'date', 'estimatedDate')]
+        .filter(Boolean)
+        .join(' · ')
+      return {
+        title: field(row, 'title') || field(row, 'event_type', 'eventType') || 'Ceremony',
+        detail,
+      }
+    })
+  }
+  if (card.tool === 'draft_site_copy') {
+    const row = asRow(card.args)
+    return (
+      [
+        { title: 'About', detail: field(row, 'about') },
+        { title: 'Travel', detail: field(row, 'travel') },
+        { title: 'Stay', detail: field(row, 'stay') },
+        { title: 'Dress code', detail: field(row, 'dress_code', 'dressCode') },
+      ] as { title: string; detail: string }[]
+    ).filter((item) => item.detail)
+  }
+  return null
+}
+
 function ConfirmActions({
   card,
   busy,
@@ -549,10 +669,37 @@ function ConfirmActions({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const rows = importPreviewRows(card)
   return (
     <div className="mt-3 rounded-xl p-3" style={{ border: '1px solid var(--color-border)' }}>
       <p className="font-medium">{card.summary}</p>
-      <p className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      {rows && rows.length > 0 && (
+        <ol
+          className="mt-2 max-h-56 space-y-1.5 overflow-y-auto pr-1 text-xs"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          {rows.map((row, index) => (
+            <li
+              key={`${row.title}:${index}`}
+              className="rounded-lg px-2 py-1.5"
+              style={{ background: 'color-mix(in srgb, var(--foreground) 6%, transparent)' }}
+            >
+              <span className="font-medium">
+                {index + 1}. {row.title}
+              </span>
+              {row.detail ? (
+                <span className="block" style={{ color: 'var(--color-text-secondary)' }}>
+                  {row.detail}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      )}
+      <p
+        className="mt-2 text-xs whitespace-pre-wrap"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         {card.blast_radius}
       </p>
       <div className="mt-3 flex gap-2">
@@ -567,7 +714,11 @@ function ConfirmActions({
             outlineColor: 'var(--ring)',
           }}
         >
-          Confirm
+          {card.tool.startsWith('import_') ||
+          card.tool === 'apply_weekend' ||
+          card.tool === 'draft_site_copy'
+            ? 'Add these'
+            : 'Confirm'}
         </button>
         <button
           type="button"

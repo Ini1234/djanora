@@ -12,6 +12,11 @@ describe('assistant.navigate', () => {
       href: '/events/evt_1/guests',
       label: 'Guests',
     })
+    expect(buildNavHref({ screen: 'contact' })).toEqual({
+      ok: true,
+      href: '/contact',
+      label: 'Contact',
+    })
   })
 
   it('refuses unknown tabs and off-app hrefs', () => {

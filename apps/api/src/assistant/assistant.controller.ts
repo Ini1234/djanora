@@ -63,7 +63,7 @@ export class AssistantController {
     @Param('id') id: string,
     @Body() dto: PostAssistantMessageDto,
   ) {
-    return this.assistant.postMessage(user.sub, id, dto.content, dto.pageContext)
+    return this.assistant.postMessage(user.sub, id, dto.content, dto.pageContext, dto.sheetContext)
   }
 
   @Post('threads/:id/confirm')

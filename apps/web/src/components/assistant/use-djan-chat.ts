@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { proxyClient } from '@/lib/proxy-client'
-import { isSafeAppHref, readPageContext } from './djan-nav'
+import type { DjanSheetAttachment } from './djan-chat-context'
+import { hrefAfterImport, isSafeAppHref, notifyEventRefresh, readPageContext } from './djan-nav'
 
 export type ConfirmCard = {
   tool: string
@@ -110,14 +111,7 @@ export function useDjanChat({
         }
         if (eventId) {
           const existing = list.find((item) => item.currentEventId === eventId)
-          if (existing) {
-            await openThread(existing.id)
-            return
-          }
-          const { data } = await proxyClient.post<Thread>('/assistant/threads', { eventId })
-          if (cancelled) return
-          setThread(data)
-          await loadThreads()
+          if (existing) await openThread(existing.id)
           return
         }
         if (autoSelectLatest && list[0]) await openThread(list[0].id)
@@ -130,7 +124,7 @@ export function useDjanChat({
     }
   }, [enabled, eventId, threadId, autoSelectLatest, loadThreads, openThread])
 
-  const send = async (text: string) => {
+  const send = async (text: string, extras?: { sheet?: DjanSheetAttachment }) => {
     const content = text.trim()
     if (!content || busy) return
     setError(null)
@@ -154,7 +148,11 @@ export function useDjanChat({
       setThread({ ...current, messages: [...current.messages, optimistic] })
       const { data } = await proxyClient.post<{ thread: Thread }>(
         `/assistant/threads/${current.id}/messages`,
-        { content, pageContext: readPageContext() },
+        {
+          content,
+          pageContext: readPageContext(),
+          ...(extras?.sheet ? { sheetContext: extras.sheet } : {}),
+        },
         { timeout: 90_000 },
       )
       setThread(data.thread)
@@ -176,30 +174,37 @@ export function useDjanChat({
 
   const confirm = async (card: ConfirmCard, messageId: string) => {
     if (!thread || busy) return
+    const dismissKey = `${messageId}:${card.confirm_token}`
     setBusy(true)
     setError(null)
+    setDismissed((prev) => ({ ...prev, [dismissKey]: true }))
     try {
-      const { data } = await proxyClient.post<{ thread: Thread }>(
+      const { data } = await proxyClient.post<{ thread: Thread; result?: unknown }>(
         `/assistant/threads/${thread.id}/confirm`,
         { tool: card.tool, args: card.args, confirmToken: card.confirm_token },
       )
-      setDismissed((prev) => ({ ...prev, [`${messageId}:${card.confirm_token}`]: true }))
       setThread(data.thread)
+      const href = hrefAfterImport(card.tool, card.args, data.result, data.thread.currentEventId)
+      if (href) go(href)
+      notifyEventRefresh()
+      router.refresh()
       await loadThreads()
     } catch {
-      setError('That confirm failed or expired. Ask me to preview it again.')
+      setDismissed((prev) => {
+        const next = { ...prev }
+        delete next[dismissKey]
+        return next
+      })
+      setError("I couldn't finish that. Ask me to preview again.")
     } finally {
       setBusy(false)
     }
   }
 
-  const newChat = async () => {
+  const newChat = () => {
     setError(null)
-    const { data } = await proxyClient.post<Thread>('/assistant/threads', { eventId })
-    loadedId.current = data.id
-    setThread(data)
-    await loadThreads()
-    return data
+    loadedId.current = null
+    setThread(null)
   }
 
   const removeThread = async (id: string, selectNext = true) => {

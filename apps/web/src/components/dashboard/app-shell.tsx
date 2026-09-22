@@ -15,7 +15,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
   return (
     <>
-      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
+      <div className="h-app flex overflow-hidden" style={{ background: 'var(--page-bg)' }}>
         <Sidebar
           displayName={displayName}
           initials={initials}

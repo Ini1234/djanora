@@ -12,6 +12,8 @@ import { CreateReviewDto } from './dto/create-review.dto'
 import { POST_INCLUDE, mapPost } from '../inspiration/post-shape'
 import { attachLookStats } from '../inspiration/look-stats'
 import type { UpdateVendorMeDto } from './dto/vendor-post.dto'
+import { listedVendorWhere } from './vendor-listing'
+import { liveUserWhere } from '../common/active-user'
 
 @Injectable()
 export class VendorsService {
@@ -24,7 +26,7 @@ export class VendorsService {
         : undefined
     const vendors = await this.prisma.vendorProfile.findMany({
       where: {
-        isActive: true,
+        ...listedVendorWhere(),
         ...(parsed
           ? {
               OR: [{ category: parsed }, { categories: { has: parsed } }],
@@ -74,8 +76,8 @@ export class VendorsService {
    * Creates a VendorProfile and marks the user as having a profile.
    */
   async createProfile(clerkId: string, dto: CreateVendorProfileDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: { vendorProfile: true },
     })
 
@@ -114,6 +116,9 @@ export class VendorsService {
         websiteUrl: dto.websiteUrl ?? null,
         instagramUrl: dto.instagramUrl ?? null,
         facebookUrl: dto.facebookUrl ?? null,
+        reviewStatus: 'PENDING',
+        isVerified: false,
+        isActive: true,
       },
     })
 
@@ -132,8 +137,8 @@ export class VendorsService {
 
   /** Returns a single public vendor profile by slug. */
   async findBySlug(slug: string) {
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: {
         id: true,
         slug: true,
@@ -218,14 +223,14 @@ export class VendorsService {
   }
 
   async reviewStatus(clerkId: string, slug: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) return { canReview: false, alreadyReviewed: false }
 
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: { id: true, userId: true },
     })
     if (!vendor || vendor.userId === user.id) {
@@ -248,13 +253,16 @@ export class VendorsService {
   }
 
   async recordView(slug: string, clerkId?: string) {
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: { id: true, userId: true },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
     if (clerkId) {
-      const viewer = await this.prisma.user.findUnique({ where: { clerkId }, select: { id: true } })
+      const viewer = await this.prisma.user.findFirst({
+        where: liveUserWhere(clerkId),
+        select: { id: true },
+      })
       if (viewer?.id === vendor.userId) return { counted: false }
     }
     await this.prisma.vendorProfile.update({
@@ -265,11 +273,14 @@ export class VendorsService {
   }
 
   async createReview(clerkId: string, slug: string, dto: CreateReviewDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId }, select: { id: true } })
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
+      select: { id: true },
+    })
     if (!user) throw new NotFoundException('User not found')
 
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: { id: true, userId: true },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
@@ -318,8 +329,8 @@ export class VendorsService {
 
   /** Returns the current vendor's own profile (for the vendor dashboard). */
   async getMyProfile(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       include: {
         vendorProfile: {
           select: {
@@ -340,6 +351,8 @@ export class VendorsService {
             externalPortfolioLabel: true,
             isVerified: true,
             isActive: true,
+            reviewStatus: true,
+            reviewNote: true,
             averageRating: true,
             totalReviews: true,
             profileViews: true,
@@ -381,6 +394,8 @@ export class VendorsService {
       externalPortfolioLabel: p.externalPortfolioLabel,
       isVerified: p.isVerified,
       isActive: p.isActive,
+      reviewStatus: p.reviewStatus,
+      reviewNote: p.reviewNote,
       averageRating: p.averageRating,
       totalReviews: p.totalReviews,
       profileViews: p.profileViews,
@@ -394,8 +409,8 @@ export class VendorsService {
   }
 
   async updateMe(clerkId: string, dto: UpdateVendorMeDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { vendorProfile: { select: { id: true } } },
     })
     if (!user?.vendorProfile) throw new NotFoundException('No vendor profile found')
@@ -418,8 +433,8 @@ export class VendorsService {
   }
 
   private async requireUser(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
     if (!user) throw new NotFoundException('User not found')
@@ -428,8 +443,8 @@ export class VendorsService {
 
   async favorite(clerkId: string, slug: string) {
     const user = await this.requireUser(clerkId)
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: { id: true, userId: true },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
@@ -470,12 +485,12 @@ export class VendorsService {
   }
 
   async favoriteStatus(clerkId: string, slug: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(clerkId),
       select: { id: true },
     })
-    const vendor = await this.prisma.vendorProfile.findUnique({
-      where: { slug, isActive: true },
+    const vendor = await this.prisma.vendorProfile.findFirst({
+      where: { slug, ...listedVendorWhere() },
       select: { id: true, userId: true, _count: { select: { favorites: true } } },
     })
     if (!vendor) throw new NotFoundException('Vendor not found')
@@ -497,7 +512,7 @@ export class VendorsService {
   async getFavorites(clerkId: string) {
     const user = await this.requireUser(clerkId)
     const rows = await this.prisma.vendorFavorite.findMany({
-      where: { userId: user.id, vendorProfile: { isActive: true } },
+      where: { userId: user.id, vendorProfile: listedVendorWhere() },
       orderBy: { createdAt: 'desc' },
       include: {
         vendorProfile: {

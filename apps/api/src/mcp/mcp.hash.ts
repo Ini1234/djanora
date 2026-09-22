@@ -25,6 +25,7 @@ export function newConfirmToken(): string {
 }
 
 export function payloadHash(toolName: string, args: Record<string, unknown>): string {
-  const { confirm_token: _token, ...rest } = args
+  const rest = { ...args }
+  delete rest.confirm_token
   return sha256Hex(`${toolName}:${canonicalJson(rest)}`)
 }

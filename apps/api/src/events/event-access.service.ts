@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { EventMemberRole, EventSurface, type Event, type User } from '@prisma/client'
-import { PrismaService } from '../prisma/prisma.service'
+import { EventAccessRepository } from './event-access.repository'
 
 export const ALL_SURFACES: EventSurface[] = [
   EventSurface.SCHEDULE,
@@ -87,7 +87,7 @@ function deny(): never {
 
 @Injectable()
 export class EventAccessService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private repo: EventAccessRepository) {}
 
   canSee(access: EventAccess, surface: EventSurface): boolean {
     return memberCanSee(access, surface)
@@ -107,10 +107,7 @@ export class EventAccessService {
   }
 
   async canSeeChecklistItem(access: EventAccess, checklistId: string) {
-    const row = await this.prisma.eventChecklist.findFirst({
-      where: { id: checklistId, eventId: access.event.id },
-      select: { concealments: { select: { eventMemberId: true } } },
-    })
+    const row = await this.repo.findChecklistConcealments(access.event.id, checklistId)
     if (!row) return false
     return this.canSeeChecklistRow(access, row.concealments)
   }
@@ -124,10 +121,7 @@ export class EventAccessService {
     const unique = [...new Set(checklistIds.filter(Boolean))]
     if (unique.length === 0) return new Set<string>()
     if (access.isHost || !access.memberId) return new Set(unique)
-    const rows = await this.prisma.eventChecklist.findMany({
-      where: { id: { in: unique }, eventId: access.event.id },
-      select: { id: true, concealments: { select: { eventMemberId: true } } },
-    })
+    const rows = await this.repo.findChecklistConcealmentsMany(access.event.id, unique)
     return new Set(
       rows.filter((row) => this.canSeeChecklistRow(access, row.concealments)).map((row) => row.id),
     )
@@ -136,30 +130,17 @@ export class EventAccessService {
   async assertConcealmentTargets(eventId: string, memberIds: string[]) {
     const unique = [...new Set(memberIds.map((id) => id.trim()).filter(Boolean))]
     if (unique.length === 0) return
-    const event = await this.prisma.event.findFirst({
-      where: { id: eventId, deletedAt: null },
-      select: { id: true, parentId: true },
-    })
+    const event = await this.repo.findLiveEventParent(eventId)
     if (!event) deny()
 
-    const found = new Set(
-      (
-        await this.prisma.eventMember.findMany({
-          where: { eventId, id: { in: unique } },
-          select: { id: true },
-        })
-      ).map((row) => row.id),
-    )
+    const found = new Set((await this.repo.findMembersByIds(eventId, unique)).map((row) => row.id))
     const missing = unique.filter((id) => !found.has(id))
     if (missing.length > 0 && event.parentId) {
-      const parentMembers = await this.prisma.eventMember.findMany({
-        where: { eventId: event.parentId, id: { in: missing } },
-        select: { id: true },
-      })
-      const grants = await this.prisma.eventSubGrant.findMany({
-        where: { eventId, eventMemberId: { in: parentMembers.map((row) => row.id) } },
-        select: { eventMemberId: true },
-      })
+      const parentMembers = await this.repo.findMembersByIds(event.parentId, missing)
+      const grants = await this.repo.findSubGrantsForMembers(
+        eventId,
+        parentMembers.map((row) => row.id),
+      )
       const granted = new Set(grants.map((row) => row.eventMemberId))
       for (const member of parentMembers) {
         if (granted.has(member.id)) found.add(member.id)
@@ -171,12 +152,10 @@ export class EventAccessService {
   }
 
   async load(clerkId: string, eventId: string): Promise<EventAccess> {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.repo.findActiveUserByClerkId(clerkId)
     if (!user) deny()
 
-    const event = await this.prisma.event.findFirst({
-      where: { id: eventId, deletedAt: null },
-    })
+    const event = await this.repo.findLiveEvent(eventId)
     if (!event) deny()
 
     if (event.userId === user.id) {
@@ -202,9 +181,7 @@ export class EventAccessService {
     }
 
     if (event.parentId) {
-      const parent = await this.prisma.event.findFirst({
-        where: { id: event.parentId, deletedAt: null },
-      })
+      const parent = await this.repo.findLiveEvent(event.parentId)
       if (!parent) deny()
       if (parent.userId === user.id) {
         return {
@@ -219,14 +196,7 @@ export class EventAccessService {
       const parentMember = await this.findAcceptedMember(event.parentId, user.id, user.email)
       if (!parentMember) deny()
 
-      const grant = await this.prisma.eventSubGrant.findUnique({
-        where: {
-          eventMemberId_eventId: {
-            eventMemberId: parentMember.id,
-            eventId,
-          },
-        },
-      })
+      const grant = await this.repo.findSubGrant(parentMember.id, eventId)
       if (!grant) deny()
 
       return {
@@ -242,30 +212,172 @@ export class EventAccessService {
     deny()
   }
 
+  async loadMany(clerkId: string, eventIds: string[]): Promise<Map<string, EventAccess | null>> {
+    const unique = [...new Set(eventIds.filter(Boolean))]
+    const out = new Map<string, EventAccess | null>()
+    if (unique.length === 0) return out
+
+    const user = await this.repo.findActiveUserByClerkId(clerkId)
+    if (!user) {
+      for (const id of unique) out.set(id, null)
+      return out
+    }
+
+    const events = unique.length === 0 ? [] : await this.repo.findLiveEvents(unique)
+    const eventById = new Map(events.map((event) => [event.id, event] as const))
+    const remaining: string[] = []
+
+    for (const id of unique) {
+      const event = eventById.get(id)
+      if (!event) {
+        out.set(id, null)
+        continue
+      }
+      if (event.userId === user.id) {
+        out.set(id, {
+          user,
+          event,
+          isHost: true,
+          role: 'HOST',
+          surfaces: [...ALL_SURFACES],
+        })
+        continue
+      }
+      remaining.push(id)
+    }
+
+    if (remaining.length === 0) return out
+
+    const members = await this.repo.findAcceptedMembersByUser(remaining, user.id)
+    const memberByEvent = new Map(members.map((member) => [member.eventId, member]))
+    const afterMember: string[] = []
+
+    for (const id of remaining) {
+      const member = memberByEvent.get(id)
+      const event = eventById.get(id)
+      if (member && event) {
+        out.set(id, {
+          user,
+          event,
+          isHost: false,
+          role: member.role,
+          surfaces: member.surfaces,
+          memberId: member.id,
+        })
+        continue
+      }
+      afterMember.push(id)
+    }
+
+    if (afterMember.length === 0) return out
+
+    const orphans = await this.repo.findAcceptedOrphansByEmail(afterMember, user.email)
+    const orphanEvents = new Set<string>()
+    for (const orphan of orphans) {
+      const linked = await this.repo.linkMemberUser(orphan.id, user.id)
+      const event = eventById.get(orphan.eventId)
+      if (!event) continue
+      orphanEvents.add(orphan.eventId)
+      out.set(orphan.eventId, {
+        user,
+        event,
+        isHost: false,
+        role: linked.role,
+        surfaces: linked.surfaces,
+        memberId: linked.id,
+      })
+    }
+
+    const leftover = afterMember.filter((id) => !orphanEvents.has(id))
+    const parentIds = [
+      ...new Set(
+        leftover.map((id) => eventById.get(id)?.parentId).filter((id): id is string => Boolean(id)),
+      ),
+    ]
+    const parents = parentIds.length === 0 ? [] : await this.repo.findLiveEvents(parentIds)
+    const parentById = new Map(parents.map((event) => [event.id, event] as const))
+    const needParentMember: string[] = []
+
+    for (const id of leftover) {
+      const event = eventById.get(id)
+      if (!event?.parentId) {
+        out.set(id, null)
+        continue
+      }
+      const parent = parentById.get(event.parentId)
+      if (!parent) {
+        out.set(id, null)
+        continue
+      }
+      if (parent.userId === user.id) {
+        out.set(id, {
+          user,
+          event,
+          isHost: true,
+          role: 'HOST',
+          surfaces: [...ALL_SURFACES],
+        })
+        continue
+      }
+      needParentMember.push(id)
+    }
+
+    if (needParentMember.length > 0) {
+      const parentEventIds = [
+        ...new Set(needParentMember.map((id) => eventById.get(id)!.parentId!)),
+      ]
+      const parentMembers = await this.repo.findAcceptedMembersByUser(parentEventIds, user.id)
+      const parentMemberByEvent = new Map(parentMembers.map((member) => [member.eventId, member]))
+      const parentOrphans = await this.repo.findAcceptedOrphansByEmail(parentEventIds, user.email)
+      for (const orphan of parentOrphans) {
+        const linked = await this.repo.linkMemberUser(orphan.id, user.id)
+        parentMemberByEvent.set(orphan.eventId, linked)
+      }
+
+      const memberIds = [...parentMemberByEvent.values()].map((member) => member.id)
+      const grants = await this.repo.findSubGrantsForEvents(memberIds, needParentMember)
+      const grantByKey = new Map(
+        grants.map((grant) => [`${grant.eventMemberId}:${grant.eventId}`, grant]),
+      )
+
+      for (const id of needParentMember) {
+        if (out.has(id)) continue
+        const event = eventById.get(id)
+        const parentMember = event?.parentId ? parentMemberByEvent.get(event.parentId) : undefined
+        const grant = parentMember ? grantByKey.get(`${parentMember.id}:${id}`) : undefined
+        if (!event || !parentMember || !grant) {
+          out.set(id, null)
+          continue
+        }
+        out.set(id, {
+          user,
+          event,
+          isHost: false,
+          role: parentMember.role,
+          surfaces: grant.surfaces,
+          memberId: parentMember.id,
+        })
+      }
+    }
+
+    for (const id of unique) {
+      if (!out.has(id)) out.set(id, null)
+    }
+    return out
+  }
+
   /**
    * Accepted membership is bound to userId. Email is only used to finish
    * linking a row that was accepted before userId was written.
    */
   private async findAcceptedMember(eventId: string, userId: string, email: string) {
-    const byUser = await this.prisma.eventMember.findFirst({
-      where: { eventId, acceptedAt: { not: null }, userId },
-    })
+    const byUser = await this.repo.findAcceptedMemberByUser(eventId, userId)
     if (byUser) return byUser
 
-    const orphan = await this.prisma.eventMember.findFirst({
-      where: {
-        eventId,
-        acceptedAt: { not: null },
-        userId: null,
-        email: { equals: email, mode: 'insensitive' },
-      },
-    })
+    const orphan = await this.repo.findAcceptedOrphanByEmail(eventId, email)
     if (!orphan) return null
 
-    return this.prisma.eventMember.update({
-      where: { id: orphan.id },
-      data: { userId },
-    })
+    return this.repo.linkMemberUser(orphan.id, userId)
   }
 
   async require(
@@ -292,25 +404,9 @@ export class EventAccessService {
   /** Events this user hosts or has accepted membership on. */
   async listAccessibleEventIds(userId: string): Promise<string[]> {
     const [hosted, memberOf, granted] = await Promise.all([
-      this.prisma.event.findMany({
-        where: { userId, deletedAt: null },
-        select: { id: true },
-      }),
-      this.prisma.eventMember.findMany({
-        where: { userId, acceptedAt: { not: null }, event: { deletedAt: null } },
-        select: { eventId: true },
-      }),
-      this.prisma.eventSubGrant.findMany({
-        where: {
-          member: {
-            acceptedAt: { not: null },
-            userId,
-            event: { deletedAt: null },
-          },
-          event: { deletedAt: null },
-        },
-        select: { eventId: true },
-      }),
+      this.repo.listHostedEventIds(userId),
+      this.repo.listMemberEventIds(userId),
+      this.repo.listGrantedEventIds(userId),
     ])
     return [
       ...new Set([

@@ -13,8 +13,6 @@ export const EVENT_TABS = [
   'party',
 ] as const
 
-export type EventTab = (typeof EVENT_TABS)[number]
-
 export const SCREENS = [
   'home',
   'events',
@@ -27,6 +25,7 @@ export const SCREENS = [
   'inspiration',
   'likes',
   'settings',
+  'contact',
   'assistant',
   'vendor_home',
   'inquiries',
@@ -114,6 +113,8 @@ export function buildNavHref(input: {
       return { ok: true, href: '/likes', label: 'Liked' }
     case 'settings':
       return { ok: true, href: '/settings', label: 'Settings' }
+    case 'contact':
+      return { ok: true, href: '/contact', label: 'Contact' }
     case 'assistant':
       return { ok: true, href: '/assistant', label: 'Djan' }
     case 'inquiries':

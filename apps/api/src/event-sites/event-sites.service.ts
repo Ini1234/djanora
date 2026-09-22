@@ -68,15 +68,18 @@ import {
   redactCoverIdentity,
   redactPublicSchedule,
   sectionIsOn,
+  siteNeedsInvite,
   toDateOnly,
 } from './event-site.visibility'
 import type {
   CreateSiteDto,
+  DraftSiteCopyDto,
   PatchSiteDto,
   SiteRsvpDto,
   SiteSectionDto,
   SiteSessionDto,
 } from './dto/event-site.dto'
+import { siteSlugFromTitle } from '../assistant/assistant.site-copy'
 
 const GENERIC_INVITE = "We couldn't find that invite."
 const SITE_INCLUDE = {
@@ -169,12 +172,10 @@ export class EventSitesService {
     const site = await this.mustSiteByEvent(eventId)
     const slug = dto.slug !== undefined ? this.requireSlug(dto.slug) : undefined
     if (slug && slug !== site.slug) await this.assertSlugFree(slug)
-    const included =
-      dto.included !== undefined
-        ? site.event.parentId
-          ? []
-          : await this.normalizeIncludes(eventId, dto.included)
-        : undefined
+    let included: Awaited<ReturnType<EventSitesService['normalizeIncludes']>> | undefined
+    if (dto.included !== undefined) {
+      included = site.event.parentId ? [] : await this.normalizeIncludes(eventId, dto.included)
+    }
 
     const customColors =
       dto.customColors !== undefined ? parseCustomColors(dto.customColors) : undefined
@@ -224,6 +225,45 @@ export class EventSitesService {
       })
     })
     return this.getEditor(clerkId, eventId)
+  }
+
+  async draftCopy(clerkId: string, eventId: string, dto: DraftSiteCopyDto) {
+    const { event } = await this.access.requireSite(clerkId, eventId)
+    const existing = await this.prisma.eventSite.findUnique({ where: { eventId } })
+    if (!existing) {
+      let slug = siteSlugFromTitle(event.title, eventId)
+      try {
+        await this.create(clerkId, eventId, { slug })
+      } catch (err) {
+        if (!(err instanceof ConflictException) && !(err instanceof BadRequestException)) {
+          throw err
+        }
+        slug = `${slug}-${eventId.replace(/-/g, '').slice(0, 6)}`.slice(0, 48)
+        await this.create(clerkId, eventId, { slug })
+      }
+    }
+    const sections: SiteSectionDto[] = []
+    if (dto.about?.trim()) {
+      sections.push({ type: EventSiteSectionType.ABOUT, enabled: true, about: dto.about.trim() })
+    }
+    if (dto.travel?.trim()) {
+      sections.push({ type: EventSiteSectionType.TRAVEL, enabled: true, travel: dto.travel.trim() })
+    }
+    if (dto.stay?.trim()) {
+      sections.push({ type: EventSiteSectionType.STAY, enabled: true, stay: dto.stay.trim() })
+    }
+    if (dto.dressCode?.trim()) {
+      sections.push({
+        type: EventSiteSectionType.DRESS_CODE,
+        enabled: true,
+        dressCode: dto.dressCode.trim(),
+      })
+    }
+    if (!sections.length) {
+      throw new BadRequestException('Add at least one of About, Travel, Stay, or Dress code')
+    }
+    const site = await this.patch(clerkId, eventId, { sections })
+    return { created: sections.length, eventId, site }
   }
 
   async publish(clerkId: string, eventId: string) {
@@ -390,8 +430,16 @@ export class EventSitesService {
     return this.getEditor(clerkId, eventId)
   }
 
-  async getPublic(slug: string, sessionHeader?: string) {
+  async getPublic(slug: string, sessionHeader?: string, clerkId?: string) {
     const site = await this.publishedSite(slug)
+    if (clerkId) {
+      try {
+        await this.access.require(clerkId, site.eventId, { action: 'view' })
+        return this.projectPublic(site, [], { hostView: true })
+      } catch {
+        // Signed-in stranger — same as a guest.
+      }
+    }
     const session = this.parseSession(sessionHeader, site.id)
     return this.projectPublic(site, session?.guestIds ?? [])
   }
@@ -401,12 +449,10 @@ export class EventSitesService {
     if (!secret) throw new ServiceUnavailableException('Site sessions are not configured')
     const site = await this.publishedSite(slug)
     const eventIds = this.siteEventIds(site)
+    const email = dto.email?.trim()
     const code = (dto.code ?? dto.inviteeId)?.trim()
-    if (!code) throw new UnauthorizedException(GENERIC_INVITE)
-    const guestIds = await this.resolveGuests(eventIds, {
-      email: dto.email,
-      code,
-    })
+    if (!email && !code) throw new UnauthorizedException(GENERIC_INVITE)
+    const guestIds = await this.resolveGuests(eventIds, { email, code })
     if (guestIds.length === 0) throw new UnauthorizedException(GENERIC_INVITE)
     const expiresAt = Date.now() + SESSION_TTL_MS
     const token = signSiteSession({ siteId: site.id, guestIds, exp: expiresAt }, secret)
@@ -525,10 +571,13 @@ export class EventSitesService {
   private async projectPublic(
     site: Prisma.EventSiteGetPayload<{ include: typeof SITE_INCLUDE }>,
     guestIds: string[],
+    opts?: { hostView?: boolean },
   ) {
+    const hostView = opts?.hostView === true
     const map = await this.guestEventMap(guestIds)
     const configs = this.eventConfigs(site)
-    const visible = configs.filter((c) => canSeeEventOnSite(c, site.eventId, new Set(map.values())))
+    const seen = hostView ? new Set(configs.map((c) => c.eventId)) : new Set(map.values())
+    const visible = configs.filter((c) => canSeeEventOnSite(c, site.eventId, seen))
     const visibleIds = new Set(visible.map((c) => c.eventId))
 
     const events = await this.prisma.event.findMany({
@@ -558,7 +607,8 @@ export class EventSitesService {
       showItemDirections: schedulePayload.showItemDirections !== false,
     }
     const rsvpOn = sectionIsOn(site.sections, EventSiteSectionType.RSVP)
-    const unlocked = guestIds.length > 0 || site.ownerAccessMode === EventSiteAccessMode.OPEN
+    const unlocked =
+      hostView || guestIds.length > 0 || site.ownerAccessMode === EventSiteAccessMode.OPEN
     const photosOn = unlocked && sectionIsOn(site.sections, EventSiteSectionType.PHOTOS)
     const peopleOn = unlocked && sectionIsOn(site.sections, EventSiteSectionType.PEOPLE)
     await importLegacyParty(this.prisma, site.eventId)
@@ -645,7 +695,7 @@ export class EventSitesService {
         ),
       },
       sections: this.decorateSections(
-        publicSections.sort((a, b) => a.sortOrder - b.sortOrder),
+        [...publicSections].toSorted((a, b) => a.sortOrder - b.sortOrder),
         unlocked ? site.photos : [],
         peopleOn ? publicPartyDtos(partyMembers) : [],
       ).map((section) => this.omitPublicSwitches(section)),
@@ -653,6 +703,8 @@ export class EventSitesService {
       owner,
       children,
       robots: unlocked ? publicRobots(visible) : 'noindex',
+      needsInvite: hostView ? false : siteNeedsInvite(configs, site.eventId, seen),
+      hostView,
     }
   }
 
@@ -677,15 +729,25 @@ export class EventSitesService {
 
   private async resolveGuests(eventIds: string[], dto: { email?: string; code?: string }) {
     const code = dto.code?.trim()
-    if (!code) return []
-    const invite = await this.prisma.guestInvite.findFirst({
-      where: { token: code, eventId: { in: eventIds } },
-      select: { guestId: true, expiresAt: true, guest: { select: { email: true } } },
-    })
-    if (!invite || !inviteIsActive(invite.expiresAt)) return []
     const email = dto.email?.trim()
-    if (email && invite.guest.email?.toLowerCase() !== email.toLowerCase()) return []
-    return [invite.guestId]
+    if (code) {
+      const invite = await this.prisma.guestInvite.findFirst({
+        where: { token: code, eventId: { in: eventIds } },
+        select: { guestId: true, expiresAt: true, guest: { select: { email: true } } },
+      })
+      if (!invite || !inviteIsActive(invite.expiresAt)) return []
+      if (email && invite.guest.email?.toLowerCase() !== email.toLowerCase()) return []
+      return [invite.guestId]
+    }
+    if (!email) return []
+    const guests = await this.prisma.guest.findMany({
+      where: {
+        eventId: { in: eventIds },
+        email: { equals: email, mode: 'insensitive' },
+      },
+      select: { id: true },
+    })
+    return guests.map((guest) => guest.id)
   }
 
   private async guestEventMap(guestIds: string[]) {

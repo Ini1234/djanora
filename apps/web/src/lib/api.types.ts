@@ -40,6 +40,8 @@ export type WeddingTheme =
   | 'INTIMATE'
   | 'MODERN'
 
+export type VendorReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED'
+
 export type VendorCategory =
   | 'CATERER'
   | 'DJ'
@@ -211,6 +213,7 @@ export interface EventStats {
   checklistTotal: number
   scheduleCount: number
   confirmedGuestCount: number
+  guestListCount: number
 }
 
 export interface Event {
@@ -345,6 +348,8 @@ export interface MyVendorProfile {
   externalPortfolioLabel: string | null
   isVerified: boolean
   isActive: boolean
+  reviewStatus?: VendorReviewStatus
+  reviewNote?: string | null
   averageRating: number | null
   totalReviews: number
   createdAt: string
@@ -582,4 +587,11 @@ export interface PublicEventSite {
   owner: PublicEventSlice
   children: PublicEventSlice[]
   robots: 'index' | 'noindex'
+  needsInvite: boolean
+  hostView?: boolean
+}
+
+export interface GuestUnlockLink {
+  url: string
+  code: string
 }

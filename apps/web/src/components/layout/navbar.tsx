@@ -6,9 +6,9 @@ import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { href: '/vendors', label: 'Find Vendors' },
-  { href: '/#how-it-works', label: 'How It Works' },
-  { href: '/#for-vendors', label: 'For Vendors' },
+  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/for-vendors', label: 'For vendors' },
+  { href: '/contact', label: 'Contact' },
 ]
 
 export function Navbar() {

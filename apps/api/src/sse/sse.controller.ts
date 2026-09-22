@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService } from './sse.service'
 import { clerkVerifyOptions } from '../common/clerk-auth'
+import { liveUserWhere } from '../common/active-user'
 
 function bearerToken(authorization?: string): string | undefined {
   if (!authorization) return undefined
@@ -36,8 +37,8 @@ export class SseController {
       throw new UnauthorizedException('Invalid token')
     })
 
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId: payload.sub },
+    const user = await this.prisma.user.findFirst({
+      where: liveUserWhere(payload.sub),
       select: { id: true },
     })
     if (!user) throw new UnauthorizedException('User not found')

@@ -2,6 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { SseService } from '../sse/sse.service'
 import { NotificationType, Prisma } from '@prisma/client'
+import { liveUserWhere } from '../common/active-user'
+
+const NOTIFICATION_LIMIT_MAX = 100
 
 @Injectable()
 export class NotificationsService {
@@ -11,8 +14,11 @@ export class NotificationsService {
   ) {}
 
   async findByUser(clerkId: string, limit = 20) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
+    limit = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.trunc(limit), 1), NOTIFICATION_LIMIT_MAX)
+      : 20
 
     const [notifications, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({
@@ -29,7 +35,7 @@ export class NotificationsService {
   }
 
   async findOne(clerkId: string, notificationId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
     const notification = await this.prisma.notification.findFirst({
       where: { id: notificationId, userId: user.id },
@@ -39,7 +45,7 @@ export class NotificationsService {
   }
 
   async markRead(clerkId: string, notificationId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     return this.prisma.notification.update({
@@ -49,7 +55,7 @@ export class NotificationsService {
   }
 
   async markAllRead(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } })
+    const user = await this.prisma.user.findFirst({ where: liveUserWhere(clerkId) })
     if (!user) throw new NotFoundException('User not found')
 
     return this.prisma.notification.updateMany({

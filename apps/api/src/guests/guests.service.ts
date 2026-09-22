@@ -21,6 +21,8 @@ import {
   SubmitRsvpDto,
   ImportGuestsDto,
 } from './dto/guests.dto'
+import { GUEST_LIST_CAP } from '../common/list-cap'
+import { mapPool } from '../common/map-pool'
 
 /** List/mutate responses must never include the RSVP capability token. */
 export const GUEST_INVITE_LIST_SELECT = {
@@ -63,6 +65,7 @@ export class GuestsService {
       where: { eventId },
       include: { invite: { select: GUEST_INVITE_LIST_SELECT } },
       orderBy: { createdAt: 'asc' },
+      take: GUEST_LIST_CAP,
     })
   }
 
@@ -167,6 +170,28 @@ export class GuestsService {
     return updated
   }
 
+  async unlockLink(clerkId: string, eventId: string, guestId: string) {
+    await this.assertEventAccess(clerkId, eventId, 'edit')
+    const guest = await this.prisma.guest.findFirst({
+      where: { id: guestId, eventId },
+      include: { invite: true },
+    })
+    if (!guest) throw new NotFoundException('Guest not found')
+    const invite =
+      guest.invite ??
+      (await this.prisma.guestInvite.create({
+        data: {
+          guestId,
+          eventId,
+          token: randomBytes(32).toString('hex'),
+        },
+      }))
+    return {
+      url: await this.inviteLink(eventId, invite.token),
+      code: invite.token,
+    }
+  }
+
   async removeGuest(clerkId: string, eventId: string, guestId: string) {
     await this.assertEventAccess(clerkId, eventId, 'edit')
     const guest = await this.prisma.guest.findFirst({ where: { id: guestId, eventId } })
@@ -257,22 +282,18 @@ export class GuestsService {
   }
 
   async bulkSendInvites(clerkId: string, eventId: string, dto: BulkSendInviteDto) {
-    const results: { guestId: string; success: boolean; error?: string }[] = []
-
-    for (const guestId of dto.guestIds) {
+    return mapPool(dto.guestIds, 5, async (guestId) => {
       try {
         await this.sendInvite(clerkId, eventId, guestId, {
           via: dto.via,
           customNote: dto.customNote,
         })
-        results.push({ guestId, success: true })
+        return { guestId, success: true as const }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error'
-        results.push({ guestId, success: false, error: message })
+        return { guestId, success: false as const, error: message }
       }
-    }
-
-    return results
+    })
   }
 
   private async inviteLink(eventId: string, token: string) {
@@ -283,12 +304,9 @@ export class GuestsService {
         parent: { select: { site: { select: { slug: true, status: true } } } },
       },
     })
-    const slug =
-      row?.site?.status === EventSiteStatus.PUBLISHED
-        ? row.site.slug
-        : row?.parent?.site?.status === EventSiteStatus.PUBLISHED
-          ? row.parent.site.slug
-          : null
+    let slug: string | null = null
+    if (row?.site?.status === EventSiteStatus.PUBLISHED) slug = row.site.slug
+    else if (row?.parent?.site?.status === EventSiteStatus.PUBLISHED) slug = row.parent.site.slug
     if (slug) return eventSiteInviteUrl(this.webUrl, slug, token)
     return `${this.webUrl}/rsvp/${token}`
   }
@@ -296,36 +314,11 @@ export class GuestsService {
   // ─── Public RSVP (no auth) ─────────────────────────────────────────────────
 
   async getInviteByToken(token: string) {
-    const invite = await this.prisma.guestInvite.findUnique({
-      where: { token },
-      include: {
-        guest: { select: { firstName: true, lastName: true, plusOneAllowed: true } },
-        event: {
-          select: {
-            id: true,
-            title: true,
-            eventType: true,
-            estimatedDate: true,
-            location: true,
-          },
-        },
-      },
-    })
-
-    if (!invite) throw new NotFoundException('Invite not found')
-    if (invite.expiresAt && new Date() > invite.expiresAt) {
-      throw new ForbiddenException('This invite has expired')
-    }
-
-    return toPublicRsvp(invite)
+    return toPublicRsvp(await this.loadLiveInvite(token))
   }
 
   async submitRsvp(token: string, dto: SubmitRsvpDto) {
-    const invite = await this.prisma.guestInvite.findUnique({ where: { token } })
-    if (!invite) throw new NotFoundException('Invite not found')
-    if (invite.expiresAt && new Date() > invite.expiresAt) {
-      throw new ForbiddenException('This invite has expired')
-    }
+    await this.loadLiveInvite(token)
 
     const updated = await this.prisma.guestInvite.update({
       where: { token },
@@ -350,6 +343,30 @@ export class GuestsService {
       },
     })
     return toPublicRsvp(updated)
+  }
+
+  private async loadLiveInvite(token: string) {
+    const invite = await this.prisma.guestInvite.findUnique({
+      where: { token },
+      include: {
+        guest: { select: { firstName: true, lastName: true, plusOneAllowed: true } },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            eventType: true,
+            estimatedDate: true,
+            location: true,
+            deletedAt: true,
+          },
+        },
+      },
+    })
+    if (!invite || invite.event.deletedAt) throw new NotFoundException('Invite not found')
+    if (invite.expiresAt && new Date() > invite.expiresAt) {
+      throw new ForbiddenException('This invite has expired')
+    }
+    return invite
   }
 
   // ─── Email template ────────────────────────────────────────────────────────

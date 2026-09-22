@@ -1,4 +1,5 @@
 import { EventMemberRole, EventSurface } from '@prisma/client'
+import { EventAccessRepository } from './event-access.repository'
 import {
   allowsAction,
   EventAccessService,
@@ -9,6 +10,10 @@ import {
   roleAllowsEdit,
 } from './event-access.service'
 import type { EventAccess } from './event-access.service'
+
+function accessService(prisma: unknown) {
+  return new EventAccessService(new EventAccessRepository(prisma as never))
+}
 
 const commenter = {
   isHost: false,
@@ -85,7 +90,7 @@ describe('event access roles', () => {
 })
 
 describe('canSeeChecklistRow', () => {
-  const svc = new EventAccessService({} as never)
+  const svc = accessService({})
   const member = { isHost: false, memberId: 'm1' } as EventAccess
   const hostAccess = { isHost: true, memberId: undefined } as EventAccess
 
@@ -103,17 +108,46 @@ describe('canSeeChecklistRow', () => {
   })
 })
 
+describe('loadMany', () => {
+  it('returns host access for owned events in one user lookup', async () => {
+    const user = { id: 'u1', clerkId: 'clerk_1', email: 'a@x.com' }
+    const hosted = { id: 'evt1', userId: 'u1', parentId: null, deletedAt: null }
+    const prisma = {
+      user: { findFirst: jest.fn().mockResolvedValue(user) },
+      event: { findMany: jest.fn().mockResolvedValue([hosted]) },
+      eventMember: { findMany: jest.fn(), update: jest.fn() },
+      eventSubGrant: { findMany: jest.fn() },
+    }
+    const svc = accessService(prisma)
+    const map = await svc.loadMany('clerk_1', ['evt1', 'evt1'])
+    expect(map.get('evt1')?.isHost).toBe(true)
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1)
+    expect(prisma.eventMember.findMany).not.toHaveBeenCalled()
+  })
+
+  it('marks missing events as null without throwing', async () => {
+    const user = { id: 'u1', clerkId: 'clerk_1', email: 'a@x.com' }
+    const prisma = {
+      user: { findFirst: jest.fn().mockResolvedValue(user) },
+      event: { findMany: jest.fn().mockResolvedValue([]) },
+    }
+    const svc = accessService(prisma)
+    const map = await svc.loadMany('clerk_1', ['gone'])
+    expect(map.get('gone')).toBeNull()
+  })
+})
+
 describe('accepted membership binding', () => {
   const user = { id: 'u1', clerkId: 'clerk_1', email: 'now@x.com' }
   const event = { id: 'evt1', userId: 'host', parentId: null, deletedAt: null }
 
   it('does not grant access via another member row that only shares the current email', async () => {
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue(user) },
+      user: { findFirst: jest.fn().mockResolvedValue(user) },
       event: { findFirst: jest.fn().mockResolvedValue(event) },
       eventMember: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
     }
-    const svc = new EventAccessService(prisma as never)
+    const svc = accessService(prisma)
     await expect(svc.load('clerk_1', 'evt1')).rejects.toMatchObject({ message: 'Event not found' })
     expect(prisma.eventMember.update).not.toHaveBeenCalled()
     expect(prisma.eventMember.findFirst).toHaveBeenNthCalledWith(
@@ -131,19 +165,31 @@ describe('accepted membership binding', () => {
       surfaces: [EventSurface.CHECKLIST],
     }
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue(user) },
+      user: { findFirst: jest.fn().mockResolvedValue(user) },
       event: { findFirst: jest.fn().mockResolvedValue(event) },
       eventMember: {
         findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(orphan),
         update: jest.fn().mockResolvedValue({ ...orphan, userId: user.id }),
       },
     }
-    const svc = new EventAccessService(prisma as never)
+    const svc = accessService(prisma)
     const access = await svc.load('clerk_1', 'evt1')
     expect(access.memberId).toBe('m-orphan')
     expect(prisma.eventMember.update).toHaveBeenCalledWith({
       where: { id: 'm-orphan' },
       data: { userId: 'u1' },
     })
+  })
+
+  it('denies a soft-deleted user (FR-24)', async () => {
+    const prisma = {
+      user: { findFirst: jest.fn().mockResolvedValue(null) },
+      event: { findFirst: jest.fn() },
+    }
+    const svc = accessService(prisma)
+    await expect(svc.load('clerk_deleted', 'evt1')).rejects.toMatchObject({
+      message: 'Event not found',
+    })
+    expect(prisma.event.findFirst).not.toHaveBeenCalled()
   })
 })

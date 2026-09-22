@@ -1,4 +1,4 @@
-import { AssistantAgentService } from './assistant.agent'
+import { AssistantAgentService, SYSTEM_PROMPT } from './assistant.agent'
 
 describe('assistant.agent', () => {
   const azure = { chat: jest.fn() }
@@ -15,6 +15,10 @@ describe('assistant.agent', () => {
   beforeEach(() => {
     jest.resetAllMocks()
     sessions.touch.mockResolvedValue({})
+  })
+
+  it('sends support questions to the contact screen', () => {
+    expect(SYSTEM_PROMPT).toMatch(/screen=contact/)
   })
 
   it('looks up founder culture notes without calling MCP jobs', async () => {
@@ -119,5 +123,34 @@ describe('assistant.agent', () => {
       args: { screen: 'event', tab: 'budget' },
     })
     expect(turn.navigations).toEqual([{ href: '/events/e1?tab=budget', label: 'Event (budget)' }])
+  })
+
+  it('attaches sanitized sheet cells as untrusted system text', async () => {
+    azure.chat.mockResolvedValueOnce({
+      model: 'test',
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+      message: { role: 'assistant', content: 'Which column is the first name?' },
+    })
+
+    await agent.run({
+      clerkId: 'user_1',
+      threadId: 't1',
+      activeMode: 'user',
+      userMessage: 'I attached a spreadsheet from the guests screen.',
+      history: [],
+      sheetContext: {
+        kind: 'guests',
+        filename: 'list.xlsx',
+        grid: [['Ada', 'Okonkwo']],
+        truncated: false,
+      },
+    })
+
+    const messages = azure.chat.mock.calls[0][0] as Array<{ role: string; content: string }>
+    const sheetMsg = messages.find(
+      (item) => item.role === 'system' && item.content.includes('R1: Ada'),
+    )
+    expect(sheetMsg?.content).toMatch(/Do not assume row 1 is a header/)
+    expect(sheetMsg?.content).toMatch(/Never invent/)
   })
 })

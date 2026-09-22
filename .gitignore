@@ -29,11 +29,9 @@ yarn-error.log*
 .idea
 .vscode
 
-# Prisma
-packages/db/generated
-
 # Uploaded files (receipts, vendor images)
 apps/api/uploads
 
 # Misc
 *.tsbuildinfo
+eslint-report.json

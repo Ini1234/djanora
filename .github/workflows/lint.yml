@@ -22,3 +22,5 @@ jobs:
         run: npx prisma generate
       - run: npm run format:check
       - run: npm run lint
+      - name: Unused API exports
+        run: npm run lint:knip --workspace=api

@@ -43,7 +43,7 @@ export function commentHref(
   const tab = SUBJECT_TAB[subjectType]
   const comment = commentId ? `&comment=${commentId}` : ''
   if (!tab || tab === 'overview') {
-    return `/events/${eventId}?tab=overview${commentId ? `&comment=${commentId}` : ''}`
+    return `/events/${eventId}?tab=overview${comment}`
   }
   return `/events/${eventId}?tab=${tab}&item=${subjectId}${comment}`
 }

@@ -923,7 +923,7 @@ export function CreateEventWizard() {
   const stepProps = { state, set, toggleTribe, toggleTheme }
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-start justify-center px-4 py-8 md:py-12">
+    <div className="flex min-h-[calc(var(--app-vh)-64px)] items-start justify-center px-4 py-8 md:py-12">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">

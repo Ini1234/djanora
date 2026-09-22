@@ -1,4 +1,10 @@
-import { emptyTranscript, parseTranscript, withTranscriptIdentity } from './assistant.transcript'
+import {
+  confirmTokensIn,
+  emptyTranscript,
+  parseTranscript,
+  withoutConfirmTokens,
+  withTranscriptIdentity,
+} from './assistant.transcript'
 
 describe('parseTranscript', () => {
   it('returns empty for invalid JSON', () => {
@@ -56,5 +62,30 @@ describe('parseTranscript', () => {
         identity,
       ),
     ).toBeNull()
+  })
+})
+
+describe('confirm cards on a transcript', () => {
+  const message = {
+    id: 'm1',
+    role: 'assistant' as const,
+    content: 'Add these guests?',
+    createdAt: '2026-09-21T00:00:00.000Z',
+    parts: {
+      confirms: [
+        { tool: 'import_guests', confirm_token: 'tok-a', summary: 'Add 5' },
+        { tool: 'import_guests', confirm_token: 'tok-b', summary: 'Add 2' },
+      ],
+    },
+  }
+
+  it('lists confirm tokens', () => {
+    expect(confirmTokensIn([message])).toEqual(['tok-a', 'tok-b'])
+  })
+
+  it('drops spent cards and leaves the rest', () => {
+    const next = withoutConfirmTokens([message], new Set(['tok-a']))
+    expect(confirmTokensIn(next)).toEqual(['tok-b'])
+    expect(withoutConfirmTokens([message], new Set(['tok-a', 'tok-b']))[0].parts).toBeNull()
   })
 })

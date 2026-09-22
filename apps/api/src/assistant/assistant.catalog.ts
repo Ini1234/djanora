@@ -1,3 +1,5 @@
+import { sheetFamily, type SheetKind } from './assistant.sheet'
+
 export type ToolFamily =
   | 'identity'
   | 'events'
@@ -130,6 +132,7 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
             'inspiration',
             'likes',
             'settings',
+            'contact',
             'assistant',
             'vendor_home',
             'inquiries',
@@ -159,6 +162,36 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     description: 'Unset the thread event.',
     family: 'events',
     parameters: obj({}),
+  },
+  {
+    name: 'apply_weekend',
+    description:
+      'Create the ceremonies the user named as child events in one confirm. Copies parent tribe, look, city, and guest count. ISO dates only if given. Bride price only if include_bride_price is true. Then adds pack checklist/budget hints onto the parent at amount 0. Do not loop add_child_event. Confirm required.',
+    family: 'events',
+    parameters: obj(
+      {
+        ...eventScope,
+        ceremonies: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              event_type: { type: 'string' },
+              title: { type: 'string' },
+              date: { type: 'string', description: 'YYYY-MM-DD only if the user gave a date' },
+            },
+            required: ['event_type'],
+            additionalProperties: false,
+          },
+        },
+        include_bride_price: {
+          type: 'boolean',
+          description: 'True only if the user asked to include bride price.',
+        },
+        ...confirm,
+      },
+      ['ceremonies'],
+    ),
   },
   {
     name: 'create_event',
@@ -217,6 +250,32 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     parameters: obj(eventScope),
   },
   {
+    name: 'import_checklist',
+    description:
+      'Add many checklist items from a pasted list in one call. Confirm required. Do not loop add_checklist_item. Do not invent due dates.',
+    family: 'checklist',
+    parameters: obj(
+      {
+        ...eventScope,
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              description: { type: 'string' },
+              due_date: { type: 'string', description: 'ISO date YYYY-MM-DD if the note has one' },
+            },
+            required: ['title'],
+            additionalProperties: false,
+          },
+        },
+        ...confirm,
+      },
+      ['items'],
+    ),
+  },
+  {
     name: 'add_checklist_item',
     description: 'Add a checklist item.',
     family: 'checklist',
@@ -257,6 +316,34 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     description: 'Schedule items.',
     family: 'schedule',
     parameters: obj(eventScope),
+  },
+  {
+    name: 'import_schedule',
+    description:
+      'Add many schedule blocks from a pasted list in one call. Confirm required. Do not loop add_schedule_item. Dates must be YYYY-MM-DD. Times must be HH:MM. show_on_site stays off.',
+    family: 'schedule',
+    parameters: obj(
+      {
+        ...eventScope,
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              date: { type: 'string' },
+              start_time: { type: 'string' },
+              end_time: { type: 'string' },
+              location: { type: 'string' },
+            },
+            required: ['title'],
+            additionalProperties: false,
+          },
+        },
+        ...confirm,
+      },
+      ['items'],
+    ),
   },
   {
     name: 'add_schedule_item',
@@ -308,6 +395,32 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     parameters: obj(eventScope),
   },
   {
+    name: 'import_party',
+    description:
+      'Add many wedding party names from a pasted list in one call. Confirm required. Do not loop add_party_member. Do not invent bios or photos. Side is BRIDE, GROOM, or OTHER. show_on_site stays off. Enables the roster if needed.',
+    family: 'party',
+    parameters: obj(
+      {
+        ...eventScope,
+        members: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              role: { type: 'string' },
+              side: { type: 'string', enum: ['BRIDE', 'GROOM', 'OTHER'] },
+            },
+            required: ['name'],
+            additionalProperties: false,
+          },
+        },
+        ...confirm,
+      },
+      ['members'],
+    ),
+  },
+  {
     name: 'add_party_member',
     description: 'Add a party member.',
     family: 'party',
@@ -355,6 +468,36 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     description: 'Guests on the event.',
     family: 'guests',
     parameters: obj(eventScope),
+  },
+  {
+    name: 'import_guests',
+    description:
+      'Add many guests from a pasted list in one call. Confirm required. Do not loop add_guest. Do not invent emails or phones. Do not send invites.',
+    family: 'guests',
+    parameters: obj(
+      {
+        ...eventScope,
+        guests: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              first_name: { type: 'string' },
+              last_name: { type: 'string' },
+              email: { type: 'string' },
+              phone: { type: 'string' },
+              note: { type: 'string' },
+              plus_one_allowed: { type: 'boolean' },
+              table_number: { type: 'string' },
+            },
+            required: ['first_name'],
+            additionalProperties: false,
+          },
+        },
+        ...confirm,
+      },
+      ['guests'],
+    ),
   },
   {
     name: 'add_guest',
@@ -434,6 +577,37 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     description: 'Budget lines.',
     family: 'budget',
     parameters: obj(eventScope),
+  },
+  {
+    name: 'import_budget',
+    description:
+      'Add many budget lines from a pasted list in one call. Confirm required. Do not loop add_budget_item. Do not invent amounts. Category must be a known vendor type or skip the row.',
+    family: 'budget',
+    parameters: obj(
+      {
+        ...eventScope,
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              category: {
+                type: 'string',
+                description:
+                  'CATERER, DJ, PHOTOGRAPHER, VIDEOGRAPHER, DECORATOR, MAKEUP_ARTIST, MC, WEDDING_PLANNER, FASHION_STYLIST, LIVE_BAND, OTHER',
+              },
+              label: { type: 'string' },
+              allocated_amount: { type: 'number' },
+              vendor_name: { type: 'string' },
+            },
+            required: ['category', 'label'],
+            additionalProperties: false,
+          },
+        },
+        ...confirm,
+      },
+      ['items'],
+    ),
   },
   {
     name: 'add_budget_item',
@@ -524,6 +698,20 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
     description: 'Event site editor payload.',
     family: 'site',
     parameters: obj(eventScope),
+  },
+  {
+    name: 'draft_site_copy',
+    description:
+      'Draft text only on About, Travel, Stay, and Dress code. Creates a draft site if none exists. Never publish, change theme, or add photos. Confirm required. Do not call update_site with a sections blob.',
+    family: 'site',
+    parameters: obj({
+      ...eventScope,
+      about: { type: 'string' },
+      travel: { type: 'string' },
+      stay: { type: 'string' },
+      dress_code: { type: 'string' },
+      ...confirm,
+    }),
   },
   {
     name: 'create_site',
@@ -761,17 +949,71 @@ export const ASSISTANT_TOOLS: CatalogTool[] = [
 
 const FAMILY_HINTS: Record<Exclude<ToolFamily, 'files'>, string[]> = {
   identity: ['profile', 'my name', 'switch mode', 'vendor mode', 'who am i'],
-  events: ['event', 'wedding', 'ceremony', 'create an event', 'child event', 'introduction'],
-  checklist: ['checklist', 'to-do', 'todo', 'task', 'assign'],
-  schedule: ['schedule', 'itinerary', 'timeline', 'what time'],
-  party: ['bridal party', 'groomsmen', 'bridesmaid', 'asoebi', 'party member'],
-  guests: ['guest', 'rsvp', 'invite', 'plus one', 'table', 'people', 'expected'],
+  events: [
+    'event',
+    'wedding',
+    'ceremony',
+    'ceremonies',
+    'weekend',
+    'create an event',
+    'child event',
+    'introduction',
+  ],
+  checklist: [
+    'checklist',
+    'to-do',
+    'todo',
+    'task',
+    'assign',
+    'paste',
+    'import',
+    'add these',
+    'this week',
+    "what's left",
+    'left to',
+  ],
+  schedule: ['schedule', 'itinerary', 'timeline', 'what time', 'paste', 'import', 'this week'],
+  party: ['bridal party', 'groomsmen', 'bridesmaid', 'asoebi', 'party member', 'paste', 'import'],
+  guests: [
+    'guest',
+    'rsvp',
+    'invite',
+    'uninvited',
+    'plus one',
+    'table',
+    'people',
+    'expected',
+    'paste',
+    'import',
+  ],
   navigate: ['take me', 'open the', 'go to', 'show me', 'navigate'],
-  budget: ['budget', 'spend', 'cost', 'naira', 'dollars', 'allocated'],
+  budget: [
+    'budget',
+    'spend',
+    'cost',
+    'naira',
+    'dollars',
+    'allocated',
+    'paste',
+    'import',
+    'this week',
+  ],
   comments: ['comment', 'mention'],
   activity: ['activity', 'what changed', 'feed'],
   personal: ['personal checklist', 'home task'],
-  site: ['website', 'event site', 'publish', 'slug', 'theme'],
+  site: [
+    'website',
+    'event site',
+    'publish',
+    'slug',
+    'theme',
+    'about',
+    'travel',
+    'stay',
+    'dress code',
+    'draft copy',
+    'site copy',
+  ],
   members: ['collaborator', 'planner', 'invite member', 'share access'],
   vendors: ['vendor', 'caterer', 'dj', 'photographer', 'directory'],
   inquiries: ['inquiry', 'quote', 'message the vendor', 'book'],
@@ -807,7 +1049,11 @@ const VENDOR_ALWAYS = new Set(['get_vendor_me', 'list_vendor_inquiries', 'set_in
 
 const MAX_TOOLS = 14
 
-export function selectToolNames(message: string, activeMode: string): string[] {
+export function selectToolNames(
+  message: string,
+  activeMode: string,
+  sheetKind?: SheetKind,
+): string[] {
   const text = message.toLowerCase()
   const scores = new Map<ToolFamily, number>()
   for (const [family, hints] of Object.entries(FAMILY_HINTS) as [ToolFamily, string[]][]) {
@@ -816,6 +1062,10 @@ export function selectToolNames(message: string, activeMode: string): string[] {
       if (text.includes(hint)) score += hint.length > 8 ? 2 : 1
     }
     if (score) scores.set(family, score)
+  }
+  if (sheetKind) {
+    const family = sheetFamily(sheetKind)
+    scores.set(family, (scores.get(family) ?? 0) + 6)
   }
   if (activeMode === 'vendor') {
     scores.set('inquiries', (scores.get('inquiries') ?? 0) + 2)

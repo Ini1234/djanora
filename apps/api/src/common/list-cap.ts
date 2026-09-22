@@ -1,0 +1,6 @@
+export const GUEST_LIST_CAP = 500
+export const INQUIRY_LIST_CAP = 100
+export const INQUIRY_MESSAGE_CAP = 200
+export const REMINDER_BATCH_CAP = 200
+export const ASSIGNED_CHECKLIST_CAP = 200
+export const VECTOR_CANDIDATE_CAP = 200

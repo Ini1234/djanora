@@ -27,7 +27,9 @@ export const DEFAULT_CHAT_DEPLOYMENT = 'gpt-4.1-mini'
 export const DEFAULT_CHAT_API_VERSION = '2024-10-21'
 
 export function trimEndpoint(endpoint: string) {
-  return endpoint.replace(/\/+$/, '')
+  let end = endpoint.length
+  while (end > 0 && endpoint[end - 1] === '/') end -= 1
+  return endpoint.slice(0, end)
 }
 
 export function usesCompletionTokens(deployment: string) {

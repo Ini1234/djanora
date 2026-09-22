@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Share2, Trash2, Copy, Check, Pencil, LogOut } from 'lucide-react'
 import { proxyClient } from '@/lib/proxy-client'
+import { copyText } from '@/lib/clipboard'
 import type { ChildGrant, EventJourneyStop, EventMemberRole, EventSurface } from '@/lib/api.types'
 import { ALL_EVENT_SURFACES } from '@/lib/api.types'
 
@@ -355,7 +356,8 @@ export function EventPeopleSection({
 
   async function copyLink(member: MemberRow) {
     if (!member.inviteUrl) return
-    await navigator.clipboard.writeText(member.inviteUrl)
+    const ok = await copyText(member.inviteUrl)
+    if (!ok) return
     setCopiedId(member.id)
     setTimeout(() => setCopiedId(null), 1500)
   }

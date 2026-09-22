@@ -74,7 +74,7 @@ This spec adds an **Event site**: one optional public page per Event at `/e/[slu
 - **FR-26.** Each included child MUST have `hasOwnGuestList` (default `true`). If `false`, that child is schedule/content only: no RSVP door, and visibility follows the **parent** Event’s guest list (or OPEN if the child’s `accessMode` is `OPEN`).
 - **FR-27.** Invited-only + `hasOwnGuestList`: a viewer MAY see that Event iff their session Guest is on that Event’s `Guest` list (email match, case-insensitive trim, or invite token).
 - **FR-28.** `OPEN`: a viewer MAY see that Event without being on the list. They MAY RSVP; the system MUST create a Guest + GuestInvite if no email match exists (email required on open RSVP).
-- **FR-29.** Empty identity (no valid session): the public GET MUST return only Events on that site with `accessMode = OPEN` (and their allowed sections). Invited-only Events MUST be omitted. Cover of the owner Event MUST still render with live title, date, and location (FR-17). The API MUST NOT return that Event’s id, schedule, or RSVP until the guest may see it.
+- **FR-29.** Empty identity (no valid session): the public GET MUST return only Events on that site with `accessMode = OPEN` (and their allowed sections). Invited-only Events MUST be omitted. Cover of the owner Event MUST still render with live title, date, and location (FR-17). The API MUST NOT return that Event’s id, schedule, or RSVP until the guest may see it. GET MUST include `needsInvite`: true while any Event on the site is still hidden, so the public page shows the email/code gate only then.
 - **FR-30.** A Guest who is only on a child list MUST be able to POST session on the **parent** slug with that child’s email or token. After success, GET MUST include that child and any other Event they may see (membership or OPEN).
 - **FR-31.** Hidden Events MUST be omitted. The API MUST NOT return their ids, titles, or counts. Fail closed: wrong email/code → `401` with generic “We couldn’t find that invite.” Do not say which Event they missed.
 - **FR-32.** Unique code MUST be the existing `GuestInvite.token` (any Event that appears on this site). `/rsvp/:token` MUST keep working unchanged.
@@ -83,7 +83,7 @@ This spec adds an **Event site**: one optional public page per Event at `/e/[slu
 
 - **FR-33.** `POST /event-sites/:slug/session` with `{ email }` or `{ code }` MUST create a signed opaque session (HMAC, payload: `siteId`, `guestId` nullable, `exp`). TTL **30 days**. Response body: `{ token, expiresAt }`. Client MUST send `X-Event-Site-Session` on later public calls. Store in `localStorage` key `djanora.eventSite.{slug}`.
 - **FR-34.** Invalid, expired, or site-mismatch token MUST be treated as empty identity (FR-29), not 500. POST session with unknown email/code MUST `401` as FR-31.
-- **FR-35.** Session is not a Clerk user. Site editor routes MUST keep Clerk + SITE grant.
+- **FR-35.** Guest session is not a Clerk user. Site editor routes MUST keep Clerk + SITE grant. A signed-in host or accepted member GET-ing the public slug with a Clerk bearer MUST receive the full site (`hostView`, `needsInvite` false) and MUST NOT need an email or unique code. A signed-in user with no event access MUST be treated as empty identity.
 
 ### RSVP via site
 
@@ -312,6 +312,14 @@ type PublicSite = {
   owner: PublicEventSlice
   children: PublicEventSlice[] // visible only
   robots: 'index' | 'noindex'
+  needsInvite: boolean // true while any Event on the site is still hidden
+  hostView?: boolean
+}
+
+// POST /events/:eventId/guests/:guestId/unlock-link
+type GuestUnlockLink = {
+  url: string // /e/{slug}?inviteeId={token} when the site is live
+  code: string // GuestInvite.token — the unique code on the public gate
 }
 
 type SiteSessionResponse = {

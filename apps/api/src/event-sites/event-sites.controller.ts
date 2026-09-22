@@ -17,7 +17,7 @@ import { ClerkAuthGuard } from '../common/guards/clerk-auth.guard'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { BlobStorageService, makeUploadName } from '../uploads/blob-storage.service'
 import { EventSitesService } from './event-sites.service'
-import { CreateSiteDto, PatchSiteDto } from './dto/event-site.dto'
+import { CreateSiteDto, DraftSiteCopyDto, PatchSiteDto } from './dto/event-site.dto'
 import { MAX_PHOTO_BYTES } from './event-site.constants'
 import { ThrottlerGuard } from '@nestjs/throttler'
 
@@ -61,6 +61,15 @@ export class EventSitesController {
     @Body() dto: PatchSiteDto,
   ) {
     return this.sites.patch(user.sub, eventId, dto)
+  }
+
+  @Post('draft-copy')
+  draftCopy(
+    @CurrentUser() user: ClerkPayload,
+    @Param('eventId') eventId: string,
+    @Body() dto: DraftSiteCopyDto,
+  ) {
+    return this.sites.draftCopy(user.sub, eventId, dto)
   }
 
   @Post('publish')
